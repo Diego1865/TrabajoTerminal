@@ -4,7 +4,7 @@ import CapturaEscritura from "@/components/CapturaEscritura";
 import LienzoDigital from "@/components/LienzoDigital";
 
 export default function Home() {
-  const [modo, setModo] = useState('camara'); // 'camara' o 'lienzo'
+  const [modo, setModo] = useState('lienzo'); // 'camara' o 'lienzo'
 
   return (
     <main className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
@@ -16,16 +16,16 @@ export default function Home() {
       {/* Selector de Modo */}
       <div className="flex bg-white p-1 rounded-xl shadow-sm border border-blue-100 mb-8">
         <button
-          onClick={() => setModo('camara')}
-          className={`px-6 py-2 rounded-lg font-medium transition-all ${modo === 'camara' ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-        >
-          Subir Foto
-        </button>
-        <button
           onClick={() => setModo('lienzo')}
           className={`px-6 py-2 rounded-lg font-medium transition-all ${modo === 'lienzo' ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           Escribir Aquí
+        </button>
+        <button
+          onClick={() => setModo('camara')}
+          className={`px-6 py-2 rounded-lg font-medium transition-all ${modo === 'camara' ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          Subir Foto
         </button>
       </div>
 
@@ -34,7 +34,7 @@ export default function Home() {
         {modo === 'camara' ? (
           <CapturaEscritura />
         ) : (
-          <LienzoDigital alTerminar={(img) => console.log("Imagen recibida:", img)} />
+          <LienzoDigital alTerminar={(img: any) => console.log("Imagen recibida:", img)} />
         )}
       </div>
       

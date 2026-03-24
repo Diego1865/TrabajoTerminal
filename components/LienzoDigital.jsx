@@ -1,42 +1,40 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
-import { ReactSketchCanvas } from 'react-sketch-canvas';
+import React, { useRef, useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Eraser, Pen, RotateCcw, CheckCircle, Trash2 } from 'lucide-react';
+
+const ReactSketchCanvas = dynamic(
+  () => import('react-sketch-canvas').then((mod) => mod.ReactSketchCanvas),
+  { ssr: false }
+);
 
 const LienzoDigital = ({ alTerminar }) => {
   const canvasRef = useRef(null);
   const [esBorrador, setEsBorrador] = useState(false);
+  const [listo, setListo] = useState(false);
 
-  // Configuración del pincel
-  const estilos = {
-    border: '4px solid #d1d5db',
-    borderRadius: '10px',
-  };
+  useEffect(() => {
+    setListo(true);
+  }, []);
 
-  // Función para obtener la imagen y enviarla
   const exportarDibujo = async () => {
     try {
-      // Exporta el dibujo como imagen PNG
       const imagenDataUrl = await canvasRef.current.exportImage('png');
-      console.log("Dibujo exportado para OCR");
-      
-      // Aquí pasaríamos la imagen al componente padre o al backend
-      if (alTerminar) {
-        alTerminar(imagenDataUrl);
-      } else {
-        alert("¡Dibujo capturado! Listo para enviar al modelo de IA.");
-      }
+      if (alTerminar) alTerminar(imagenDataUrl);
     } catch (e) {
       console.error("Error al exportar", e);
     }
   };
 
+  const GROSOR_LAPIZ = 4;
+  const GROSOR_GOMA = 30;
+
   return (
     <div className="flex flex-col items-center w-full max-w-2xl mx-auto">
       
       {/* Barra de Herramientas */}
-      <div className="flex gap-4 mb-4 bg-white p-3 rounded-xl shadow-sm border border-gray-200">
+      <div className="flex gap-4 mb-4 bg-white p-3 rounded-xl shadow-sm border border-gray-200 z-10">
         <button
           onClick={() => { setEsBorrador(false); canvasRef.current.eraseMode(false); }}
           className={`p-3 rounded-lg flex flex-col items-center gap-1 transition-colors ${!esBorrador ? 'bg-blue-100 text-blue-700 font-bold' : 'hover:bg-gray-100'}`}
@@ -72,23 +70,41 @@ const LienzoDigital = ({ alTerminar }) => {
         </button>
       </div>
 
-      {/* Área de Dibujo */}
-      <div className="w-full h-80 shadow-inner bg-white rounded-xl overflow-hidden relative">
-        {/* Fondo opcional de líneas tipo cuaderno para guiar al niño */}
-        <div className="absolute inset-0 pointer-events-none opacity-20" 
-             style={{ backgroundImage: 'linear-gradient(#000 1px, transparent 1px)', backgroundSize: '100% 40px', marginTop: '30px' }}>
-        </div>
-
-        <ReactSketchCanvas
-          ref={canvasRef}
-          style={estilos}
-          strokeWidth={4}
-          strokeColor="black"
-          canvasColor="transparent" // Transparente para ver las líneas de fondo
-        />
+      {/* Área de dibujo */}
+      <div 
+        className="w-full h-80 relative bg-white rounded-xl shadow-inner border-4 border-gray-300 overflow-hidden"
+        style={{ 
+          backgroundImage: 'linear-gradient(#e5e7eb 1px, transparent 1px)', 
+          backgroundSize: '100% 40px',
+          backgroundPosition: '0 30px',
+          touchAction: 'none',
+          userSelect: 'none',         
+          MozUserSelect: 'none',      
+          WebkitUserSelect: 'none',   
+          msUserSelect: 'none',
+        }}
+      >
+        {listo && (
+          <ReactSketchCanvas
+            ref={canvasRef}
+            style={{
+              position: 'absolute', 
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: 'none' 
+            }}
+            width="100%"
+            height="100%"
+            strokeWidth={GROSOR_LAPIZ} 
+            eraserWidth={GROSOR_GOMA}
+            strokeColor="black"
+            canvasColor="transparent"
+          />
+        )}
       </div>
 
-      {/* Botón de Enviar */}
       <button
         onClick={exportarDibujo}
         className="mt-6 w-full max-w-xs py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-md transition-transform active:scale-95"
