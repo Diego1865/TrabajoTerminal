@@ -1,18 +1,42 @@
 'use client';
-import  { useState } from 'react';
+import { useState } from 'react';
 import { CheckCircle, Mail, Lock, User } from 'lucide-react';
 
-// --- Componente de Registro ---
 const Registro = ({ onRegister, onNavigateLogin }) => {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulación de registro
-    if (nombre && email && password) {
+    setError('');
+    
+    if (!nombre || !email || !password) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nombre, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || 'Error al registrar usuario');
+      }
+
       onRegister();
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -24,6 +48,12 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
           <p className="text-gray-500">Regístrate para empezar a practicar</p>
         </div>
 
+        {error && (
+          <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Completo</label>
@@ -34,10 +64,11 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
               <input
                 type="text"
                 required
-                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Juan Pérez"
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-600"
+                placeholder="Nombre completo"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
@@ -51,10 +82,11 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
               <input
                 type="email"
                 required
-                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-600"
                 placeholder="correo@ejemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
@@ -68,20 +100,22 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
               <input
                 type="password"
                 required
-                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-600"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-md mt-4"
+            disabled={loading}
+            className="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-md mt-4"
           >
-            Registrarse
-            <CheckCircle size={20} />
+            {loading ? 'Registrando...' : 'Registrarse'}
+            {!loading && <CheckCircle size={20} />}
           </button>
         </form>
 

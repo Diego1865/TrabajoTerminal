@@ -1,3 +1,8 @@
+CREATE DATABASE TT;
+GO
+
+USE TT;
+GO
 
 -- ── Catálogo de estados ─────────────────────────────────────
 CREATE TABLE status (

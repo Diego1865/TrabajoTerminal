@@ -1,7 +1,7 @@
 ## Crea tu entorno virtual en python e instala:
 
 ```bash
-pip install fastapi uvicorn
+pip install fastapi uvicorn pyodbc python-dotenv passlib[bcrypt]
 ```
 
 ## Para ejecutar Python usa:
