@@ -1,8 +1,6 @@
 'use client';
-
 import React, { useState, useRef } from 'react';
 import { Camera, Upload, X, CheckCircle } from 'lucide-react';
-
 
 const CapturaEscritura = () => {
     const [imagenPreview, setImagenPreview] = useState(null);
