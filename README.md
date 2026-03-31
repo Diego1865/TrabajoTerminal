@@ -7,7 +7,7 @@ pip install fastapi uvicorn pyodbc python-dotenv passlib[bcrypt]
 ## Para ejecutar Python usa:
 
 ```bash
-uvicorn main:app --reload
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ## Antes de ejecutar es necesario instalar dependencias ocupadas:
