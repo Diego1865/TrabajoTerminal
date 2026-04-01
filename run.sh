@@ -2,7 +2,7 @@ echo "Iniciando servidores..."
 
 # Iniciar Backend
 cd BackEnd || exit
-docker start TT
+sudo docker start TT
 source ../env/bin/activate
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload &
 BACK_PID=$!
