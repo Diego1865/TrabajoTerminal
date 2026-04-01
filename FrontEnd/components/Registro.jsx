@@ -6,7 +6,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
   const [nombre, setNombre] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [rol, setRol] = useState("");
+  const [rol] = useState('tutor');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

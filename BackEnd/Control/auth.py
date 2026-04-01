@@ -19,6 +19,7 @@ class LoginResponse(BaseModel):
     id_usuario: int
     nombre: str
     rol: str
+    tipo_usuario: str
 
 class RegisterRequest(BaseModel):
     nombre: str
@@ -52,32 +53,67 @@ async def login(credentials: LoginRequest):
 
     cursor = conn.cursor()
     try:
-        # Consulta a la tabla Usuarios (Tutores/Administradores)
-        query = """
+        # Primero, consulta a la tabla Usuario (Tutores/Administradores)
+        query_tutor = """
             SELECT id_usuario, contrasena_cifrada, nombre, rol, id_estatus 
             FROM Usuario
             WHERE username = ?
         """
-        cursor.execute(query, credentials.username)
+        cursor.execute(query_tutor, credentials.username)
         user = cursor.fetchone()
 
-        if not user:
+        if user:
+            # Usuario es tutor/administrador
+            id_usuario, contrasena_cifrada, nombre, rol, id_estatus = user
+
+            # Verificar estatus activo (id_estatus = 1 según catálogo)
+            if id_estatus != 1:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="El usuario no se encuentra activo"
+                )
+
+            # Verificar la contraseña
+            if not verify_password(credentials.password, contrasena_cifrada):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Usuario o contraseña incorrectos"
+                )
+
+            return {
+                "message": "Inicio de sesión exitoso",
+                "id_usuario": id_usuario,
+                "nombre": nombre,
+                "rol": rol,
+                "tipo_usuario": "tutor"
+            }
+        
+        # Si no es tutor, buscar en la tabla Alumno
+        query_alumno = """
+            SELECT id_alumno, contrasena_cifrada, nombre, id_estatus 
+            FROM Alumno
+            WHERE usuario = ?
+        """
+        cursor.execute(query_alumno, credentials.username)
+        alumno = cursor.fetchone()
+
+        if not alumno:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Usuario o contraseña incorrectos"
             )
 
-        id_usuario, contrasena_cifrada, nombre, rol, id_estatus = user
+        id_alumno, contrasena_cifrada_alumno, nombre_alumno, id_estatus_alumno = alumno
 
-        # Verificar estatus activo (id_estatus = 1 según catálogo)
-        if id_estatus != 1:
+        # Verificar estatus activo
+        if id_estatus_alumno != 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="El usuario no se encuentra activo"
+                detail="El alumno no se encuentra activo"
             )
 
-        # Verificar la contraseña
-        if not verify_password(credentials.password, contrasena_cifrada):
+        # Verificar la contraseña del alumno
+        if not verify_password(credentials.password, contrasena_cifrada_alumno):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Usuario o contraseña incorrectos"
@@ -85,11 +121,14 @@ async def login(credentials: LoginRequest):
 
         return {
             "message": "Inicio de sesión exitoso",
-            "id_usuario": id_usuario,
-            "nombre": nombre,
-            "rol": rol
+            "id_usuario": id_alumno,
+            "nombre": nombre_alumno,
+            "rol": "alumno",
+            "tipo_usuario": "alumno"
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 

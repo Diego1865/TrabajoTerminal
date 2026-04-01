@@ -1,12 +1,13 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CapturaEscritura from "@/components/CapturaEscritura";
 import LienzoDigital from "@/components/LienzoDigital";
 import Login from "@/components/Login";
 import Registro from "@/components/Registro";
+import DashboardTutor from "@/components/DashboardTutor";
 import { LogOut } from 'lucide-react';
 
-// --- Componente Principal (Dashboard) ---
+// --- Componente Principal (Dashboard Alumno) ---
 const MainApp = ({ onLogout }: { onLogout: () => void }) => {
   const [modo, setModo] = useState('lienzo');
 
@@ -54,11 +55,35 @@ const MainApp = ({ onLogout }: { onLogout: () => void }) => {
 // --- Enrutador Principal ---
 export default function App() {
   const [vistaActual, setVistaActual] = useState('login'); // 'login', 'registro', 'dashboard'
+  const [tipoUsuario, setTipoUsuario] = useState<string | null>(null); // 'tutor' o 'alumno'
+
+  const handleLogin = () => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setTipoUsuario(user.tipo_usuario || 'alumno');
+      setVistaActual('dashboard');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setTipoUsuario(null);
+    setVistaActual('login');
+  };
+
+  // Verificar sesión activa al cargar la aplicación
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      handleLogin();
+    }
+  }, []);
 
   if (vistaActual === 'login') {
     return (
       <Login 
-        onLogin={() => setVistaActual('dashboard')} 
+        onLogin={handleLogin} 
         onNavigateRegister={() => setVistaActual('registro')} 
       />
     );
@@ -67,11 +92,20 @@ export default function App() {
   if (vistaActual === 'registro') {
     return (
       <Registro 
-        onRegister={() => setVistaActual('dashboard')} 
+        onRegister={handleLogin} 
         onNavigateLogin={() => setVistaActual('login')} 
       />
     );
   }
 
-  return <MainApp onLogout={() => setVistaActual('login')} />;
+  if (vistaActual === 'dashboard') {
+    // Si el tipo de usuario es tutor, muestra el panel del profesor
+    if (tipoUsuario === 'tutor') {
+      return <DashboardTutor onLogout={handleLogout} />;
+    }
+    // De lo contrario, muestra el lienzo de dibujo para el alumno
+    return <MainApp onLogout={handleLogout} />;
+  }
+
+  return null;
 }
