@@ -45,7 +45,7 @@ const MainApp = ({ onLogout }: { onLogout: () => void }) => {
         {modo === 'camara' ? (
           <CapturaEscritura />
         ) : (
-          <LienzoDigital alTerminar={(img) => console.log("Imagen recibida:", img)} />
+          <LienzoDigital alTerminar={(img: string) => console.log("Imagen recibida:", img)} />
         )}
       </div>
     </main>
