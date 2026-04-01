@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 
 const Login = ({ onLogin, onNavigateRegister }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,7 +12,7 @@ const Login = ({ onLogin, onNavigateRegister }) => {
     e.preventDefault();
     setError('');
     
-    if (!email || !password) return;
+    if (!username || !password) return;
 
     setLoading(true);
     try {
@@ -21,7 +21,7 @@ const Login = ({ onLogin, onNavigateRegister }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
@@ -57,18 +57,18 @@ const Login = ({ onLogin, onNavigateRegister }) => {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de Usuario</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-gray-400" />
               </div>
               <input
-                type="email"
+                type="text"
                 required
                 className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-600"
-                placeholder="correo@ejemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Nombre de usuario"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
               />
             </div>

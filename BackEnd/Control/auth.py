@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
+import re
 from Modelo.database import connect_to_database
 from passlib.context import CryptContext
 
@@ -10,7 +11,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Modelos de Pydantic para la validación de datos
 class LoginRequest(BaseModel):
-    email: str
+    username: str
     password: str
 
 class LoginResponse(BaseModel):
@@ -21,9 +22,18 @@ class LoginResponse(BaseModel):
 
 class RegisterRequest(BaseModel):
     nombre: str
+    username: str = Field(..., min_length=6, pattern=r'^[a-zA-Z0-9_]+$')
     email: str
-    password: str
+    password: str = Field(..., min_length=8)
     rol: str = "tutor"
+
+    @field_validator('password')
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$'
+        if not re.match(pattern, v):
+            raise ValueError('La contraseña debe contener al menos una minúscula, una mayúscula, un número y un carácter especial.')
+        return v
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -45,16 +55,16 @@ async def login(credentials: LoginRequest):
         # Consulta a la tabla Usuarios (Tutores/Administradores)
         query = """
             SELECT id_usuario, contrasena_cifrada, nombre, rol, id_estatus 
-            FROM Usuarios 
-            WHERE correo = ?
+            FROM Usuario
+            WHERE username = ?
         """
-        cursor.execute(query, credentials.email)
+        cursor.execute(query, credentials.username)
         user = cursor.fetchone()
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Correo o contraseña incorrectos"
+                detail="Usuario o contraseña incorrectos"
             )
 
         id_usuario, contrasena_cifrada, nombre, rol, id_estatus = user
@@ -70,7 +80,7 @@ async def login(credentials: LoginRequest):
         if not verify_password(credentials.password, contrasena_cifrada):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Correo o contraseña incorrectos"
+                detail="Usuario o contraseña incorrectos"
             )
 
         return {
@@ -101,20 +111,28 @@ async def register(user_data: RegisterRequest):
     cursor = conn.cursor()
     try:
         # Verificar si el correo ya existe
-        cursor.execute("SELECT id_usuario FROM Usuarios WHERE correo = ?", user_data.email)
+        cursor.execute("SELECT id_usuario FROM Usuario WHERE correo = ?", user_data.email)
         if cursor.fetchone():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="El correo electrónico ya está registrado"
             )
 
+        # Verificar si el username ya existe
+        cursor.execute("SELECT id_usuario FROM Usuario WHERE username = ?", user_data.username)
+        if cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El nombre de usuario ya está registrado"
+            )
+
         hashed_password = get_password_hash(user_data.password)
         
         query = """
-            INSERT INTO Usuarios (nombre, correo, contrasena_cifrada, rol, id_estatus)
-            VALUES (?, ?, ?, ?, 1)
+            INSERT INTO Usuario (nombre, username, correo, contrasena_cifrada, rol, id_estatus)
+            VALUES (?, ?, ?, ?, ?, 1)
         """
-        cursor.execute(query, (user_data.nombre, user_data.email, hashed_password, user_data.rol))
+        cursor.execute(query, (user_data.nombre, user_data.username, user_data.email, hashed_password, user_data.rol))
         conn.commit()
 
         return {"message": "Usuario registrado exitosamente"}

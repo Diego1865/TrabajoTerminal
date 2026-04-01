@@ -1,19 +1,49 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle, Mail, Lock, User } from 'lucide-react';
+import { CheckCircle, Mail, Lock, User, UserCheck, ChevronDown } from 'lucide-react';
 
 const Registro = ({ onRegister, onNavigateLogin }) => {
   const [nombre, setNombre] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [rol, setRol] = useState("");
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const validateUsername = (username) => {
+    if (username.length < 6) return "El nombre de usuario debe tener al menos 6 caracteres.";
+    if (/\s/.test(username)) return "El nombre de usuario no puede contener espacios.";
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return "El nombre de usuario solo puede contener letras, números y guiones bajos.";
+    return "";
+  };
+
+  const validatePassword = (password) => {
+    if (password.length < 8) return "La contraseña debe tener al menos 8 caracteres.";
+    if (!/(?=.*[a-z])/.test(password)) return "La contraseña debe contener al menos una letra minúscula.";
+    if (!/(?=.*[A-Z])/.test(password)) return "La contraseña debe contener al menos una letra mayúscula.";
+    if (!/(?=.*\d)/.test(password)) return "La contraseña debe contener al menos un número.";
+    if (!/(?=.*[@$!%*?&])/.test(password)) return "La contraseña debe contener al menos un carácter especial (@$!%*?&).";
+    return "";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
-    if (!nombre || !email || !password) return;
+    if (!nombre || !username || !email || !password) return;
+
+    const usernameError = validateUsername(username);
+    const passwordError = validatePassword(password);
+
+    if (usernameError) {
+      setError(usernameError);
+      return;
+    }
+
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -22,7 +52,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nombre, email, password }),
+        body: JSON.stringify({ nombre, username, email, password, rol }),
       });
 
       const data = await response.json();
@@ -68,6 +98,24 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
                 placeholder="Nombre completo"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Nombre de Usuario</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <UserCheck className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                required
+                className="pl-10 w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-gray-900 placeholder-gray-600"
+                placeholder="Nombre de usuario"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 disabled={loading}
               />
             </div>
