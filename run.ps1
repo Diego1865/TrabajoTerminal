@@ -1,4 +1,3 @@
-# start-dev.ps1
 Write-Host "Iniciando servidores en nuevas ventanas..."
 
 # Iniciar Backend

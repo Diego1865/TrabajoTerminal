@@ -14,7 +14,6 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 ```bash
 npm install lucide-react
-npm install react-sketch-canvas
 ```
 
 ## Para ejecutar el Front:
