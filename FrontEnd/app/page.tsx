@@ -5,6 +5,7 @@ import LienzoDigital from "@/components/LienzoDigital";
 import Login from "@/components/Login";
 import Registro from "@/components/Registro";
 import DashboardTutor from "@/components/DashboardTutor";
+import DashboardAlumno from "@/components/alumnos/DashboardAlumno";
 import { LogOut } from 'lucide-react';
 
 // --- Componente Principal (Dashboard Alumno) ---
@@ -92,7 +93,7 @@ export default function App() {
   if (vistaActual === 'registro') {
     return (
       <Registro 
-        onRegister={handleLogin} 
+        onRegister={() => setVistaActual('login')} 
         onNavigateLogin={() => setVistaActual('login')} 
       />
     );
@@ -104,7 +105,8 @@ export default function App() {
       return <DashboardTutor onLogout={handleLogout} />;
     }
     // De lo contrario, muestra el lienzo de dibujo para el alumno
-    return <MainApp onLogout={handleLogout} />;
+    //return <MainApp onLogout={handleLogout} />;
+    return <DashboardAlumno onLogout={handleLogout} />;
   }
 
   return null;
