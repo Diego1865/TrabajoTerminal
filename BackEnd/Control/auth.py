@@ -106,7 +106,8 @@ async def login(credentials: LoginRequest):
         id_alumno, contrasena_cifrada_alumno, nombre_alumno, id_estatus_alumno = alumno
 
         # Verificar estatus activo
-        if id_estatus_alumno != 1:
+    
+        if id_estatus_alumno not in (1, 2):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="El alumno no se encuentra activo"

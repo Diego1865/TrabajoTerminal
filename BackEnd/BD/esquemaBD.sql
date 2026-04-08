@@ -62,19 +62,31 @@ CREATE TABLE Ejercicios (
     CONSTRAINT FK_Ejercicios_Estatus FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
 );
 
+IF OBJECT_ID('Ejercicios_Tutor', 'U') IS NULL
+CREATE TABLE Ejercicios_Tutor (
+    id_ejercicio_tutor INT           NOT NULL IDENTITY(1,1),
+    id_ejercicio       INT           NOT NULL,
+    id_usuario         INT           NOT NULL,
+    id_estatus         INT           NOT NULL DEFAULT 1,
+    CONSTRAINT PK_Ejercicios_Tutor PRIMARY KEY (id_ejercicio_tutor),
+    CONSTRAINT FK_Ejercicios_Tutor_ejercicio FOREIGN KEY (id_ejercicio) REFERENCES Ejercicios(id_ejercicio),
+    CONSTRAINT FK_Ejercicios_Tutor_usuario FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
+    CONSTRAINT FK_Ejercicios_Tutor_estatus FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
+);
+
 -- ── Intentos ────────────────────────────────────────────────
 IF OBJECT_ID('Intentos', 'U') IS NULL
 CREATE TABLE Intentos (
     id_intento           INT         NOT NULL IDENTITY(1,1),
     id_alumno            INT         NOT NULL,
-    id_ejercicio         INT         NOT NULL,
+    id_ejercicio_tutor         INT         NOT NULL,
     imagen_codificada    VARCHAR(MAX) NOT NULL,            
     texto_detectado_ocr  VARCHAR(MAX)    NULL,           
     fecha_envio          DATETIME2   NOT NULL DEFAULT GETDATE(),
     tiempo_respuesta     INT             NULL,           
     CONSTRAINT PK_Intentos          PRIMARY KEY (id_intento),
     CONSTRAINT FK_Intentos_alumno   FOREIGN KEY (id_alumno)    REFERENCES Alumno(id_alumno),
-    CONSTRAINT FK_Intentos_ejercicio FOREIGN KEY (id_ejercicio) REFERENCES Ejercicios(id_ejercicio)
+    CONSTRAINT FK_Intentos_ET FOREIGN KEY (id_ejercicio_tutor) REFERENCES Ejercicios_Tutor(id_ejercicio_tutor)
 );
 
 -- ── Progreso del alumno  ───────────────────
@@ -169,3 +181,17 @@ INSERT INTO Estatus (descripcion) VALUES
 ('activo'), 
 ('inactivo'), 
 ('eliminado');
+
+SELECT * FROM Ejercicios;
+
+SELECT * FROM Ejercicios_Tutor
+
+--- Agregar fechas para Ejercicio_Tutor
+
+ALTER TABLE Ejercicios_Tutor
+    ADD fecha_asignacion DATETIME2 NOT NULL DEFAULT GETDATE(),
+        fecha_desactivacion DATETIME2 NULL;
+
+
+
+
