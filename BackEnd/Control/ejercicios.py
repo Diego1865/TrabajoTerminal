@@ -247,7 +247,7 @@ async def get_ejercicios_vencidos(id_alumno: int):
                 "titulo":             r[2],
                 "descripcion":        r[3],
                 "tipo":               r[4],
-                "fecha_desactivacion":          r[5],
+                "fecha_desactivacion":  r[5],
             }
             for r in rows
         ]
