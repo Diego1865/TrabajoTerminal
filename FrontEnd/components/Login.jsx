@@ -31,7 +31,7 @@ const Login = ({ onLogin, onNavigateRegister }) => {
       }
 
       // Almacenar datos del usuario en localStorage si es necesario
-      localStorage.setItem('user', JSON.stringify(data));
+      localStorage.setItem('token', data.token);
       onLogin();
 
     } catch (err) {

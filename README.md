@@ -1,7 +1,7 @@
 ## Crea tu entorno virtual en python e instala:
 
 ```bash
-pip install fastapi uvicorn pyodbc python-dotenv passlib[bcrypt] apscheduler
+pip install fastapi uvicorn pyodbc python-dotenv passlib[bcrypt] apscheduler PyJWT
 ```
 
 ## Para ejecutar Python usa:
