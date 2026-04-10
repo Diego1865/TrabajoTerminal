@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect , useRef } from 'react';
 import { LogOut, UserPlus, Trash2, Loader2 } from 'lucide-react';
+import TabEjercicios from './TabEjercicios';
 
 const DashboardTutor = ({ onLogout }) => {
   const [pestañaActiva, setPestañaActiva] = useState('ejercicios');
@@ -163,10 +164,7 @@ const DashboardTutor = ({ onLogout }) => {
         )}
 
         {pestañaActiva === 'ejercicios' && (
-            <div className="space-y-4">
-                {/* Contenido de ejercicios omitido por brevedad */}
-                <h2 className="text-2xl font-bold text-gray-800">Ejercicios Disponibles</h2>
-            </div>
+            <TabEjercicios idTutor={getTutorId()} />
         )}
 
         {pestañaActiva === 'alumnos' && (

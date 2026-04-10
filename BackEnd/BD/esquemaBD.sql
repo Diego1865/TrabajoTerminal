@@ -45,7 +45,7 @@ CREATE TABLE Alumno (
     CONSTRAINT PK_Alumno          PRIMARY KEY (id_alumno),
     CONSTRAINT UQ_Alumno_usuario  UNIQUE      (usuario),
     CONSTRAINT FK_Alumno_tutor    FOREIGN KEY (id_tutor)   REFERENCES Usuario(id_usuario),
-    CONSTRAINT FK_Alumno_Estatus   FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
+    CONSTRAINT FK_Alumno_Estatus  FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
 );
 
 -- ── Ejercicios ──────────────────────────────────────────────
@@ -55,11 +55,25 @@ CREATE TABLE Ejercicios (
     titulo           VARCHAR(150)  NOT NULL,
     descripcion      VARCHAR(MAX)  NOT NULL,              
     tipo             VARCHAR(30)   NOT NULL,
-  --  nivel_dificultad INT           NOT NULL DEFAULT 1,
     contenido_base   VARCHAR(MAX)  NOT NULL,
     id_estatus       INT           NOT NULL DEFAULT 1,
     CONSTRAINT PK_Ejercicios        PRIMARY KEY (id_ejercicio),
     CONSTRAINT FK_Ejercicios_Estatus FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
+);
+
+-- ── Ejercicios_Tutor (Asignación de ejercicios a tutores) ──
+IF OBJECT_ID('Ejercicios_Tutor', 'U') IS NULL
+CREATE TABLE Ejercicios_Tutor (
+    id_ejercicio_tutor  INT           NOT NULL IDENTITY(1,1),
+    id_ejercicio        INT           NOT NULL,
+    id_usuario          INT           NOT NULL,
+    id_estatus          INT           NOT NULL DEFAULT 1,
+    fecha_asignacion    DATETIME2     NOT NULL DEFAULT GETDATE(),
+    fecha_desactivacion DATETIME2         NULL,
+    CONSTRAINT PK_Ejercicios_Tutor PRIMARY KEY (id_ejercicio_tutor),
+    CONSTRAINT FK_Ejercicios_Tutor_ejercicio FOREIGN KEY (id_ejercicio) REFERENCES Ejercicios(id_ejercicio),
+    CONSTRAINT FK_Ejercicios_Tutor_usuario FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
+    CONSTRAINT FK_Ejercicios_Tutor_estatus FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
 );
 
 -- ── Intentos ────────────────────────────────────────────────
@@ -67,17 +81,17 @@ IF OBJECT_ID('Intentos', 'U') IS NULL
 CREATE TABLE Intentos (
     id_intento           INT         NOT NULL IDENTITY(1,1),
     id_alumno            INT         NOT NULL,
-    id_ejercicio         INT         NOT NULL,
+    id_ejercicio_tutor   INT         NOT NULL,
     imagen_codificada    VARCHAR(MAX) NOT NULL,            
     texto_detectado_ocr  VARCHAR(MAX)    NULL,           
     fecha_envio          DATETIME2   NOT NULL DEFAULT GETDATE(),
     tiempo_respuesta     INT             NULL,           
     CONSTRAINT PK_Intentos          PRIMARY KEY (id_intento),
     CONSTRAINT FK_Intentos_alumno   FOREIGN KEY (id_alumno)    REFERENCES Alumno(id_alumno),
-    CONSTRAINT FK_Intentos_ejercicio FOREIGN KEY (id_ejercicio) REFERENCES Ejercicios(id_ejercicio)
+    CONSTRAINT FK_Intentos_ET       FOREIGN KEY (id_ejercicio_tutor) REFERENCES Ejercicios_Tutor(id_ejercicio_tutor)
 );
 
--- ── Progreso del alumno  ───────────────────
+-- ── Progreso del alumno ─────────────────────────────────────
 IF OBJECT_ID('Progreso_Alumno', 'U') IS NULL
 CREATE TABLE Progreso_Alumno (
     id_progreso          INT            NOT NULL IDENTITY(1,1),
@@ -89,11 +103,11 @@ CREATE TABLE Progreso_Alumno (
     inclinacion_score    DECIMAL(5,2)       NULL,
     fecha_modificacion   DATETIME2      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_Progreso_Alumno   PRIMARY KEY (id_progreso),
-    CONSTRAINT UQ_Progreso_alumno   UNIQUE      (id_alumno),   -- un registro por alumno
+    CONSTRAINT UQ_Progreso_alumno   UNIQUE      (id_alumno),   
     CONSTRAINT FK_Progreso_alumno   FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno)
 );
 
--- ── Historial del alumno  ───────────────────
+-- ── Historial del alumno ────────────────────────────────────
 IF OBJECT_ID('Historial_Alumno', 'U') IS NULL
 CREATE TABLE Historial_Alumno (
     id_historial         INT            NOT NULL IDENTITY(1,1),
@@ -119,7 +133,7 @@ CREATE TABLE Analisis_Caligrafico (
     inclinacion_score       DECIMAL(5,2)       NULL,
     observaciones           VARCHAR(MAX)       NULL,
     CONSTRAINT PK_Analisis_Caligrafico  PRIMARY KEY (id_analisis_caligrafico),
-    CONSTRAINT UQ_Analisis_Cal_intento  UNIQUE      (id_intento),  -- uno por intento
+    CONSTRAINT UQ_Analisis_Cal_intento  UNIQUE      (id_intento),  
     CONSTRAINT FK_Analisis_Cal_intento  FOREIGN KEY (id_intento) REFERENCES Intentos(id_intento)
 );
 
@@ -128,7 +142,7 @@ IF OBJECT_ID('Analisis_Ortografico', 'U') IS NULL
 CREATE TABLE Analisis_Ortografico (
     id_analisis_ortografico INT            NOT NULL IDENTITY(1,1),
     id_intento              INT            NOT NULL,
-    errores_detectados      VARCHAR(MAX)       NULL,       -- puede no haber errores
+    errores_detectados      VARCHAR(MAX)       NULL,       
     cantidad_errores        INT            NOT NULL DEFAULT 0,
     sugerencias_json        NVARCHAR(MAX)      NULL,       
     ortografia_score        DECIMAL(5,2)       NULL,
@@ -165,7 +179,12 @@ CREATE TABLE Recomendacion (
     CONSTRAINT FK_Recom_actividad     FOREIGN KEY (id_actividad) REFERENCES Actividad_Sugerida(id_actividad)
 );
 
-INSERT INTO Estatus (descripcion) VALUES 
-('activo'), 
-('inactivo'), 
-('eliminado');
+-- ── Inserciones Iniciales ───────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM Estatus)
+BEGIN
+    INSERT INTO Estatus (descripcion) VALUES 
+    ('activo'), 
+    ('inactivo'), 
+    ('eliminado');
+END
+GO

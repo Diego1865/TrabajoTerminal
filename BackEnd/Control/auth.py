@@ -3,23 +3,28 @@ from pydantic import BaseModel, Field, field_validator
 import re
 from Modelo.database import connect_to_database
 from passlib.context import CryptContext
+import jwt
+from datetime import datetime, timedelta
 
 router = APIRouter()
 
-# Configuración para la verificación de contraseñas
+# Configuración para la verificación de contraseñas y JWT
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ATENCIÓN: En producción, esta clave debe almacenarse en variables de entorno (ej. usando dotenv)
+SECRET_KEY = "tu_clave_secreta_super_segura"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 horas
 
 # Modelos de Pydantic para la validación de datos
 class LoginRequest(BaseModel):
     username: str
     password: str
 
+# Se modifica la respuesta para devolver el token en lugar de los datos expuestos
 class LoginResponse(BaseModel):
     message: str
-    id_usuario: int
-    nombre: str
-    rol: str
-    tipo_usuario: str
+    token: str
 
 class RegisterRequest(BaseModel):
     nombre: str
@@ -41,6 +46,13 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     return pwd_context.hash(password[:72])
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
 @router.post("/login", response_model=LoginResponse)
 async def login(credentials: LoginRequest):
@@ -80,12 +92,18 @@ async def login(credentials: LoginRequest):
                     detail="Usuario o contraseña incorrectos"
                 )
 
-            return {
-                "message": "Inicio de sesión exitoso",
+            # Generar Token para Tutor
+            token_payload = {
                 "id_usuario": id_usuario,
                 "nombre": nombre,
                 "rol": rol,
                 "tipo_usuario": "tutor"
+            }
+            token = create_access_token(token_payload)
+
+            return {
+                "message": "Inicio de sesión exitoso",
+                "token": token
             }
         
         # Si no es tutor, buscar en la tabla Alumno
@@ -106,7 +124,7 @@ async def login(credentials: LoginRequest):
         id_alumno, contrasena_cifrada_alumno, nombre_alumno, id_estatus_alumno = alumno
 
         # Verificar estatus activo
-        if id_estatus_alumno != 1:
+        if id_estatus_alumno not in (1, 2):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="El alumno no se encuentra activo"
@@ -119,12 +137,18 @@ async def login(credentials: LoginRequest):
                 detail="Usuario o contraseña incorrectos"
             )
 
-        return {
-            "message": "Inicio de sesión exitoso",
+        # Generar Token para Alumno
+        token_payload = {
             "id_usuario": id_alumno,
             "nombre": nombre_alumno,
             "rol": "alumno",
             "tipo_usuario": "alumno"
+        }
+        token = create_access_token(token_payload)
+
+        return {
+            "message": "Inicio de sesión exitoso",
+            "token": token
         }
 
     except HTTPException:
