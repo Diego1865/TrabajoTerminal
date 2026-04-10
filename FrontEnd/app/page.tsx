@@ -1,19 +1,32 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CapturaEscritura from "@/components/CapturaEscritura";
 import LienzoDigital from "@/components/LienzoDigital";
+import Login from "@/components/Login";
+import Registro from "@/components/Registro";
+import DashboardTutor from "@/components/DashboardTutor";
+import DashboardAlumno from "@/components/alumnos/DashboardAlumno";
+import { LogOut } from 'lucide-react';
 
-export default function Home() {
-  const [modo, setModo] = useState('lienzo'); // 'camara' o 'lienzo'
+// --- Componente Principal (Dashboard Alumno) ---
+const MainApp = ({ onLogout }: { onLogout: () => void }) => {
+  const [modo, setModo] = useState('lienzo');
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center p-6">
-      <h1 className="text-3xl font-bold text-blue-800 mb-2">
+    <main className="min-h-screen bg-gray-50 flex flex-col items-center p-6 relative">
+      <button 
+        onClick={onLogout}
+        className="absolute top-6 right-6 flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors font-medium"
+      >
+        <LogOut size={20} />
+        <span className="hidden sm:inline">Cerrar Sesión</span>
+      </button>
+
+      <h1 className="text-3xl font-bold text-blue-800 mb-2 mt-8">
         Aprende a Escribir
       </h1>
       <p className="text-gray-600 mb-8">Práctica para 3º y 4º de Primaria</p>
 
-      {/* Selector de Modo */}
       <div className="flex bg-white p-1 rounded-xl shadow-sm border border-blue-100 mb-8">
         <button
           onClick={() => setModo('lienzo')}
@@ -29,15 +42,72 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Renderizado Condicional */}
       <div className="w-full max-w-2xl">
         {modo === 'camara' ? (
           <CapturaEscritura />
         ) : (
-          <LienzoDigital alTerminar={(img: any) => console.log("Imagen recibida:", img)} />
+          <LienzoDigital alTerminar={(img: string) => console.log("Imagen recibida:", img)} />
         )}
       </div>
-      
     </main>
   );
+};
+
+// --- Enrutador Principal ---
+export default function App() {
+  const [vistaActual, setVistaActual] = useState('login'); // 'login', 'registro', 'dashboard'
+  const [tipoUsuario, setTipoUsuario] = useState<string | null>(null); // 'tutor' o 'alumno'
+
+  const handleLogin = () => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const user = JSON.parse(userStr);
+      setTipoUsuario(user.tipo_usuario || 'alumno');
+      setVistaActual('dashboard');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setTipoUsuario(null);
+    setVistaActual('login');
+  };
+
+  // Verificar sesión activa al cargar la aplicación
+  useEffect(() => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      handleLogin();
+    }
+  }, []);
+
+  if (vistaActual === 'login') {
+    return (
+      <Login 
+        onLogin={handleLogin} 
+        onNavigateRegister={() => setVistaActual('registro')} 
+      />
+    );
+  }
+
+  if (vistaActual === 'registro') {
+    return (
+      <Registro 
+        onRegister={() => setVistaActual('login')} 
+        onNavigateLogin={() => setVistaActual('login')} 
+      />
+    );
+  }
+
+  if (vistaActual === 'dashboard') {
+    // Si el tipo de usuario es tutor, muestra el panel del profesor
+    if (tipoUsuario === 'tutor') {
+      return <DashboardTutor onLogout={handleLogout} />;
+    }
+    // De lo contrario, muestra el lienzo de dibujo para el alumno
+    //return <MainApp onLogout={handleLogout} />;
+    return <DashboardAlumno onLogout={handleLogout} />;
+  }
+
+  return null;
 }
