@@ -1,9 +1,10 @@
 from decimal import Decimal
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from Modelo.database import connect_to_database
 from Control.auth import get_password_hash
+from dependencies import get_current_user
 
 router = APIRouter()
 
@@ -78,7 +79,13 @@ async def registrar_alumno(alumno_data: AlumnoCreate):
         conn.close()
 
 @router.get("/tutor/{id_tutor}", response_model=List[AlumnoResponse])
-async def obtener_alumnos_por_tutor(id_tutor: int):
+async def obtener_alumnos_por_tutor(id_tutor: int, current_user: dict = Depends(get_current_user)):
+    if current_user["rol"] != "tutor":
+        raise HTTPException(status_code=403, detail="Acceso denegado. Se requiere rol de tutor.")
+    
+    if current_user["id_usuario"] != id_tutor:
+        raise HTTPException(status_code=403, detail="No tiene permiso para ver los alumnos de otro tutor.")
+    
     conn = connect_to_database()
     if not conn:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")

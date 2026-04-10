@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from Modelo.database import connect_to_database
 from datetime import datetime
+from dependencies import get_current_user
 
 router = APIRouter()
 
@@ -143,7 +144,13 @@ async def desactivar_ejercicio(id_usuario: int, id_ejercicio: int):
 
 # Ejercicios proximos a vencer para un alumno
 @router.get("/alumno/{id_alumno}/proximos")
-async def get_ejercicios_proximos(id_alumno: int):
+async def get_ejercicios_proximos(id_alumno: int, current_user: dict = Depends(get_current_user)):
+    if current_user["rol"] != "alumno":
+        raise HTTPException(status_code=403, detail="Acceso denegado. Se requiere rol de alumno.")
+        
+    if current_user["id_usuario"] != id_alumno:
+        raise HTTPException(status_code=403, detail="No tiene permiso para ver los ejercicios de otro alumno.")
+    
     conn = connect_to_database()
     cursor = conn.cursor()
     try:
