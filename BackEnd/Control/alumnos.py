@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from Modelo.database import connect_to_database
 from Control.auth import get_password_hash
-from dependencies import get_current_user
+from Control.dependencies import get_current_user
 
 router = APIRouter()
 

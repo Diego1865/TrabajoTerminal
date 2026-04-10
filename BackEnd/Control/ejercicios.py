@@ -3,7 +3,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from Modelo.database import connect_to_database
 from datetime import datetime
-from dependencies import get_current_user
+from Control.dependencies import get_current_user
 
 router = APIRouter()
 
