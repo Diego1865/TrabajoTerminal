@@ -1,7 +1,7 @@
 INSERT INTO Alumno (nombre, apellido_paterno, apellido_materno, usuario, contrasena_cifrada, grado, grupo, id_tutor, id_estatus)
 VALUES
 ('Juan', 'García', 'López', 'juangarc23', 'hashed_password_1', '3', 'A', 2, 1),
-('María', 'Rodríguez', 'Martínez', 'mariarod45', 'hashed_password_2', '3', 'A', , 1),
+('María', 'Rodríguez', 'Martínez', 'mariarod45', 'hashed_password_2', '3', 'A', 2, 1),
 ('Carlos', 'Hernández', 'Pérez', 'carloshe78', 'hashed_password_3', '3', 'B', 1, 1),
 ('Ana', 'López', 'González', 'analopez12', 'hashed_password_4', '4', 'A', 1, 1),
 ('Luis', 'Martínez', 'Sánchez', 'luismart67', 'hashed_password_5', '4', 'B', 1, 1),
