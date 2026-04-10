@@ -29,7 +29,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     if (!nombre || !username || !email || !password) return;
 
     const usernameError = validateUsername(username);
@@ -61,7 +61,12 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
         throw new Error(data.detail || 'Error al registrar usuario');
       }
 
-      onRegister();
+      // Al completar el registro, navegar directamente al login
+      if (typeof onNavigateLogin === 'function') {
+        onNavigateLogin();
+      } else if (typeof onRegister === 'function') {
+        onRegister();
+      }
 
     } catch (err) {
       setError(err.message);
