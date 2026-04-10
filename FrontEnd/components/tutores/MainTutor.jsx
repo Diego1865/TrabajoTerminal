@@ -6,14 +6,32 @@ import TabEjercicios from "../TabEjercicios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// 1. Función para decodificar el payload del JWT
+const decodificarJwt = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
+
+// 2. Extraer datos desde el token en lugar del JSON en texto plano
 const getTutorFromStorage = () => {
   try {
-    return JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+    return decodificarJwt(token);
   } catch {
     return null;
   }
 };
 
+const getToken = () => localStorage.getItem("token");
 const getTutorId = () => getTutorFromStorage()?.id_usuario;
 const getNombreTutor = () => getTutorFromStorage()?.nombre || "Tutor";
 
@@ -59,7 +77,10 @@ export default function MainTutor({ onLogout }) {
       setLoadingRiesgo(true);
       setErrorRiesgo(null);
       try {
-        const res = await fetch(`${API_URL}/api/alumnos/riesgo/${idTutor}`);
+        const res = await fetch(`${API_URL}/api/alumnos/riesgo/${idTutor}`, {
+          // 3. Enviar el token en la cabecera
+          headers: { "Authorization": `Bearer ${getToken()}` }
+        });
         if (!res.ok) throw new Error("Error al obtener alumnos en riesgo");
         const data = await res.json();
         setAlumnosEnRiesgo(data);
@@ -74,7 +95,10 @@ export default function MainTutor({ onLogout }) {
       setLoadingProgreso(true);
       setErrorProgreso(null);
       try {
-        const res = await fetch(`${API_URL}/api/alumnos/progreso/${idTutor}`);
+        const res = await fetch(`${API_URL}/api/alumnos/progreso/${idTutor}`, {
+          // 3. Enviar el token en la cabecera
+          headers: { "Authorization": `Bearer ${getToken()}` }
+        });
         if (!res.ok) throw new Error("Error al obtener progreso de alumnos");
         const data = await res.json();
         setAlumnosProgreso(data);
@@ -100,7 +124,10 @@ export default function MainTutor({ onLogout }) {
     setErrorAlumnos("");
 
     try {
-      const response = await fetch(`${API_URL}/api/alumnos/tutor/${idTutor}`);
+      const response = await fetch(`${API_URL}/api/alumnos/tutor/${idTutor}`, {
+        // 3. Enviar el token en la cabecera
+        headers: { "Authorization": `Bearer ${getToken()}` }
+      });
       if (!response.ok) throw new Error("Error al obtener la lista de alumnos");
       const data = await response.json();
       setAlumnos(data);
@@ -151,7 +178,11 @@ export default function MainTutor({ onLogout }) {
       setLoadingAlumnos(true);
       const response = await fetch(`${API_URL}/api/alumnos/registrar`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          // 3. Enviar el token en la cabecera
+          "Authorization": `Bearer ${getToken()}`
+        },
         body: JSON.stringify({ ...formData, id_tutor: idTutor }),
       });
       const data = await response.json();
@@ -185,6 +216,8 @@ export default function MainTutor({ onLogout }) {
     try {
       const response = await fetch(`${API_URL}/api/alumnos/baja/${id_alumno}`, {
         method: "PUT",
+        // 3. Enviar el token en la cabecera
+        headers: { "Authorization": `Bearer ${getToken()}` }
       });
       if (!response.ok) throw new Error("Error al procesar la baja");
       await fetchAlumnos();
