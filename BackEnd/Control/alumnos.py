@@ -184,6 +184,8 @@ async def obtener_alumnos_en_riesgo(id_tutor: int):
         cursor.close()
         conn.close()
 
+
+
 @router.get("/progreso/{id_tutor}")
 async def obtener_progreso_grafico(id_tutor: int):
     conn = connect_to_database()
