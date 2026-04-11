@@ -11,9 +11,13 @@ const TabCompletados = ({ idAlumno }) => {
   useEffect(() => {
     const fetchEjercicios = async () => {
       setLoadingPage(true);
+      const token = localStorage.getItem('token');
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/alumno/${idAlumno}/completados`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/alumno/${idAlumno}/completados`,
+          {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }
         );
         if (!res.ok) throw new Error('Error al cargar los ejercicios completados');
         const data = await res.json();

@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { BookOpen, Clock, Loader2, Tag, X } from 'lucide-react';
 
-const TabProximos = ({ idAlumno }) => {
+const TabProximos = ({ idAlumno , onRealizar}) => {
   const [ejercicios, setEjercicios] = useState([]);
   const [loadingPage, setLoadingPage] = useState(true);
   const [error, setError] = useState('');
@@ -11,9 +11,13 @@ const TabProximos = ({ idAlumno }) => {
   useEffect(() => {
     const fetchEjercicios = async () => {
       setLoadingPage(true);
+      const token = localStorage.getItem('token');
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/alumno/${idAlumno}/proximos`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/alumno/${idAlumno}/proximos`,
+          {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }
         );
         if (!res.ok) throw new Error('Error al cargar los ejercicios');
         const data = await res.json();
@@ -179,10 +183,11 @@ const TabProximos = ({ idAlumno }) => {
               </div>
             </div>
 
-            {/* Botón realizar */}
+            {/* Botón realizar en el modal */}
             <button
               onClick={() => {
-                console.log('Realizar ejercicio:', ejercicioSeleccionado.id_ejercicio_tutor);
+                setEjercicioSeleccionado(null); // Cierra el modal
+                onRealizar(ejercicioSeleccionado); // Activa el lienzo/cámara
               }}
               className="w-full py-3 rounded-xl font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
             >
