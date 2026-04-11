@@ -4,7 +4,8 @@ import CapturaEscritura from "@/components/CapturaEscritura";
 import LienzoDigital from "@/components/LienzoDigital";
 import Login from "@/components/Login";
 import Registro from "@/components/Registro";
-import DashboardTutor from "@/components/DashboardTutor";
+//import DashboardTutor from "@/components/DashboardTutor";
+import MainTutor from "@/components/tutores/MainTutor";
 import DashboardAlumno from "@/components/alumnos/DashboardAlumno";
 import { LogOut } from 'lucide-react';
 
@@ -121,7 +122,7 @@ export default function App() {
   if (vistaActual === 'dashboard') {
     // Si el tipo de usuario es tutor, muestra el panel del profesor
     if (tipoUsuario === 'tutor') {
-      return <DashboardTutor onLogout={handleLogout} />;
+      return <MainTutor onLogout={handleLogout} />;
     }
     // De lo contrario, muestra el lienzo de dibujo para el alumno
     //return <MainApp onLogout={handleLogout} />;

@@ -10,14 +10,27 @@ const TabEjercicios = ({ idTutor }) => {
   const [error, setError] = useState('');
   const [ejercicioSeleccionado, setEjercicioSeleccionado] = useState(null); // ← modal
   const [fechaFin, setFechaFin] = useState('');
+  const [token, setToken] = useState('');
+
+  // Obtener token del localStorage
+  useEffect(() => {
+    const storedToken = localStorage.getItem('token');
+    setToken(storedToken || '');
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!token) return; // Esperar a que el token esté disponible
+      
       setLoadingPage(true);
       try {
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+        };
+
         const [resEjercicios, resActivados] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios`),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/tutor/${idTutor}`),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/tutor/${idTutor}`, { headers }),
         ]);
 
         if (!resEjercicios.ok || !resActivados.ok)
@@ -35,8 +48,8 @@ const TabEjercicios = ({ idTutor }) => {
       }
     };
 
-    if (idTutor) fetchData();
-  }, [idTutor]);
+    if (idTutor && token) fetchData();
+  }, [idTutor, token]);
 
   const formatearFechaParaSQL = (fecha) => {
     if (!fecha) return null;
@@ -48,10 +61,15 @@ const TabEjercicios = ({ idTutor }) => {
     const estaActivado = activados.has(id_ejercicio);
 
     try {
+      const headers = {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
+
       if (estaActivado) {
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/tutor/${idTutor}/${id_ejercicio}`,
-          { method: 'DELETE' }
+          { method: 'DELETE', headers }
         );
         if (!res.ok) throw new Error('No se pudo desactivar el ejercicio');
         setActivados((prev) => {
@@ -64,7 +82,7 @@ const TabEjercicios = ({ idTutor }) => {
           `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/tutor`,
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({ id_ejercicio, id_usuario: idTutor, fecha_fin: formatearFechaParaSQL(fechaFin) }),
           }
         );
