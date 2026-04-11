@@ -5,14 +5,18 @@ from Modelo.database import connect_to_database
 from passlib.context import CryptContext
 import jwt
 from datetime import datetime, timedelta
+import os
+from dotenv import load_dotenv
 
+# Cargar .env desde la raíz del proyecto
+
+load_dotenv()
 router = APIRouter()
 
 # Configuración para la verificación de contraseñas y JWT
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ATENCIÓN: En producción, esta clave debe almacenarse en variables de entorno (ej. usando dotenv)
-SECRET_KEY = "tu_clave_secreta_super_segura"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 horas
 

@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from Modelo.database import connect_to_database
 from Control.auth import get_password_hash
-from Control.dependencies import get_current_user
+from Control.dependencies import require_tutor
 
 router = APIRouter()
 
@@ -37,7 +37,10 @@ class AlumnoEnRiesgoResponse(BaseModel):
     promedio_legibilidad: Decimal
 
 @router.post("/registrar", response_model=dict)
-async def registrar_alumno(alumno_data: AlumnoCreate):
+async def registrar_alumno(alumno_data: AlumnoCreate, current_user: dict = Depends(require_tutor)):
+    if alumno_data.id_tutor != current_user["id_usuario"]:
+        raise HTTPException(status_code=403, detail="No tiene permiso para registrar alumnos para otro tutor.")
+
     conn = connect_to_database()
     if not conn:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
@@ -79,10 +82,7 @@ async def registrar_alumno(alumno_data: AlumnoCreate):
         conn.close()
 
 @router.get("/tutor/{id_tutor}", response_model=List[AlumnoResponse])
-async def obtener_alumnos_por_tutor(id_tutor: int, current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "tutor":
-        raise HTTPException(status_code=403, detail="Acceso denegado. Se requiere rol de tutor.")
-    
+async def obtener_alumnos_por_tutor(id_tutor: int, current_user: dict = Depends(require_tutor)):
     if current_user["id_usuario"] != id_tutor:
         raise HTTPException(status_code=403, detail="No tiene permiso para ver los alumnos de otro tutor.")
     
@@ -121,16 +121,23 @@ async def obtener_alumnos_por_tutor(id_tutor: int, current_user: dict = Depends(
         conn.close()
 
 @router.put("/baja/{id_alumno}")
-async def dar_de_baja_alumno(id_alumno: int):
+async def dar_de_baja_alumno(id_alumno: int, current_user: dict = Depends(require_tutor)):
     conn = connect_to_database()
     if not conn:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
 
     cursor = conn.cursor()
     try:
+        cursor.execute("SELECT id_tutor FROM Alumno WHERE id_alumno = ?", (id_alumno,))
+        row = cursor.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="Alumno no encontrado")
+        if row[0] != current_user["id_usuario"]:
+            raise HTTPException(status_code=403, detail="No tiene permiso para dar de baja a este alumno.")
+
         # Actualizar a estatus 2 (inactivo)
         query = "UPDATE Alumno SET id_estatus = 2 WHERE id_alumno = ?"
-        cursor.execute(query, id_alumno)
+        cursor.execute(query, (id_alumno,))
         conn.commit()
 
         if cursor.rowcount == 0:
@@ -147,7 +154,10 @@ async def dar_de_baja_alumno(id_alumno: int):
 # Alumnos en riesgo
 
 @router.get("/riesgo/{id_tutor}", response_model=List[AlumnoEnRiesgoResponse])
-async def obtener_alumnos_en_riesgo(id_tutor: int):
+async def obtener_alumnos_en_riesgo(id_tutor: int, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != id_tutor:
+        raise HTTPException(status_code=403, detail="No tiene permiso para ver los alumnos en riesgo de otro tutor.")
+
     conn = connect_to_database()
     if not conn:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
@@ -194,7 +204,10 @@ async def obtener_alumnos_en_riesgo(id_tutor: int):
 
 
 @router.get("/progreso/{id_tutor}")
-async def obtener_progreso_grafico(id_tutor: int):
+async def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != id_tutor:
+        raise HTTPException(status_code=403, detail="No tiene permiso para ver el progreso de otro tutor.")
+
     conn = connect_to_database()
     if not conn:
         raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")

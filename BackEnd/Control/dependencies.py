@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 
@@ -33,6 +34,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
             "nombre": nombre
         }
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expirado")
     except jwt.InvalidTokenError:
         raise credentials_exception
+
+async def require_tutor(current_user: dict = Depends(get_current_user)):
+    if current_user.get("rol") != "tutor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Se requiere rol de tutor.")
+    return current_user
+
+async def require_alumno(current_user: dict = Depends(get_current_user)):
+    if current_user.get("rol") != "alumno":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Se requiere rol de alumno.")
+    return current_user

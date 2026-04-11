@@ -97,7 +97,7 @@ export default function MainTutor({ onLogout }) {
       try {
         const res = await fetch(`${API_URL}/api/alumnos/progreso/${idTutor}`, {
           // 3. Enviar el token en la cabecera
-          headers: { "Authorization": `Bearer ${getToken()}` }
+          headers: { "Authorization": `Bearer ${getToken()}`, "Content-Type": "application/json" }
         });
         if (!res.ok) throw new Error("Error al obtener progreso de alumnos");
         const data = await res.json();
@@ -126,7 +126,7 @@ export default function MainTutor({ onLogout }) {
     try {
       const response = await fetch(`${API_URL}/api/alumnos/tutor/${idTutor}`, {
         // 3. Enviar el token en la cabecera
-        headers: { "Authorization": `Bearer ${getToken()}` }
+        headers: { "Authorization": `Bearer ${getToken()}`, "Content-Type": "application/json" }
       });
       if (!response.ok) throw new Error("Error al obtener la lista de alumnos");
       const data = await response.json();
