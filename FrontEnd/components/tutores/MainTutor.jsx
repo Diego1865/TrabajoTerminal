@@ -3,6 +3,7 @@ import { LogOut, UserPlus, Trash2, Loader2 } from "lucide-react";
 import AlumnosEnRiesgo from "./AlumnosEnRiesgo";
 import ProgresoAlumnos from "./ProgresoAlumnos";
 import TabEjercicios from "../TabEjercicios";
+import PerfilTutor from "./PerfilTutor"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -230,6 +231,7 @@ export default function MainTutor({ onLogout }) {
     { key: "inicio", label: "Inicio" },
     { key: "ejercicios", label: "Ejercicios" },
     { key: "alumnos", label: "Agregar alumnos" },
+    { key: "perfil", label: "Mi perfil" },
   ];
 
   return (
@@ -432,6 +434,10 @@ export default function MainTutor({ onLogout }) {
               </div>
             </div>
           </div>
+        )}
+
+        {tab === "perfil" && (
+          <PerfilTutor onLogout={onLogout} />
         )}
       </main>
     </div>

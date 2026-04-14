@@ -6,11 +6,14 @@ import TabCompletados from './TabCompletados';
 import TabVencidos from './TabVencidos';
 import LienzoDigital from '../LienzoDigital';
 import CapturaEscritura from '../CapturaEscritura';
+import PerfilAlumno from './PerfilAlumno';
+import { AlertTriangle } from 'lucide-react';
 
 const TABS = [
   { id: 'proximos',    label: 'Próximos' },
   { id: 'completados', label: 'Completados' },
   { id: 'vencidos',    label: 'Vencidos' },
+  { id: 'perfil',      label: 'Mi perfil' },
 ];
 
 const decodificarJwt = (token) => {
@@ -34,6 +37,26 @@ const DashboardAlumno = ({ onLogout }) => {
   // Estados para manejar el flujo del ejercicio
   const [modoVista, setModoVista] = useState('tabs'); // 'tabs', 'lienzo', 'camara'
   const [ejercicioActivo, setEjercicioActivo] = useState(null);
+  const [tutorActivo, setTutorActivo] = useState(true);
+
+  // Agregar este useEffect junto a los otros
+  useEffect(() => {
+    const verificarTutor = async () => {
+      const token = localStorage.getItem('token');
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/perfil/alumno/estado-tutor`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTutorActivo(data.tutor_activo);
+        }
+      } catch (err) {
+        console.error("No se pudo verificar el estado del tutor");
+      }
+    };
+    verificarTutor();
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -145,9 +168,24 @@ const DashboardAlumno = ({ onLogout }) => {
       </div>
 
       <div className="w-full max-w-4xl mx-auto">
-        {pestañaActiva === 'proximos'    && <TabProximos idAlumno={idAlumno} onRealizar={handleRealizarEjercicio} />}
-        {pestañaActiva === 'completados' && <TabCompletados idAlumno={idAlumno} />}
-        {pestañaActiva === 'vencidos'    && <TabVencidos idAlumno={idAlumno} />}
+        {pestañaActiva === 'perfil' ? (
+          <PerfilAlumno />
+        ) : !tutorActivo ? (
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8 text-center mt-10">
+            <AlertTriangle className="mx-auto text-red-500 mb-4" size={48} />
+            <h2 className="text-2xl font-bold text-red-800 mb-2">Plataforma No Disponible</h2>
+            <p className="text-red-600 text-lg">
+              Tu profesor actual ya no se encuentra activo en la plataforma. 
+              Por el momento no puedes realizar ejercicios ni ser evaluado. Contacta a tu escuela para ser reasignado.
+            </p>
+          </div>
+        ) : (
+          <>
+            {pestañaActiva === 'proximos'    && <TabProximos idAlumno={idAlumno} onRealizar={handleRealizarEjercicio} />}
+            {pestañaActiva === 'completados' && <TabCompletados idAlumno={idAlumno} />}
+            {pestañaActiva === 'vencidos'    && <TabVencidos idAlumno={idAlumno} />}
+          </>
+        )}
       </div>
     </div>
   );
