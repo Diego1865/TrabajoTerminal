@@ -231,7 +231,7 @@ export default function MainTutor({ onLogout }) {
     { key: "inicio", label: "Inicio" },
     { key: "ejercicios", label: "Ejercicios" },
     { key: "alumnos", label: "Agregar alumnos" },
-    { key: "perfil", label: "Mi perfil" },
+    { key: "perfil", label: "Perfil" },
   ];
 
   return (

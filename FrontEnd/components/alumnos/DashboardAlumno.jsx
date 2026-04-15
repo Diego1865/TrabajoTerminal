@@ -13,7 +13,7 @@ const TABS = [
   { id: 'proximos',    label: 'Próximos' },
   { id: 'completados', label: 'Completados' },
   { id: 'vencidos',    label: 'Vencidos' },
-  { id: 'perfil',      label: 'Mi perfil' },
+  { id: 'perfil',      label: 'Perfil' },
 ];
 
 const decodificarJwt = (token) => {
@@ -149,13 +149,16 @@ const DashboardAlumno = ({ onLogout }) => {
         </h1>
       </div>
 
-      <div className="flex justify-center mb-8 mt-4">
-        <div className="flex bg-gray-200 p-1 rounded-full shadow-inner">
+      <div className="flex justify-center mb-8 mt-4 px-2 w-full">
+        <div 
+          className="flex bg-gray-200 p-1 rounded-full shadow-inner overflow-x-auto max-w-full" 
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setPestañaActiva(tab.id)}
-              className={`px-8 py-2 rounded-full font-medium transition-all ${
+              className={`px-4 sm:px-8 py-2 rounded-full font-medium text-sm sm:text-base whitespace-nowrap transition-all ${
                 pestañaActiva === tab.id
                   ? 'bg-blue-500 text-white shadow-md'
                   : 'text-gray-600 hover:text-gray-800'
