@@ -135,7 +135,7 @@ async def desactivar_ejercicio(id_usuario: int, id_ejercicio: int, current_user:
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            UPDATE Ejercicios_Tutor SET id_estatus = 3
+            UPDATE Ejercicios_Tutor SET id_estatus = 2
             WHERE id_usuario = ? AND id_ejercicio = ?
         """, (id_usuario, id_ejercicio))
         conn.commit()

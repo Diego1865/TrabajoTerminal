@@ -280,8 +280,6 @@ async def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(r
                 "categoria": row[0],
                 "cantidad_alumnos": row[1]
             })
-        print(progreso_legibilidad)
-        print(progreso_ortografico)
         return {
             "ortografia": progreso_ortografico,
             "legibilidad": progreso_legibilidad
