@@ -34,7 +34,7 @@ VALUES
 
 --- Insertar Historial de progreso del alumno solo es ejemplo
 
-INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, aliniacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha)
+INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha)
 VALUES
 -- Alumno 1
 (1, 8.75, 7.50, 8.25, 7.80, 8.40, '2026-03-15 10:30:00'),
@@ -162,29 +162,29 @@ VALUES
 (31, 9.65, 9.15, 9.55, 9.35, 9.75, '2026-04-02 16:30:00');
 
 -- Actualice el promedio y scores para prueba de alumnos en riesgo:
-UPDATE Historial_Alumno SET promedio_ortografia = 3.45, aliniacion_score = 2.80, tamano_letra_score = 3.20, espaciado_score = 2.90, inclinacion_score = 3.10 WHERE id_historial = 1;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.20, aliniacion_score = 3.50, tamano_letra_score = 4.10, espaciado_score = 3.75, inclinacion_score = 4.05 WHERE id_historial = 2;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.15, aliniacion_score = 4.40, tamano_letra_score = 5.05, espaciado_score = 4.75, inclinacion_score = 5.25 WHERE id_historial = 3;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.45, alineacion_score = 2.80, tamano_letra_score = 3.20, espaciado_score = 2.90, inclinacion_score = 3.10 WHERE id_historial = 1;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.20, alineacion_score = 3.50, tamano_letra_score = 4.10, espaciado_score = 3.75, inclinacion_score = 4.05 WHERE id_historial = 2;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.15, alineacion_score = 4.40, tamano_letra_score = 5.05, espaciado_score = 4.75, inclinacion_score = 5.25 WHERE id_historial = 3;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 2.65, aliniacion_score = 2.10, tamano_letra_score = 2.50, espaciado_score = 2.20, inclinacion_score = 2.75 WHERE id_historial = 10;
-UPDATE Historial_Alumno SET promedio_ortografia = 3.50, aliniacion_score = 2.85, tamano_letra_score = 3.40, espaciado_score = 3.10, inclinacion_score = 3.60 WHERE id_historial = 11;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.40, aliniacion_score = 3.75, tamano_letra_score = 4.30, espaciado_score = 4.00, inclinacion_score = 4.50 WHERE id_historial = 12;
+UPDATE Historial_Alumno SET promedio_ortografia = 2.65, alineacion_score = 2.10, tamano_letra_score = 2.50, espaciado_score = 2.20, inclinacion_score = 2.75 WHERE id_historial = 10;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.50, alineacion_score = 2.85, tamano_letra_score = 3.40, espaciado_score = 3.10, inclinacion_score = 3.60 WHERE id_historial = 11;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.40, alineacion_score = 3.75, tamano_letra_score = 4.30, espaciado_score = 4.00, inclinacion_score = 4.50 WHERE id_historial = 12;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 1.85, aliniacion_score = 1.50, tamano_letra_score = 1.75, espaciado_score = 1.60, inclinacion_score = 1.95 WHERE id_historial = 19;
-UPDATE Historial_Alumno SET promedio_ortografia = 2.90, aliniacion_score = 2.35, tamano_letra_score = 2.80, espaciado_score = 2.55, inclinacion_score = 3.05 WHERE id_historial = 20;
-UPDATE Historial_Alumno SET promedio_ortografia = 3.95, aliniacion_score = 3.25, tamano_letra_score = 3.85, espaciado_score = 3.55, inclinacion_score = 4.05 WHERE id_historial = 21;
+UPDATE Historial_Alumno SET promedio_ortografia = 1.85, alineacion_score = 1.50, tamano_letra_score = 1.75, espaciado_score = 1.60, inclinacion_score = 1.95 WHERE id_historial = 19;
+UPDATE Historial_Alumno SET promedio_ortografia = 2.90, alineacion_score = 2.35, tamano_letra_score = 2.80, espaciado_score = 2.55, inclinacion_score = 3.05 WHERE id_historial = 20;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.95, alineacion_score = 3.25, tamano_letra_score = 3.85, espaciado_score = 3.55, inclinacion_score = 4.05 WHERE id_historial = 21;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 3.75, aliniacion_score = 3.10, tamano_letra_score = 3.65, espaciado_score = 3.35, inclinacion_score = 3.85 WHERE id_historial = 31;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.55, aliniacion_score = 3.90, tamano_letra_score = 4.45, espaciado_score = 4.15, inclinacion_score = 4.65 WHERE id_historial = 32;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.40, aliniacion_score = 4.70, tamano_letra_score = 5.30, espaciado_score = 5.00, inclinacion_score = 5.50 WHERE id_historial = 33;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.75, alineacion_score = 3.10, tamano_letra_score = 3.65, espaciado_score = 3.35, inclinacion_score = 3.85 WHERE id_historial = 31;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.55, alineacion_score = 3.90, tamano_letra_score = 4.45, espaciado_score = 4.15, inclinacion_score = 4.65 WHERE id_historial = 32;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.40, alineacion_score = 4.70, tamano_letra_score = 5.30, espaciado_score = 5.00, inclinacion_score = 5.50 WHERE id_historial = 33;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 2.35, aliniacion_score = 1.85, tamano_letra_score = 2.25, espaciado_score = 1.95, inclinacion_score = 2.45 WHERE id_historial = 43;
-UPDATE Historial_Alumno SET promedio_ortografia = 3.40, aliniacion_score = 2.75, tamano_letra_score = 3.30, espaciado_score = 3.00, inclinacion_score = 3.50 WHERE id_historial = 44;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.35, aliniacion_score = 3.65, tamano_letra_score = 4.25, espaciado_score = 3.95, inclinacion_score = 4.45 WHERE id_historial = 45;
+UPDATE Historial_Alumno SET promedio_ortografia = 2.35, alineacion_score = 1.85, tamano_letra_score = 2.25, espaciado_score = 1.95, inclinacion_score = 2.45 WHERE id_historial = 43;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.40, alineacion_score = 2.75, tamano_letra_score = 3.30, espaciado_score = 3.00, inclinacion_score = 3.50 WHERE id_historial = 44;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.35, alineacion_score = 3.65, tamano_letra_score = 4.25, espaciado_score = 3.95, inclinacion_score = 4.45 WHERE id_historial = 45;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 4.10, aliniacion_score = 3.45, tamano_letra_score = 4.00, espaciado_score = 3.70, inclinacion_score = 4.20 WHERE id_historial = 55;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.05, aliniacion_score = 4.35, tamano_letra_score = 4.95, espaciado_score = 4.65, inclinacion_score = 5.15 WHERE id_historial = 56;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.90, aliniacion_score = 5.20, tamano_letra_score = 5.80, espaciado_score = 5.50, inclinacion_score = 6.00 WHERE id_historial = 57;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.10, alineacion_score = 3.45, tamano_letra_score = 4.00, espaciado_score = 3.70, inclinacion_score = 4.20 WHERE id_historial = 55;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.05, alineacion_score = 4.35, tamano_letra_score = 4.95, espaciado_score = 4.65, inclinacion_score = 5.15 WHERE id_historial = 56;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.90, alineacion_score = 5.20, tamano_letra_score = 5.80, espaciado_score = 5.50, inclinacion_score = 6.00 WHERE id_historial = 57;
 
 
 -- Progreso alumno, posiblemente lo ocupemos esto para el backend:
@@ -193,7 +193,7 @@ USING (
     SELECT 
         id_alumno,
         AVG(promedio_ortografia) AS promedio_ortografia,
-        AVG(aliniacion_score) AS aliniacion_score,
+        AVG(alineacion_score) AS alineacion_score,
         AVG(tamano_letra_score) AS tamano_letra_score,
         AVG(espaciado_score) AS espaciado_score,
         AVG(inclinacion_score) AS inclinacion_score
@@ -204,14 +204,14 @@ ON target.id_alumno = source.id_alumno
 WHEN MATCHED THEN
     UPDATE SET 
         promedio_ortografia = source.promedio_ortografia,
-        aliniacion_score = source.aliniacion_score,
+        alineacion_score = source.alineacion_score,
         tamano_letra_score = source.tamano_letra_score,
         espaciado_score = source.espaciado_score,
         inclinacion_score = source.inclinacion_score,
         fecha_modificacion = GETDATE()
 WHEN NOT MATCHED THEN
-    INSERT (id_alumno, promedio_ortografia, aliniacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha_modificacion)
-    VALUES (source.id_alumno, source.promedio_ortografia, source.aliniacion_score, source.tamano_letra_score, source.espaciado_score, source.inclinacion_score, GETDATE());
+    INSERT (id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha_modificacion)
+    VALUES (source.id_alumno, source.promedio_ortografia, source.alineacion_score, source.tamano_letra_score, source.espaciado_score, source.inclinacion_score, GETDATE());
 
 SELECT * FROM Progreso_Alumno;
 
@@ -219,7 +219,7 @@ SELECT * FROM Progreso_Alumno;
 WITH PromedialidadAlumnos AS (
     SELECT a.id_alumno, a.nombre, a.apellido_paterno, a.apellido_materno, 
            p.promedio_ortografia,
-           (p.aliniacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+           (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
     FROM Usuario tu
     JOIN Alumno a ON tu.id_usuario = a.id_tutor
     JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
@@ -255,7 +255,7 @@ ORDER BY cantidad_alumnos DESC;
 
 WITH ProgresoLegibilidad AS(
     SELECT
-        (aliniacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
+        (alineacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
     FROM Usuario tu
     JOIN Alumno a ON tu.id_usuario = a.id_tutor
     JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno

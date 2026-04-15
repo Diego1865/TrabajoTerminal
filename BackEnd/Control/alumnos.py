@@ -168,7 +168,7 @@ async def obtener_alumnos_en_riesgo(id_tutor: int, current_user: dict = Depends(
             WITH PromedialidadAlumnos AS (
                 SELECT a.id_alumno, a.nombre, a.apellido_paterno, a.apellido_materno, 
                     p.promedio_ortografia,
-                    (p.aliniacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
                 FROM Usuario tu
                 JOIN Alumno a ON tu.id_usuario = a.id_tutor
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
@@ -249,7 +249,7 @@ async def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(r
         query2 = """
             WITH ProgresoLegibilidad AS (
                 SELECT
-                    (aliniacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
+                    (alineacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
                 FROM Usuario tu
                 JOIN Alumno a ON tu.id_usuario = a.id_tutor
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
