@@ -166,11 +166,11 @@ async def get_ejercicios_proximos(id_alumno: int, current_user: dict = Depends(r
                 e.descripcion, e.tipo, e.contenido_base, et.fecha_desactivacion as fecha_fin
             FROM Ejercicios_Tutor et
             JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
-            JOIN Alumno a ON a.id_tutor = et.id_usuario
-            WHERE a.id_alumno = ?
+            JOIN Usuario a ON a.id_tutor = et.id_usuario AND a.tipo_usuario = 'alumno'
+            WHERE a.id_usuario = ?
               AND et.id_estatus = 1
               AND et.id_ejercicio_tutor NOT IN (
-                  SELECT id_ejercicio_tutor FROM Intentos WHERE id_alumno = ?
+                  SELECT id_ejercicio_tutor FROM Intentos WHERE id_usuario = ?
               )
         """, (id_alumno, id_alumno))
         rows = cursor.fetchall()
@@ -211,7 +211,7 @@ async def get_ejercicios_completados(id_alumno: int, current_user: dict = Depend
             FROM Intentos i
             JOIN Ejercicios_Tutor et ON i.id_ejercicio_tutor = et.id_ejercicio_tutor
             JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
-            WHERE i.id_alumno = ?
+            WHERE i.id_usuario = ?
             GROUP BY 
                 et.id_ejercicio_tutor, e.id_ejercicio, e.titulo,
                 e.descripcion, e.tipo, et.fecha_desactivacion
@@ -251,11 +251,11 @@ async def get_ejercicios_vencidos(id_alumno: int, current_user: dict = Depends(r
                 e.descripcion, e.tipo, et.fecha_desactivacion
             FROM Ejercicios_Tutor et
             JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
-            JOIN Alumno a ON a.id_tutor = et.id_usuario
-            WHERE a.id_alumno = ?
+            JOIN Usuario a ON a.id_tutor = et.id_usuario AND a.tipo_usuario = 'alumno'
+            WHERE a.id_usuario = ?
               AND et.id_estatus = 2
               AND et.id_ejercicio_tutor NOT IN (
-                  SELECT id_ejercicio_tutor FROM Intentos WHERE id_alumno = ?
+                  SELECT id_ejercicio_tutor FROM Intentos WHERE id_usuario = ?
               )
         """, (id_alumno, id_alumno))
         rows = cursor.fetchall()

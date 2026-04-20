@@ -33,6 +33,7 @@ const DashboardAlumno = ({ onLogout }) => {
   const [pestañaActiva, setPestañaActiva] = useState('proximos');
   const [idAlumno, setIdAlumno] = useState(null);
   const [nombreAlumno, setNombreAlumno] = useState('');
+  const [tipoUsuario, setTipoUsuario] = useState(null);
   
   // Estados para manejar el flujo del ejercicio
   const [modoVista, setModoVista] = useState('tabs'); // 'tabs', 'lienzo', 'camara'
@@ -62,12 +63,26 @@ const DashboardAlumno = ({ onLogout }) => {
     const token = localStorage.getItem('token');
     if (token) {
       const payload = decodificarJwt(token);
+      
       if (payload) {
+        // Verificar que el usuario sea tipo alumno
+        if (payload.tipo_usuario !== 'alumno') {
+          console.warn('Acceso denegado: usuario no es alumno. tipo_usuario:', payload.tipo_usuario);
+          onLogout();
+          return;
+        }
         setIdAlumno(payload.id_usuario);
         setNombreAlumno(payload.nombre || 'Alumno');
+        setTipoUsuario(payload.tipo_usuario);
+      } else {
+        console.error('No se pudo decodificar el token');
+        onLogout();
       }
+    } else {
+      console.warn('No hay token');
+      onLogout();
     }
-  }, []);
+  }, [onLogout]);
 
   const handleRealizarEjercicio = (ejercicio) => {
     setEjercicioActivo(ejercicio);
@@ -76,7 +91,6 @@ const DashboardAlumno = ({ onLogout }) => {
 
   const handleTerminarEjercicio = (img) => {
     // Aquí posteriormente se implementará la llamada a la API para guardar el intento
-    console.log("Imagen generada del ejercicio:", img);
     alert("¡Ejercicio completado con éxito!");
     
     // Regresar a la vista principal

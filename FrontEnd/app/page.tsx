@@ -72,25 +72,27 @@ export default function App() {
   const [vistaActual, setVistaActual] = useState('login'); // 'login', 'registro', 'dashboard'
   const [tipoUsuario, setTipoUsuario] = useState<string | null>(null); // 'tutor' o 'alumno'
 
-  const handleLogin = () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const payload = decodificarJwt(token);
-      if (payload && payload.tipo_usuario) {
-        // Extrae el rol del token decodificado
-        setTipoUsuario(payload.tipo_usuario);
-        setVistaActual('dashboard');
-      } else {
-        handleLogout(); // Token inválido o sin rol
-      }
-    }
-  };
-
   const handleLogout = () => {
     // Cambiar la clave eliminada a 'token'
     localStorage.removeItem('token');
     setTipoUsuario(null);
     setVistaActual('login');
+  };
+
+  const handleLogin = () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const payload = decodificarJwt(token);
+      
+      if (payload && payload.tipo_usuario) {
+        // Extrae el tipo de usuario del token decodificado ('tutor' o 'alumno')
+        setTipoUsuario(payload.tipo_usuario);
+        setVistaActual('dashboard');
+      } else {
+        console.warn('Token inválido o sin tipo_usuario');
+        handleLogout(); // Token inválido o sin tipo_usuario
+      }
+    }
   };
 
   // Verificar sesión activa al cargar la aplicación
@@ -120,13 +122,22 @@ export default function App() {
   }
 
   if (vistaActual === 'dashboard') {
-    // Si el tipo de usuario es tutor, muestra el panel del profesor
+    // Enrutamiento basado en el tipo de usuario
+    
     if (tipoUsuario === 'tutor') {
       return <MainTutor onLogout={handleLogout} />;
+    } else if (tipoUsuario === 'alumno') {
+      return <DashboardAlumno onLogout={handleLogout} />;
+    } else {
+      console.warn('tipoUsuario inválido:', tipoUsuario);
+      // Si no hay tipo_usuario válido, volver al login
+      return (
+        <Login 
+          onLogin={handleLogin} 
+          onNavigateRegister={() => setVistaActual('registro')} 
+        />
+      );
     }
-    // De lo contrario, muestra el lienzo de dibujo para el alumno
-    //return <MainApp onLogout={handleLogout} />;
-    return <DashboardAlumno onLogout={handleLogout} />;
   }
 
   return null;

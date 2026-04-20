@@ -6,7 +6,6 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
   const [nombre, setNombre] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [rol] = useState('tutor');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,7 +51,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ nombre, username, email, password, rol }),
+        body: JSON.stringify({ nombre, username, email, password }),
       });
 
       const data = await response.json();

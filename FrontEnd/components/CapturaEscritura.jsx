@@ -48,7 +48,6 @@ const CapturaEscritura = () => {
         return;
     }
 
-    console.log("Enviando imagen al Controlador...");
     alert("¡Tarea enviada! Ahora la revisaremos.");
     };
 
