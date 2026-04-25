@@ -1,45 +1,47 @@
-INSERT INTO Alumno (nombre, apellido_paterno, apellido_materno, usuario, contrasena_cifrada, grado, grupo, id_tutor, id_estatus)
+-- Insertar alumnos de ejemplo en la tabla Usuario con tipo_usuario = 'alumno'
+INSERT INTO Usuario (nombre, apellido_paterno, apellido_materno, username, contrasena_cifrada, tipo_usuario, grado, grupo, id_tutor, id_estatus)
 VALUES
-('Juan', 'García', 'López', 'juangarc23', 'hashed_password_1', '3', 'A', 2, 1),
-('María', 'Rodríguez', 'Martínez', 'mariarod45', 'hashed_password_2', '3', 'A', 2, 1),
-('Carlos', 'Hernández', 'Pérez', 'carloshe78', 'hashed_password_3', '3', 'B', 1, 1),
-('Ana', 'López', 'González', 'analopez12', 'hashed_password_4', '4', 'A', 1, 1),
-('Luis', 'Martínez', 'Sánchez', 'luismart67', 'hashed_password_5', '4', 'B', 1, 1),
-('Sofia', 'Pérez', 'Ramírez', 'sofiape89', 'hashed_password_6', '4', 'A', 1, 1),
-('Diego', 'González', 'Torres', 'diegogon34', 'hashed_password_7', '3', 'C', 1, 1),
-('Laura', 'Fernández', 'Díaz', 'laurafe56', 'hashed_password_8', '3', 'A', 1, 1),
-('Miguel', 'Sánchez', 'Ruiz', 'miguelsa90', 'hashed_password_9', '4', 'B', 1, 1),
-('Isabel', 'Jiménez', 'Vargas', 'isabelji41', 'hashed_password_10', '3', 'A', 1, 1),
-('Roberto', 'Morales', 'Campos', 'robertomo28', 'hashed_password_11', '4', 'C', 1, 1),
-('Valentina', 'Romero', 'Navarro', 'valentinar73', 'hashed_password_12', '3', 'A', 1, 1),
-('Fernando', 'Castro', 'Ortiz', 'fernandoca55', 'hashed_password_13', '4', 'B', 1, 1),
-('Camila', 'Núñez', 'Flores', 'camilanu82', 'hashed_password_14', '3', 'A', 1, 1),
-('Pablo', 'Vargas', 'Medina', 'pablovar19', 'hashed_password_15', '4', 'C', 1, 1),
-('Gabriela', 'Aguilar', 'Salazar', 'gabrielag64', 'hashed_password_16', '3', 'B', 1, 1),
-('Andrés', 'Ibáñez', 'Reyes', 'andresib37', 'hashed_password_17', '4', 'B', 1, 1),
-('Mariana', 'Domínguez', 'Vega', 'marianadom51', 'hashed_password_18', '3', 'A', 1, 1),
-('Ricardo', 'Escobar', 'Montes', 'ricardoes72', 'hashed_password_19', '4', 'C', 1, 1),
-('Alejandra', 'Quintero', 'Acosta', 'alejandraq26', 'hashed_password_20', '3', 'A', 1, 1),
-('Francisco', 'Salinas', 'Bernal', 'franciscosal48', 'hashed_password_21', '4', 'B', 1, 1),
-('Daniela', 'Medrano', 'Gómez', 'danielamed93', 'hashed_password_22', '3', 'A', 1, 1),
-('Javier', 'Cortés', 'Lara', 'javiercor85', 'hashed_password_23', '4', 'C', 1, 1),
-('Natalia', 'Benavides', 'Hidalgo', 'nataliaben61', 'hashed_password_24', '3', 'A', 1, 1),
-('Eduardo', 'Molina', 'Ponce', 'eduardomol39', 'hashed_password_25', '4', 'B', 1, 1),
-('Lucía', 'Vázquez', 'Arias', 'luciavaz76', 'hashed_password_26', '3', 'A', 1, 1),
-('Mauricio', 'Riquelme', 'Carrillo', 'mauriciorit44', 'hashed_password_27', '4', 'C', 1, 1),
-('Catalina', 'Cifuentes', 'Durán', 'catalinacif88', 'hashed_password_28', '3', 'A', 1, 1),
-('Rodrigo', 'Valenzuela', 'Espinoza', 'rodrigoval57', 'hashed_password_29', '4', 'B', 1, 1),
-('Francisca', 'Tapia', 'Bravo', 'franciscatap70', 'hashed_password_30', '3', 'A', 1, 1);
+('Juan', 'García', 'López', 'juangarc23', 'hashed_password_1', 'alumno', '3', 'A', 2, 1),
+('María', 'Rodríguez', 'Martínez', 'mariarod45', 'hashed_password_2', 'alumno', '3', 'A', 2, 1),
+('Carlos', 'Hernández', 'Pérez', 'carloshe78', 'hashed_password_3', 'alumno', '3', 'B', 1, 1),
+('Ana', 'López', 'González', 'analopez12', 'hashed_password_4', 'alumno', '4', 'A', 1, 1),
+('Luis', 'Martínez', 'Sánchez', 'luismart67', 'hashed_password_5', 'alumno', '4', 'B', 1, 1),
+('Sofia', 'Pérez', 'Ramírez', 'sofiape89', 'hashed_password_6', 'alumno', '4', 'A', 1, 1),
+('Diego', 'González', 'Torres', 'diegogon34', 'hashed_password_7', 'alumno', '3', 'C', 1, 1),
+('Laura', 'Fernández', 'Díaz', 'laurafe56', 'hashed_password_8', 'alumno', '3', 'A', 1, 1),
+('Miguel', 'Sánchez', 'Ruiz', 'miguelsa90', 'hashed_password_9', 'alumno', '4', 'B', 1, 1),
+('Isabel', 'Jiménez', 'Vargas', 'isabelji41', 'hashed_password_10', 'alumno', '3', 'A', 1, 1),
+('Roberto', 'Morales', 'Campos', 'robertomo28', 'hashed_password_11', 'alumno', '4', 'C', 1, 1),
+('Valentina', 'Romero', 'Navarro', 'valentinar73', 'hashed_password_12', 'alumno', '3', 'A', 1, 1),
+('Fernando', 'Castro', 'Ortiz', 'fernandoca55', 'hashed_password_13', 'alumno', '4', 'B', 1, 1),
+('Camila', 'Núñez', 'Flores', 'camilanu82', 'hashed_password_14', 'alumno', '3', 'A', 1, 1),
+('Pablo', 'Vargas', 'Medina', 'pablovar19', 'hashed_password_15', 'alumno', '4', 'C', 1, 1),
+('Gabriela', 'Aguilar', 'Salazar', 'gabrielag64', 'hashed_password_16', 'alumno', '3', 'B', 1, 1),
+('Andrés', 'Ibáñez', 'Reyes', 'andresib37', 'hashed_password_17', 'alumno', '4', 'B', 1, 1),
+('Mariana', 'Domínguez', 'Vega', 'marianadom51', 'hashed_password_18', 'alumno', '3', 'A', 1, 1),
+('Ricardo', 'Escobar', 'Montes', 'ricardoes72', 'hashed_password_19', 'alumno', '4', 'C', 1, 1),
+('Alejandra', 'Quintero', 'Acosta', 'alejandraq26', 'hashed_password_20', 'alumno', '3', 'A', 1, 1),
+('Francisco', 'Salinas', 'Bernal', 'franciscosal48', 'hashed_password_21', 'alumno', '4', 'B', 1, 1),
+('Daniela', 'Medrano', 'Gómez', 'danielamed93', 'hashed_password_22', 'alumno', '3', 'A', 1, 1),
+('Javier', 'Cortés', 'Lara', 'javiercor85', 'hashed_password_23', 'alumno', '4', 'C', 1, 1),
+('Natalia', 'Benavides', 'Hidalgo', 'nataliaben61', 'hashed_password_24', 'alumno', '3', 'A', 1, 1),
+('Eduardo', 'Molina', 'Ponce', 'eduardomol39', 'hashed_password_25', 'alumno', '4', 'B', 1, 1),
+('Lucía', 'Vázquez', 'Arias', 'luciavaz76', 'hashed_password_26', 'alumno', '3', 'A', 1, 1),
+('Mauricio', 'Riquelme', 'Carrillo', 'mauriciorit44', 'hashed_password_27', 'alumno', '4', 'C', 1, 1),
+('Catalina', 'Cifuentes', 'Durán', 'catalinacif88', 'hashed_password_28', 'alumno', '3', 'A', 1, 1),
+('Rodrigo', 'Valenzuela', 'Espinoza', 'rodrigoval57', 'hashed_password_29', 'alumno', '4', 'B', 1, 1),
+('Francisca', 'Tapia', 'Bravo', 'franciscatap70', 'hashed_password_30', 'alumno', '3', 'A', 1, 1);
 
 
 --- Insertar Historial de progreso del alumno solo es ejemplo
+-- Ahora usando id_usuario en lugar de id_usuario
 
-INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, aliniacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha)
+INSERT INTO Historial_Alumno (id_usuario, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha)
 VALUES
 -- Alumno 1
-(1, 8.75, 7.50, 8.25, 7.80, 8.40, '2026-03-15 10:30:00'),
-(1, 8.90, 7.75, 8.50, 8.10, 8.65, '2026-03-22 11:15:00'),
-(1, 9.15, 8.00, 8.75, 8.35, 8.90, '2026-03-29 09:45:00'),
+(5, 8.75, 7.50, 8.25, 7.80, 8.40, '2026-03-15 10:30:00'),  -- Se requiere obtener id_usuario correcto de Usuario
+(5, 8.90, 7.75, 8.50, 8.10, 8.65, '2026-03-22 11:15:00'),
+(5, 9.15, 8.00, 8.75, 8.35, 8.90, '2026-03-29 09:45:00'),
 -- Alumno 2
 (2, 7.60, 6.80, 7.40, 7.20, 7.50, '2026-03-16 10:30:00'),
 (2, 7.85, 7.05, 7.65, 7.45, 7.75, '2026-03-23 11:15:00'),
@@ -155,74 +157,70 @@ VALUES
 -- Alumno 30
 (30, 9.05, 8.45, 8.95, 8.65, 9.15, '2026-03-16 17:15:00'),
 (30, 9.30, 8.70, 9.20, 8.90, 9.40, '2026-03-23 17:15:00'),
-(30, 9.50, 8.95, 9.40, 9.15, 9.60, '2026-03-30 17:15:00'),
-
-(31, 9.25, 8.65, 9.15, 8.85, 9.35, '2026-03-19 16:30:00'),
-(31, 9.45, 8.90, 9.35, 9.10, 9.55, '2026-03-26 16:30:00'),
-(31, 9.65, 9.15, 9.55, 9.35, 9.75, '2026-04-02 16:30:00');
+(30, 9.50, 8.95, 9.40, 9.15, 9.60, '2026-03-30 17:15:00');
 
 -- Actualice el promedio y scores para prueba de alumnos en riesgo:
-UPDATE Historial_Alumno SET promedio_ortografia = 3.45, aliniacion_score = 2.80, tamano_letra_score = 3.20, espaciado_score = 2.90, inclinacion_score = 3.10 WHERE id_historial = 1;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.20, aliniacion_score = 3.50, tamano_letra_score = 4.10, espaciado_score = 3.75, inclinacion_score = 4.05 WHERE id_historial = 2;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.15, aliniacion_score = 4.40, tamano_letra_score = 5.05, espaciado_score = 4.75, inclinacion_score = 5.25 WHERE id_historial = 3;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.45, alineacion_score = 2.80, tamano_letra_score = 3.20, espaciado_score = 2.90, inclinacion_score = 3.10 WHERE id_historial = 1;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.20, alineacion_score = 3.50, tamano_letra_score = 4.10, espaciado_score = 3.75, inclinacion_score = 4.05 WHERE id_historial = 2;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.15, alineacion_score = 4.40, tamano_letra_score = 5.05, espaciado_score = 4.75, inclinacion_score = 5.25 WHERE id_historial = 3;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 2.65, aliniacion_score = 2.10, tamano_letra_score = 2.50, espaciado_score = 2.20, inclinacion_score = 2.75 WHERE id_historial = 10;
-UPDATE Historial_Alumno SET promedio_ortografia = 3.50, aliniacion_score = 2.85, tamano_letra_score = 3.40, espaciado_score = 3.10, inclinacion_score = 3.60 WHERE id_historial = 11;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.40, aliniacion_score = 3.75, tamano_letra_score = 4.30, espaciado_score = 4.00, inclinacion_score = 4.50 WHERE id_historial = 12;
+UPDATE Historial_Alumno SET promedio_ortografia = 2.65, alineacion_score = 2.10, tamano_letra_score = 2.50, espaciado_score = 2.20, inclinacion_score = 2.75 WHERE id_historial = 10;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.50, alineacion_score = 2.85, tamano_letra_score = 3.40, espaciado_score = 3.10, inclinacion_score = 3.60 WHERE id_historial = 11;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.40, alineacion_score = 3.75, tamano_letra_score = 4.30, espaciado_score = 4.00, inclinacion_score = 4.50 WHERE id_historial = 12;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 1.85, aliniacion_score = 1.50, tamano_letra_score = 1.75, espaciado_score = 1.60, inclinacion_score = 1.95 WHERE id_historial = 19;
-UPDATE Historial_Alumno SET promedio_ortografia = 2.90, aliniacion_score = 2.35, tamano_letra_score = 2.80, espaciado_score = 2.55, inclinacion_score = 3.05 WHERE id_historial = 20;
-UPDATE Historial_Alumno SET promedio_ortografia = 3.95, aliniacion_score = 3.25, tamano_letra_score = 3.85, espaciado_score = 3.55, inclinacion_score = 4.05 WHERE id_historial = 21;
+UPDATE Historial_Alumno SET promedio_ortografia = 1.85, alineacion_score = 1.50, tamano_letra_score = 1.75, espaciado_score = 1.60, inclinacion_score = 1.95 WHERE id_historial = 19;
+UPDATE Historial_Alumno SET promedio_ortografia = 2.90, alineacion_score = 2.35, tamano_letra_score = 2.80, espaciado_score = 2.55, inclinacion_score = 3.05 WHERE id_historial = 20;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.95, alineacion_score = 3.25, tamano_letra_score = 3.85, espaciado_score = 3.55, inclinacion_score = 4.05 WHERE id_historial = 21;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 3.75, aliniacion_score = 3.10, tamano_letra_score = 3.65, espaciado_score = 3.35, inclinacion_score = 3.85 WHERE id_historial = 31;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.55, aliniacion_score = 3.90, tamano_letra_score = 4.45, espaciado_score = 4.15, inclinacion_score = 4.65 WHERE id_historial = 32;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.40, aliniacion_score = 4.70, tamano_letra_score = 5.30, espaciado_score = 5.00, inclinacion_score = 5.50 WHERE id_historial = 33;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.75, alineacion_score = 3.10, tamano_letra_score = 3.65, espaciado_score = 3.35, inclinacion_score = 3.85 WHERE id_historial = 31;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.55, alineacion_score = 3.90, tamano_letra_score = 4.45, espaciado_score = 4.15, inclinacion_score = 4.65 WHERE id_historial = 32;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.40, alineacion_score = 4.70, tamano_letra_score = 5.30, espaciado_score = 5.00, inclinacion_score = 5.50 WHERE id_historial = 33;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 2.35, aliniacion_score = 1.85, tamano_letra_score = 2.25, espaciado_score = 1.95, inclinacion_score = 2.45 WHERE id_historial = 43;
-UPDATE Historial_Alumno SET promedio_ortografia = 3.40, aliniacion_score = 2.75, tamano_letra_score = 3.30, espaciado_score = 3.00, inclinacion_score = 3.50 WHERE id_historial = 44;
-UPDATE Historial_Alumno SET promedio_ortografia = 4.35, aliniacion_score = 3.65, tamano_letra_score = 4.25, espaciado_score = 3.95, inclinacion_score = 4.45 WHERE id_historial = 45;
+UPDATE Historial_Alumno SET promedio_ortografia = 2.35, alineacion_score = 1.85, tamano_letra_score = 2.25, espaciado_score = 1.95, inclinacion_score = 2.45 WHERE id_historial = 43;
+UPDATE Historial_Alumno SET promedio_ortografia = 3.40, alineacion_score = 2.75, tamano_letra_score = 3.30, espaciado_score = 3.00, inclinacion_score = 3.50 WHERE id_historial = 44;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.35, alineacion_score = 3.65, tamano_letra_score = 4.25, espaciado_score = 3.95, inclinacion_score = 4.45 WHERE id_historial = 45;
 
-UPDATE Historial_Alumno SET promedio_ortografia = 4.10, aliniacion_score = 3.45, tamano_letra_score = 4.00, espaciado_score = 3.70, inclinacion_score = 4.20 WHERE id_historial = 55;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.05, aliniacion_score = 4.35, tamano_letra_score = 4.95, espaciado_score = 4.65, inclinacion_score = 5.15 WHERE id_historial = 56;
-UPDATE Historial_Alumno SET promedio_ortografia = 5.90, aliniacion_score = 5.20, tamano_letra_score = 5.80, espaciado_score = 5.50, inclinacion_score = 6.00 WHERE id_historial = 57;
+UPDATE Historial_Alumno SET promedio_ortografia = 4.10, alineacion_score = 3.45, tamano_letra_score = 4.00, espaciado_score = 3.70, inclinacion_score = 4.20 WHERE id_historial = 55;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.05, alineacion_score = 4.35, tamano_letra_score = 4.95, espaciado_score = 4.65, inclinacion_score = 5.15 WHERE id_historial = 56;
+UPDATE Historial_Alumno SET promedio_ortografia = 5.90, alineacion_score = 5.20, tamano_letra_score = 5.80, espaciado_score = 5.50, inclinacion_score = 6.00 WHERE id_historial = 57;
 
 
 -- Progreso alumno, posiblemente lo ocupemos esto para el backend:
 MERGE INTO Progreso_Alumno AS target
 USING (
     SELECT 
-        id_alumno,
+        id_usuario,
         AVG(promedio_ortografia) AS promedio_ortografia,
-        AVG(aliniacion_score) AS aliniacion_score,
+        AVG(alineacion_score) AS alineacion_score,
         AVG(tamano_letra_score) AS tamano_letra_score,
         AVG(espaciado_score) AS espaciado_score,
         AVG(inclinacion_score) AS inclinacion_score
     FROM Historial_Alumno
-    GROUP BY id_alumno
+    GROUP BY id_usuario
 ) AS source
-ON target.id_alumno = source.id_alumno
+ON target.id_usuario = source.id_usuario
 WHEN MATCHED THEN
     UPDATE SET 
         promedio_ortografia = source.promedio_ortografia,
-        aliniacion_score = source.aliniacion_score,
+        alineacion_score = source.alineacion_score,
         tamano_letra_score = source.tamano_letra_score,
         espaciado_score = source.espaciado_score,
         inclinacion_score = source.inclinacion_score,
         fecha_modificacion = GETDATE()
 WHEN NOT MATCHED THEN
-    INSERT (id_alumno, promedio_ortografia, aliniacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha_modificacion)
-    VALUES (source.id_alumno, source.promedio_ortografia, source.aliniacion_score, source.tamano_letra_score, source.espaciado_score, source.inclinacion_score, GETDATE());
+    INSERT (id_usuario, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha_modificacion)
+    VALUES (source.id_usuario, source.promedio_ortografia, source.alineacion_score, source.tamano_letra_score, source.espaciado_score, source.inclinacion_score, GETDATE());
 
 SELECT * FROM Progreso_Alumno;
 
 
 WITH PromedialidadAlumnos AS (
-    SELECT a.id_alumno, a.nombre, a.apellido_paterno, a.apellido_materno, 
+    SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
            p.promedio_ortografia,
-           (p.aliniacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+           (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
     FROM Usuario tu
-    JOIN Alumno a ON tu.id_usuario = a.id_tutor
-    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    JOIN Usuario a ON tu.id_usuario = a.id_tutor AND a.tipo_usuario = 'alumno'
+    JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
     WHERE tu.id_usuario = 1 -- Reemplaza con el ID del tutor específico que deseas consultar
 )
 SELECT *
@@ -239,10 +237,10 @@ SELECT
         WHEN promedio_ortografia BETWEEN 6 AND 8 THEN 'Promedio Regular'
         ELSE 'Mal Promedio'
     END AS categoria,
-    COUNT(DISTINCT p.id_alumno) AS cantidad_alumnos
+    COUNT(DISTINCT p.id_usuario) AS cantidad_alumnos
 FROM Usuario tu
-JOIN Alumno a ON tu.id_usuario = a.id_tutor
-JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+JOIN Usuario a ON tu.id_usuario = a.id_tutor AND a.tipo_usuario = 'alumno'
+JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
 WHERE tu.id_usuario = 1 -- Reemplaza con el ID del tutor específico que deseas
 GROUP BY 
     CASE 
@@ -255,10 +253,10 @@ ORDER BY cantidad_alumnos DESC;
 
 WITH ProgresoLegibilidad AS(
     SELECT
-        (aliniacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
+        (alineacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
     FROM Usuario tu
-    JOIN Alumno a ON tu.id_usuario = a.id_tutor
-    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    JOIN Usuario a ON tu.id_usuario = a.id_tutor AND a.tipo_usuario = 'alumno'
+    JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
     WHERE tu.id_usuario = 1 -- Reemplaza con el ID del tutor específico que
     
 )

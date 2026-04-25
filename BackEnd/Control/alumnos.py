@@ -48,16 +48,16 @@ async def registrar_alumno(alumno_data: AlumnoCreate, current_user: dict = Depen
     cursor = conn.cursor()
     try:
         # Verificar si el usuario ya existe para evitar duplicados
-        cursor.execute("SELECT id_alumno FROM Alumno WHERE usuario = ?", alumno_data.usuario)
+        cursor.execute("SELECT id_usuario FROM Usuario WHERE username = ?", alumno_data.usuario)
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="El nombre de usuario del alumno ya está en uso")
 
         hashed_password = get_password_hash(alumno_data.contrasena)
         
         query = """
-            INSERT INTO Alumno 
-            (nombre, apellido_paterno, apellido_materno, usuario, contrasena_cifrada, grado, grupo, id_tutor, id_estatus)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            INSERT INTO Usuario 
+            (nombre, apellido_paterno, apellido_materno, username, contrasena_cifrada, tipo_usuario, grado, grupo, id_tutor, id_estatus)
+            VALUES (?, ?, ?, ?, ?, 'alumno', ?, ?, ?, 1)
         """
         cursor.execute(query, (
             alumno_data.nombre, 
@@ -93,9 +93,9 @@ async def obtener_alumnos_por_tutor(id_tutor: int, current_user: dict = Depends(
     cursor = conn.cursor()
     try:
         query = """
-            SELECT id_alumno, nombre, apellido_paterno, apellido_materno, usuario, grado, grupo 
-            FROM Alumno 
-            WHERE id_tutor = ? AND id_estatus = 1
+            SELECT id_usuario, nombre, apellido_paterno, apellido_materno, username, grado, grupo 
+            FROM Usuario 
+            WHERE id_tutor = ? AND tipo_usuario = 'alumno' AND id_estatus = 1
         """
         cursor.execute(query, id_tutor)
         rows = cursor.fetchall()
@@ -128,7 +128,7 @@ async def dar_de_baja_alumno(id_alumno: int, current_user: dict = Depends(requir
 
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT id_tutor FROM Alumno WHERE id_alumno = ?", (id_alumno,))
+        cursor.execute("SELECT id_tutor FROM Usuario WHERE id_usuario = ? AND tipo_usuario = 'alumno'", (id_alumno,))
         row = cursor.fetchone()
         if not row:
             raise HTTPException(status_code=404, detail="Alumno no encontrado")
@@ -136,7 +136,7 @@ async def dar_de_baja_alumno(id_alumno: int, current_user: dict = Depends(requir
             raise HTTPException(status_code=403, detail="No tiene permiso para dar de baja a este alumno.")
 
         # Actualizar a estatus 2 (inactivo)
-        query = "UPDATE Alumno SET id_estatus = 2 WHERE id_alumno = ?"
+        query = "UPDATE Usuario SET id_estatus = 2 WHERE id_usuario = ?"
         cursor.execute(query, (id_alumno,))
         conn.commit()
 
@@ -166,13 +166,12 @@ async def obtener_alumnos_en_riesgo(id_tutor: int, current_user: dict = Depends(
     try:
         query = """
             WITH PromedialidadAlumnos AS (
-                SELECT a.id_alumno, a.nombre, a.apellido_paterno, a.apellido_materno, 
+                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
                     p.promedio_ortografia,
-                    (p.aliniacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
-                FROM Usuario tu
-                JOIN Alumno a ON tu.id_usuario = a.id_tutor
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                WHERE tu.id_usuario = ?
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = ? AND a.tipo_usuario = 'alumno'
             )
             SELECT *
             FROM PromedialidadAlumnos
@@ -222,11 +221,10 @@ async def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(r
                     WHEN promedio_ortografia BETWEEN 6 AND 8 THEN 'Promedio Regular'
                     ELSE 'Mal Promedio'
                 END AS categoria,
-                COUNT(DISTINCT p.id_alumno) AS cantidad_alumnos
-            FROM Usuario tu
-                JOIN Alumno a ON tu.id_usuario = a.id_tutor
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-            WHERE tu.id_usuario = ?
+                COUNT(DISTINCT p.id_usuario) AS cantidad_alumnos
+            FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+            WHERE a.id_tutor = ? AND a.tipo_usuario = 'alumno'
             GROUP BY 
                 CASE 
                     WHEN promedio_ortografia > 8 THEN 'Buen Promedio'
@@ -249,11 +247,10 @@ async def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(r
         query2 = """
             WITH ProgresoLegibilidad AS (
                 SELECT
-                    (aliniacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
-                FROM Usuario tu
-                JOIN Alumno a ON tu.id_usuario = a.id_tutor
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                WHERE tu.id_usuario = ?
+                    (alineacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = ? AND a.tipo_usuario = 'alumno'
             )
             SELECT 
                 CASE 
@@ -280,8 +277,6 @@ async def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(r
                 "categoria": row[0],
                 "cantidad_alumnos": row[1]
             })
-        print(progreso_legibilidad)
-        print(progreso_ortografico)
         return {
             "ortografia": progreso_ortografico,
             "legibilidad": progreso_legibilidad

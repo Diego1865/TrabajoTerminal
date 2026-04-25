@@ -4,6 +4,9 @@ GO
 USE TT;
 GO
 
+SET QUOTED_IDENTIFIER ON;
+GO
+
 -- ── Catálogo de estados ─────────────────────────────────────
 IF OBJECT_ID('Estatus', 'U') IS NULL
 CREATE TABLE Estatus (
@@ -12,41 +15,31 @@ CREATE TABLE Estatus (
     CONSTRAINT PK_Estatus PRIMARY KEY (id_estatus)
 );
 
--- ── Usuario (tutores / administradores) ────────────────────
+-- ── Usuario (tutores, administradores y alumnos) ──────────
 IF OBJECT_ID('Usuario', 'U') IS NULL
 CREATE TABLE Usuario (
     id_usuario          INT           NOT NULL IDENTITY(1,1),
     nombre              VARCHAR(50)   NOT NULL,
-    username            VARCHAR(75)   NOT NULL,
-    correo              VARCHAR(100)  NOT NULL,
+    apellido_paterno    VARCHAR(50)       NULL,
+    apellido_materno    VARCHAR(50)       NULL,
+    username            VARCHAR(75)   NOT NULL UNIQUE,
+    correo              VARCHAR(100)      NULL,
     contrasena_cifrada  VARCHAR(255)  NOT NULL,
-    rol                 VARCHAR(30)   NOT NULL,
+    tipo_usuario        VARCHAR(15)   NOT NULL,           -- 'tutor' o 'alumno'
+    grado               VARCHAR(15)       NULL,           -- Para alumnos
+    grupo               VARCHAR(15)       NULL,           -- Para alumnos
+    id_tutor            INT               NULL,           -- Para alumnos: referencia a su tutor
     fecha_registro      DATETIME2     NOT NULL DEFAULT GETDATE(),
     id_estatus          INT           NOT NULL DEFAULT 1,
-    CONSTRAINT PK_Usuario        PRIMARY KEY (id_usuario),
-    CONSTRAINT UQ_Usuario_correo UNIQUE      (correo),
-    CONSTRAINT FK_Usuario_Estatus FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
+    CONSTRAINT PK_Usuario           PRIMARY KEY (id_usuario),
+    CONSTRAINT UQ_Usuario_username  UNIQUE      (username),
+    CONSTRAINT FK_Usuario_Tutor     FOREIGN KEY (id_tutor) REFERENCES Usuario(id_usuario),
+    CONSTRAINT FK_Usuario_Estatus   FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus),
+    CONSTRAINT CK_tipo_usuario      CHECK (tipo_usuario IN ('tutor', 'alumno'))
 );
 
--- ── Alumnos ─────────────────────────────────────────────────
-IF OBJECT_ID('Alumno', 'U') IS NULL
-CREATE TABLE Alumno (
-    id_alumno           INT           NOT NULL IDENTITY(1,1),
-    nombre              VARCHAR(50)   NOT NULL,
-    apellido_paterno    VARCHAR(50)   NOT NULL,
-    apellido_materno    VARCHAR(50)       NULL,           
-    usuario             VARCHAR(75)   NOT NULL,
-    contrasena_cifrada  VARCHAR(255)  NOT NULL,
-    grado               VARCHAR(15)   NOT NULL,
-    grupo               VARCHAR(15)       NULL,
-    fecha_registro      DATETIME2     NOT NULL DEFAULT GETDATE(),
-    id_tutor            INT           NOT NULL,           
-    id_estatus          INT           NOT NULL DEFAULT 1,
-    CONSTRAINT PK_Alumno          PRIMARY KEY (id_alumno),
-    CONSTRAINT UQ_Alumno_usuario  UNIQUE      (usuario),
-    CONSTRAINT FK_Alumno_tutor    FOREIGN KEY (id_tutor)   REFERENCES Usuario(id_usuario),
-    CONSTRAINT FK_Alumno_Estatus  FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
-);
+-- Índice UNIQUE filtrado para correo (permite múltiples NULL)
+CREATE UNIQUE INDEX UX_Usuario_correo ON Usuario(correo) WHERE correo IS NOT NULL;
 
 -- ── Ejercicios ──────────────────────────────────────────────
 IF OBJECT_ID('Ejercicios', 'U') IS NULL
@@ -80,14 +73,14 @@ CREATE TABLE Ejercicios_Tutor (
 IF OBJECT_ID('Intentos', 'U') IS NULL
 CREATE TABLE Intentos (
     id_intento           INT         NOT NULL IDENTITY(1,1),
-    id_alumno            INT         NOT NULL,
+    id_usuario           INT         NOT NULL,           -- Alumno que realiza el intento
     id_ejercicio_tutor   INT         NOT NULL,
     imagen_codificada    VARCHAR(MAX) NOT NULL,            
     texto_detectado_ocr  VARCHAR(MAX)    NULL,           
     fecha_envio          DATETIME2   NOT NULL DEFAULT GETDATE(),
     tiempo_respuesta     INT             NULL,           
     CONSTRAINT PK_Intentos          PRIMARY KEY (id_intento),
-    CONSTRAINT FK_Intentos_alumno   FOREIGN KEY (id_alumno)    REFERENCES Alumno(id_alumno),
+    CONSTRAINT FK_Intentos_usuario  FOREIGN KEY (id_usuario)    REFERENCES Usuario(id_usuario),
     CONSTRAINT FK_Intentos_ET       FOREIGN KEY (id_ejercicio_tutor) REFERENCES Ejercicios_Tutor(id_ejercicio_tutor)
 );
 
@@ -95,31 +88,31 @@ CREATE TABLE Intentos (
 IF OBJECT_ID('Progreso_Alumno', 'U') IS NULL
 CREATE TABLE Progreso_Alumno (
     id_progreso          INT            NOT NULL IDENTITY(1,1),
-    id_alumno            INT            NOT NULL,
+    id_usuario           INT            NOT NULL,           -- Usuario tipo 'alumno'
     promedio_ortografia  DECIMAL(5,2)       NULL,
-    aliniacion_score     DECIMAL(5,2)       NULL,
+    alineacion_score     DECIMAL(5,2)       NULL,
     tamano_letra_score   DECIMAL(5,2)       NULL,
     espaciado_score      DECIMAL(5,2)       NULL,
     inclinacion_score    DECIMAL(5,2)       NULL,
     fecha_modificacion   DATETIME2      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_Progreso_Alumno   PRIMARY KEY (id_progreso),
-    CONSTRAINT UQ_Progreso_alumno   UNIQUE      (id_alumno),   
-    CONSTRAINT FK_Progreso_alumno   FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno)
+    CONSTRAINT UQ_Progreso_usuario  UNIQUE      (id_usuario),   
+    CONSTRAINT FK_Progreso_usuario  FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
 );
 
 -- ── Historial del alumno ────────────────────────────────────
 IF OBJECT_ID('Historial_Alumno', 'U') IS NULL
 CREATE TABLE Historial_Alumno (
     id_historial         INT            NOT NULL IDENTITY(1,1),
-    id_alumno            INT            NOT NULL,
+    id_usuario           INT            NOT NULL,           -- Usuario tipo 'alumno'
     promedio_ortografia  DECIMAL(5,2)       NULL,
-    aliniacion_score     DECIMAL(5,2)       NULL,
+    alineacion_score     DECIMAL(5,2)       NULL,
     tamano_letra_score   DECIMAL(5,2)       NULL,
     espaciado_score      DECIMAL(5,2)       NULL,
     inclinacion_score    DECIMAL(5,2)       NULL,
     fecha                DATETIME2      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_Historial_Alumno PRIMARY KEY (id_historial),
-    CONSTRAINT FK_Historial_alumno FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno)
+    CONSTRAINT FK_Historial_usuario FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
 );
 
 -- ── Análisis caligráfico ────────────────────────────────────
@@ -127,7 +120,7 @@ IF OBJECT_ID('Analisis_Caligrafico', 'U') IS NULL
 CREATE TABLE Analisis_Caligrafico (
     id_analisis_caligrafico INT            NOT NULL IDENTITY(1,1),
     id_intento              INT            NOT NULL,
-    aliniacion_score        DECIMAL(5,2)       NULL,
+    alineacion_score        DECIMAL(5,2)       NULL,
     tamano_letra_score      DECIMAL(5,2)       NULL,
     espaciado_score         DECIMAL(5,2)       NULL,
     inclinacion_score       DECIMAL(5,2)       NULL,

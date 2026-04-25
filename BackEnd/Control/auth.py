@@ -35,7 +35,6 @@ class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=6, pattern=r'^[a-zA-Z0-9_]+$')
     email: str
     password: str = Field(..., min_length=8)
-    rol: str = "tutor"
 
     @field_validator('password')
     @classmethod
@@ -69,85 +68,44 @@ async def login(credentials: LoginRequest):
 
     cursor = conn.cursor()
     try:
-        # Primero, consulta a la tabla Usuario (Tutores/Administradores)
-        query_tutor = """
-            SELECT id_usuario, contrasena_cifrada, nombre, rol, id_estatus 
+        # Consulta unificada a la tabla Usuario
+        query = """
+            SELECT id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus 
             FROM Usuario
             WHERE username = ?
         """
-        cursor.execute(query_tutor, credentials.username)
+        cursor.execute(query, credentials.username)
         user = cursor.fetchone()
 
-        if user:
-            # Usuario es tutor/administrador
-            id_usuario, contrasena_cifrada, nombre, rol, id_estatus = user
-
-            # Verificar estatus activo (id_estatus = 1 según catálogo)
-            if id_estatus != 1:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="El usuario no se encuentra activo"
-                )
-
-            # Verificar la contraseña
-            if not verify_password(credentials.password, contrasena_cifrada):
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Usuario o contraseña incorrectos"
-                )
-
-            # Generar Token para Tutor
-            token_payload = {
-                "id_usuario": id_usuario,
-                "nombre": nombre,
-                "rol": rol,
-                "tipo_usuario": "tutor"
-            }
-            token = create_access_token(token_payload)
-
-            return {
-                "message": "Inicio de sesión exitoso",
-                "token": token
-            }
-        
-        # Si no es tutor, buscar en la tabla Alumno
-        query_alumno = """
-            SELECT id_alumno, contrasena_cifrada, nombre, id_estatus 
-            FROM Alumno
-            WHERE usuario = ?
-        """
-        cursor.execute(query_alumno, credentials.username)
-        alumno = cursor.fetchone()
-
-        if not alumno:
+        if not user:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Usuario o contraseña incorrectos"
             )
 
-        id_alumno, contrasena_cifrada_alumno, nombre_alumno, id_estatus_alumno = alumno
+        id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus = user
 
-        # Verificar estatus activo
-        if id_estatus_alumno not in (1, 2):
+        # Verificar estatus activo (id_estatus = 1 según catálogo)
+        if id_estatus != 1:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="El alumno no se encuentra activo"
+                detail="El usuario no se encuentra activo"
             )
 
-        # Verificar la contraseña del alumno
-        if not verify_password(credentials.password, contrasena_cifrada_alumno):
+        # Verificar la contraseña
+        if not verify_password(credentials.password, contrasena_cifrada):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Usuario o contraseña incorrectos"
             )
 
-        # Generar Token para Alumno
+        # Generar Token unificado
         token_payload = {
-            "id_usuario": id_alumno,
-            "nombre": nombre_alumno,
-            "rol": "alumno",
-            "tipo_usuario": "alumno"
+            "id_usuario": id_usuario,
+            "nombre": nombre,
+            "tipo_usuario": tipo_usuario
         }
+        
         token = create_access_token(token_payload)
 
         return {
@@ -196,10 +154,10 @@ async def register(user_data: RegisterRequest):
         hashed_password = get_password_hash(user_data.password)
         
         query = """
-            INSERT INTO Usuario (nombre, username, correo, contrasena_cifrada, rol, id_estatus)
-            VALUES (?, ?, ?, ?, ?, 1)
+            INSERT INTO Usuario (nombre, username, correo, contrasena_cifrada, tipo_usuario, id_estatus)
+            VALUES (?, ?, ?, ?, 'tutor', 1)
         """
-        cursor.execute(query, (user_data.nombre, user_data.username, user_data.email, hashed_password, user_data.rol))
+        cursor.execute(query, (user_data.nombre, user_data.username, user_data.email, hashed_password))
         conn.commit()
 
         return {"message": "Usuario registrado exitosamente"}

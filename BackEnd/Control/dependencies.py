@@ -20,16 +20,14 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         id_usuario: int = payload.get("id_usuario")
-        rol: str = payload.get("rol")
         tipo_usuario: str = payload.get("tipo_usuario")
         nombre: str = payload.get("nombre")
         
-        if id_usuario is None or rol is None:
+        if id_usuario is None or tipo_usuario is None:
             raise credentials_exception
             
         return {
             "id_usuario": id_usuario,
-            "rol": rol,
             "tipo_usuario": tipo_usuario,
             "nombre": nombre
         }
@@ -39,11 +37,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         raise credentials_exception
 
 async def require_tutor(current_user: dict = Depends(get_current_user)):
-    if current_user.get("rol") != "tutor":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Se requiere rol de tutor.")
+    if current_user.get("tipo_usuario") != "tutor":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Se requiere ser tutor.")
     return current_user
 
 async def require_alumno(current_user: dict = Depends(get_current_user)):
-    if current_user.get("rol") != "alumno":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Se requiere rol de alumno.")
+    if current_user.get("tipo_usuario") != "alumno":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado. Se requiere ser alumno.")
     return current_user

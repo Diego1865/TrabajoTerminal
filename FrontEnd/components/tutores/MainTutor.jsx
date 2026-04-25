@@ -32,6 +32,7 @@ const getTutorFromStorage = () => {
   }
 };
 
+const getTipoUsuario = () => getTutorFromStorage()?.tipo_usuario;
 const getToken = () => localStorage.getItem("token");
 const getTutorId = () => getTutorFromStorage()?.id_usuario;
 const getNombreTutor = () => getTutorFromStorage()?.nombre || "Tutor";
@@ -64,12 +65,27 @@ export default function MainTutor({ onLogout }) {
 
   const idTutor = getTutorId();
   const nombreTutor = getNombreTutor();
+  const tipoUsuario = getTipoUsuario();
 
   const fecha = new Date().toLocaleDateString("es-MX", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
+
+  // Verificar que el usuario es tutor
+  useEffect(() => {
+    
+    if (!tipoUsuario) {
+      console.warn('MainTutor: No hay tipo_usuario');
+      return;
+    }
+    
+    if (tipoUsuario !== 'tutor') {
+      console.warn('Acceso denegado: usuario no es tutor. tipo_usuario:', tipoUsuario);
+      onLogout();
+    }
+  }, [tipoUsuario, onLogout]);
 
   useEffect(() => {
     if (!idTutor || tab !== "inicio") return;
@@ -231,7 +247,7 @@ export default function MainTutor({ onLogout }) {
     { key: "inicio", label: "Inicio" },
     { key: "ejercicios", label: "Ejercicios" },
     { key: "alumnos", label: "Agregar alumnos" },
-    { key: "perfil", label: "Mi perfil" },
+    { key: "perfil", label: "Perfil" },
   ];
 
   return (

@@ -31,7 +31,7 @@ class DeleteAccount(BaseModel):
 
 @router.put("/tutor/nombre")
 async def actualizar_nombre_tutor(data: TutorUpdate, current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
+    if current_user["tipo_usuario"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
     
     conn = connect_to_database()
     cursor = conn.cursor()
@@ -45,7 +45,7 @@ async def actualizar_nombre_tutor(data: TutorUpdate, current_user: dict = Depend
 
 @router.put("/tutor/correo")
 async def actualizar_correo_tutor(data: EmailUpdate, current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
+    if current_user["tipo_usuario"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
     
     conn = connect_to_database()
     cursor = conn.cursor()
@@ -65,7 +65,7 @@ async def actualizar_correo_tutor(data: EmailUpdate, current_user: dict = Depend
 
 @router.put("/tutor/password")
 async def actualizar_password_tutor(data: PasswordUpdate, current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
+    if current_user["tipo_usuario"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
     
     conn = connect_to_database()
     cursor = conn.cursor()
@@ -85,7 +85,7 @@ async def actualizar_password_tutor(data: PasswordUpdate, current_user: dict = D
 
 @router.delete("/tutor/cuenta")
 async def eliminar_cuenta_tutor(data: DeleteAccount, current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
+    if current_user["tipo_usuario"] != "tutor": raise HTTPException(status_code=403, detail="Acceso denegado")
     
     conn = connect_to_database()
     cursor = conn.cursor()
@@ -105,15 +105,15 @@ async def eliminar_cuenta_tutor(data: DeleteAccount, current_user: dict = Depend
 
 @router.put("/alumno/info")
 async def actualizar_info_alumno(data: AlumnoUpdate, current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "alumno": raise HTTPException(status_code=403, detail="Acceso denegado")
+    if current_user.get("tipo_usuario") != "alumno": raise HTTPException(status_code=403, detail="Acceso denegado")
     
     conn = connect_to_database()
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            UPDATE Alumno 
+            UPDATE Usuario 
             SET nombre = ?, apellido_paterno = ?, apellido_materno = ?, grupo = ? 
-            WHERE id_alumno = ?
+            WHERE id_usuario = ?
         """, (data.nombre, data.apellido_paterno, data.apellido_materno, data.grupo, current_user["id_usuario"]))
         conn.commit()
         return {"message": "Información actualizada correctamente"}
@@ -123,18 +123,18 @@ async def actualizar_info_alumno(data: AlumnoUpdate, current_user: dict = Depend
 
 @router.put("/alumno/password")
 async def actualizar_password_alumno(data: PasswordUpdate, current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "alumno": raise HTTPException(status_code=403, detail="Acceso denegado")
+    if current_user.get("tipo_usuario") != "alumno": raise HTTPException(status_code=403, detail="Acceso denegado")
     
     conn = connect_to_database()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT contrasena_cifrada FROM Alumno WHERE id_alumno = ?", (current_user["id_usuario"],))
+        cursor.execute("SELECT contrasena_cifrada FROM Usuario WHERE id_usuario = ?", (current_user["id_usuario"],))
         hash_db = cursor.fetchone()[0]
         if not verify_password(data.contrasena_actual, hash_db):
             raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
             
         nuevo_hash = get_password_hash(data.nueva_contrasena)
-        cursor.execute("UPDATE Alumno SET contrasena_cifrada = ? WHERE id_alumno = ?", (nuevo_hash, current_user["id_usuario"]))
+        cursor.execute("UPDATE Usuario SET contrasena_cifrada = ? WHERE id_usuario = ?", (nuevo_hash, current_user["id_usuario"]))
         conn.commit()
         return {"message": "Contraseña actualizada correctamente"}
     finally:
@@ -143,7 +143,7 @@ async def actualizar_password_alumno(data: PasswordUpdate, current_user: dict = 
 
 @router.get("/alumno/estado-tutor")
 async def verificar_estado_tutor(current_user: dict = Depends(get_current_user)):
-    if current_user["rol"] != "alumno": raise HTTPException(status_code=403, detail="Acceso denegado")
+    if current_user.get("tipo_usuario") != "alumno": raise HTTPException(status_code=403, detail="Acceso denegado")
     
     conn = connect_to_database()
     cursor = conn.cursor()
@@ -152,8 +152,7 @@ async def verificar_estado_tutor(current_user: dict = Depends(get_current_user))
         cursor.execute("""
             SELECT u.id_estatus 
             FROM Usuario u
-            JOIN Alumno a ON u.id_usuario = a.id_tutor
-            WHERE a.id_alumno = ?
+            WHERE u.id_usuario = (SELECT id_tutor FROM Usuario WHERE id_usuario = ? AND tipo_usuario = 'alumno')
         """, (current_user["id_usuario"],))
         
         row = cursor.fetchone()
