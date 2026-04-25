@@ -448,8 +448,4 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor }) => {
   );
 };
 
-export default function App({ idEjercicio = "ejercicio-prueba-01" }) {
-  return (
-    <LienzoDigital idEjercicioTutor={idEjercicio} />
-  );
-}
+export default LienzoDigital;
