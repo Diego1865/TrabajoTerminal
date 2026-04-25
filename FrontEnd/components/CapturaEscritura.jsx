@@ -49,10 +49,6 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar }) => {
         return;
     }
 
-<<<<<<< Updated upstream
-    console.log("Enviando imagen al Controlador...");
-    alert("¡Tarea enviada! Ahora la revisaremos.");
-=======
     try {
         setEnviando(true);
         setError('');
@@ -100,7 +96,6 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar }) => {
     } finally {
         setEnviando(false);
     }
->>>>>>> Stashed changes
     };
 
 
