@@ -203,29 +203,54 @@ async def get_ejercicios_completados(id_alumno: int, current_user: dict = Depend
     conn = connect_to_database()
     cursor = conn.cursor()
     try:
+        # Se utiliza CTE (Common Table Expression) con ROW_NUMBER 
+        # para obtener toda la información del último envío por ejercicio.
         cursor.execute("""
-            SELECT DISTINCT
-                et.id_ejercicio_tutor, e.id_ejercicio, e.titulo,
-                e.descripcion, e.tipo, et.fecha_desactivacion as fecha_fin,
-                MAX(i.fecha_envio) AS fecha_envio
-            FROM Intentos i
-            JOIN Ejercicios_Tutor et ON i.id_ejercicio_tutor = et.id_ejercicio_tutor
+            WITH UltimosIntentos AS (
+                SELECT 
+                    id_ejercicio_tutor,
+                    fecha_envio,
+                    imagen_codificada,
+                    texto_detectado_ocr,
+                    -- puntuacion,         -- Descomentar si la columna existe en la tabla Intentos
+                    -- retroalimentacion,  -- Descomentar si la columna existe en la tabla Intentos
+                    ROW_NUMBER() OVER(PARTITION BY id_ejercicio_tutor ORDER BY fecha_envio DESC) as rn
+                FROM Intentos
+                WHERE id_usuario = ?
+            )
+            SELECT 
+                et.id_ejercicio_tutor, 
+                e.id_ejercicio, 
+                e.titulo,
+                e.descripcion, 
+                e.tipo, 
+                et.fecha_desactivacion as fecha_fin,
+                ui.fecha_envio,
+                ui.imagen_codificada,
+                ui.texto_detectado_ocr
+                -- ui.puntuacion,
+                -- ui.retroalimentacion
+            FROM UltimosIntentos ui
+            JOIN Ejercicios_Tutor et ON ui.id_ejercicio_tutor = et.id_ejercicio_tutor
             JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
-            WHERE i.id_usuario = ?
-            GROUP BY 
-                et.id_ejercicio_tutor, e.id_ejercicio, e.titulo,
-                e.descripcion, e.tipo, et.fecha_desactivacion
+            WHERE ui.rn = 1
         """, id_alumno)
+        
         rows = cursor.fetchall()
+        
         return [
             {
-                "id_ejercicio_tutor": r[0],
-                "id_ejercicio":       r[1],
-                "titulo":             r[2],
-                "descripcion":        r[3],
-                "tipo":               r[4],
-                "fecha_desactivacion":r[5],
-                "fecha_envio":        r[6],
+                "id_ejercicio_tutor":  r[0],
+                "id_ejercicio":        r[1],
+                "titulo":              r[2],
+                "descripcion":         r[3],
+                "tipo":                r[4],
+                "fecha_desactivacion": r[5],
+                "fecha_envio":         r[6],
+                "imagen_codificada":   r[7],
+                "texto_detectado_ocr": r[8],
+                # "puntuacion":        r[9],
+                # "retroalimentacion": r[10]
             }
             for r in rows
         ]
