@@ -212,8 +212,8 @@ async def get_ejercicios_completados(id_alumno: int, current_user: dict = Depend
                     fecha_envio,
                     imagen_codificada,
                     texto_detectado_ocr,
-                    -- puntuacion,         -- Descomentar si la columna existe en la tabla Intentos
-                    -- retroalimentacion,  -- Descomentar si la columna existe en la tabla Intentos
+                    puntuacion,         
+                    retroalimentacion,  
                     ROW_NUMBER() OVER(PARTITION BY id_ejercicio_tutor ORDER BY fecha_envio DESC) as rn
                 FROM Intentos
                 WHERE id_usuario = ?
@@ -227,9 +227,9 @@ async def get_ejercicios_completados(id_alumno: int, current_user: dict = Depend
                 et.fecha_desactivacion as fecha_fin,
                 ui.fecha_envio,
                 ui.imagen_codificada,
-                ui.texto_detectado_ocr
-                -- ui.puntuacion,
-                -- ui.retroalimentacion
+                ui.texto_detectado_ocr,
+                ui.puntuacion,
+                ui.retroalimentacion
             FROM UltimosIntentos ui
             JOIN Ejercicios_Tutor et ON ui.id_ejercicio_tutor = et.id_ejercicio_tutor
             JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
@@ -249,8 +249,8 @@ async def get_ejercicios_completados(id_alumno: int, current_user: dict = Depend
                 "fecha_envio":         r[6],
                 "imagen_codificada":   r[7],
                 "texto_detectado_ocr": r[8],
-                # "puntuacion":        r[9],
-                # "retroalimentacion": r[10]
+                "puntuacion":          r[9],
+                "retroalimentacion":   r[10]
             }
             for r in rows
         ]

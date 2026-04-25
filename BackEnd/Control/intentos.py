@@ -23,7 +23,69 @@ class IntentoTutorResponse(BaseModel):
     imagen_codificada: str
     texto_detectado_ocr: Optional[str] = None
 
+class CalificarIntentoRequest(BaseModel):
+    calificacion: int
+    retroalimentacion: Optional[str] = None
+
 # --- Endpoints ---
+
+@router.put("/calificar/{id_intento}")
+async def calificar_intento(
+    id_intento: int, 
+    datos: CalificarIntentoRequest, 
+    current_user: dict = Depends(require_tutor)
+):
+    """
+    Actualiza la calificación y retroalimentación de un intento específico.
+    Verifica que el tutor tenga permiso sobre el alumno del intento.
+    """
+    id_tutor = current_user["id_usuario"]
+    conn = connect_to_database()
+    if not conn:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Error de conexión a la base de datos"
+        )
+
+    cursor = conn.cursor()
+    try:
+        # Verificar que el intento existe y pertenece a un alumno del tutor logueado
+        cursor.execute("""
+            SELECT i.id_intento 
+            FROM Intentos i
+            JOIN Usuario a ON i.id_usuario = a.id_usuario
+            WHERE i.id_intento = ? AND a.id_tutor = ? AND a.tipo_usuario = 'alumno'
+        """, (id_intento, id_tutor))
+        
+        if not cursor.fetchone():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="No tienes permiso para calificar este intento o el intento no existe."
+            )
+
+        # Actualizar el registro en la tabla Intentos
+        # Nota: Asegúrate de que las columnas 'puntuacion' y 'retroalimentacion' existan en tu tabla
+        cursor.execute("""
+            UPDATE Intentos
+            SET puntuacion = ?, retroalimentacion = ?
+            WHERE id_intento = ?
+        """, (datos.calificacion, datos.retroalimentacion, id_intento))
+        
+        conn.commit()
+
+        return {"message": "Calificación registrada correctamente."}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Error al calificar: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error al procesar la calificación: {str(e)}"
+        )
+    finally:
+        cursor.close()
+        conn.close()
 
 @router.post("/registrar", status_code=status.HTTP_201_CREATED)
 async def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(require_alumno)):
@@ -111,7 +173,9 @@ async def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends
                 e.titulo, 
                 i.fecha_envio, 
                 i.imagen_codificada,
-                i.texto_detectado_ocr
+                i.texto_detectado_ocr,
+                i.puntuacion,        
+                i.retroalimentacion  
             FROM Intentos i
             INNER JOIN Usuario a ON i.id_usuario = a.id_usuario
             INNER JOIN Ejercicios_Tutor et ON i.id_ejercicio_tutor = et.id_ejercicio_tutor
