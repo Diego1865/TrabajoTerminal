@@ -106,7 +106,7 @@ const DashboardAlumno = ({ onLogout }) => {
           {ejercicioActivo?.descripcion}
         </p>
 
-        <div className="flex bg-white p-1 rounded-xl shadow-sm border border-blue-100 mb-8">
+        <div className="flex bg-white p-1 rounded-xl shadow-sm border border-blue-100 mb-2">
           <button
             onClick={() => setModoVista('lienzo')}
             className={`px-6 py-2 rounded-lg font-medium transition-all ${modoVista === 'lienzo' ? 'bg-blue-100 text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
@@ -123,9 +123,15 @@ const DashboardAlumno = ({ onLogout }) => {
 
         <div className="w-full max-w-2xl">
           {modoVista === 'camara' ? (
-            <CapturaEscritura />
+            <CapturaEscritura 
+              idEjercicioTutor={ejercicioActivo?.id_ejercicio_tutor}
+              alTerminar={handleTerminarEjercicio}
+            />
           ) : (
-            <LienzoDigital alTerminar={handleTerminarEjercicio} />
+            <LienzoDigital 
+              alTerminar={handleTerminarEjercicio}
+              idEjercicioTutor={ejercicioActivo?.id_ejercicio_tutor}
+            />
           )}
         </div>
       </div>

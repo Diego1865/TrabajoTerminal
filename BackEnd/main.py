@@ -5,6 +5,7 @@ from Control.alumnos import router as alumnos_router
 from Control.ejercicios import router as ejercicios_router
 from Control.tareas.cerrar_ejercicio import iniciar_scheduler
 from Control.perfil import router as perfil_router
+from Control.intentos import router as intentos_router
 
 app = FastAPI()
 
@@ -21,6 +22,7 @@ app.include_router(auth_router, prefix="/api/auth", tags=["Autenticacion"])
 app.include_router(alumnos_router, prefix="/api/alumnos", tags=["alumnos"])
 app.include_router(ejercicios_router, prefix="/api/ejercicios", tags=["ejercicios"])
 app.include_router(perfil_router, prefix="/api/perfil", tags=["Perfil"])
+app.include_router(intentos_router, prefix="/api/intentos",tags=["Intentos"])
 
 @app.get('/')
 async def read_root():

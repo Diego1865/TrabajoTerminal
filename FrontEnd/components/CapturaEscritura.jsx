@@ -1,10 +1,11 @@
 'use client';
 import React, { useState, useRef } from 'react';
-import { Camera, Upload, X, CheckCircle } from 'lucide-react';
+import { Camera, Upload, X, CheckCircle, Loader } from 'lucide-react';
 
-const CapturaEscritura = () => {
+const CapturaEscritura = ({ idEjercicioTutor, alTerminar }) => {
     const [imagenPreview, setImagenPreview] = useState(null);
     const [error, setError] = useState('');
+    const [enviando, setEnviando] = useState(false);
     const fileInputRef = useRef(null);
 
     // Manejar la selección de archivos
@@ -42,14 +43,64 @@ const CapturaEscritura = () => {
     };
 
     // Simulación de envío al Controlador (Backend) [cite: 90]
-    const enviarCaptura = () => {
+    const enviarCaptura = async () => {
         if (!imagenPreview) {
         setError('Primero debes tomar una foto de tu tarea.');
         return;
     }
 
+<<<<<<< Updated upstream
     console.log("Enviando imagen al Controlador...");
     alert("¡Tarea enviada! Ahora la revisaremos.");
+=======
+    try {
+        setEnviando(true);
+        setError('');
+
+        // Validar que hay un id_ejercicio_tutor
+        if (!idEjercicioTutor) {
+            setError("Error: No se especificó el ejercicio. Por favor, recarga la página.");
+            setEnviando(false);
+            return;
+        }
+
+        // Obtener el token del localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+            setError("Error: Sesión expirada. Por favor, inicia sesión nuevamente.");
+            setEnviando(false);
+            return;
+        }
+
+        // Hacer fetch al backend
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/intentos/registrar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                id_ejercicio_tutor: idEjercicioTutor,
+                imagen_codificada: imagenPreview
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Error al enviar el intento');
+        }
+
+        alert("¡Foto enviada correctamente! La revisión automática está en proceso.");
+        limpiarCaptura();
+        if (alTerminar) alTerminar(imagenPreview);
+
+    } catch (error) {
+        console.error("Error al enviar:", error);
+        setError(`Error: ${error.message || 'No se pudo enviar la foto'}`);
+    } finally {
+        setEnviando(false);
+    }
+>>>>>>> Stashed changes
     };
 
 
@@ -144,16 +195,24 @@ const CapturaEscritura = () => {
 
         <button
             onClick={enviarCaptura}
-            disabled={!imagenPreview}
+            disabled={!imagenPreview || enviando}
             className={`w-full py-3 rounded-xl font-bold text-lg flex items-center justify-center gap-2
 
-            ${imagenPreview 
-
+            ${imagenPreview && !enviando
                 ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md' 
                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
         >
-        <CheckCircle/>
+        {enviando ? (
+            <>
+                <Loader size={20} className="animate-spin" />
+                Enviando...
+            </>
+        ) : (
+            <>
+                <CheckCircle/>
                 Enviar para Revisión
+            </>
+        )}
         </button>
     </div>
     );
