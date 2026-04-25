@@ -106,6 +106,8 @@ async def activar_ejercicio(data: EjercicioTutorCreate, current_user: dict = Dep
         """, (data.id_ejercicio, data.id_usuario))
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="El ejercicio ya está activado")
+        
+        print("Fecha de desactivación:", data.fecha_fin)
 
         cursor.execute("""
             INSERT INTO Ejercicios_Tutor (id_ejercicio, id_usuario, id_estatus, fecha_desactivacion)

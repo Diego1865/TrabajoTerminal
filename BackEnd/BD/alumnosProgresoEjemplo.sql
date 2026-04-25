@@ -277,4 +277,58 @@ GROUP BY
 ORDER BY cantidad_alumnos DESC;
 
 
+WITH PromedialidadAlumnos AS (
+                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
+                    p.promedio_ortografia,
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
+            )
+            SELECT *
+            FROM PromedialidadAlumnos
+            WHERE promedio_ortografia > 8.0 
+            AND promedio_legibilidad > 8.0;
+
+
+WITH PromedialidadAlumnos AS (
+                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
+                    p.promedio_ortografia,
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
+            )
+            SELECT *
+            FROM PromedialidadAlumnos
+            where promedio_ortografia + promedio_legibilidad / 2 >= 6.0
+            or promedio_ortografia + promedio_legibilidad / 2 <= 8.0;
+
+
+WITH PromedialidadAlumnos AS (
+                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
+                    p.promedio_ortografia,
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
+            )
+            SELECT *
+            FROM PromedialidadAlumnos
+            WHERE promedio_ortografia + promedio_legibilidad / 2 < 6.0;
+
+WITH PromedialidadAlumnos AS (
+                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
+                    p.promedio_ortografia,
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
+            )
+            SELECT *
+            FROM PromedialidadAlumnos
+            where (promedio_ortografia + promedio_legibilidad) / 2 > 8.0;
+            
+
 SELECT * from Progreso_Alumno
+

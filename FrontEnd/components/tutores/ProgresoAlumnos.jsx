@@ -13,7 +13,7 @@ function transformarDatos(datos) {
   }));
 }
 
-export default function ProgresoAlumnos({ progreso = { ortografia: [], legibilidad: [] } }) {
+export default function ProgresoAlumnos({ progreso = { ortografia: [], legibilidad: [] }, onCategoriaClick }) {
   const [tab, setTab] = useState("ortografia");
   const [ancho, setAncho] = useState(500);
   const contenedorRef = useRef(null);
@@ -98,7 +98,11 @@ export default function ProgresoAlumnos({ progreso = { ortografia: [], legibilid
           </>
         ) : (
         
-          <DonutChart width={ancho} height={altoDonut} data={data} />
+          <DonutChart width={ancho}
+           height={altoDonut}
+           data={data}
+           onSliceClick={onCategoriaClick} 
+          />
         )}
       </div>
     </div>

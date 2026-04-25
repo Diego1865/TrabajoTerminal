@@ -28,7 +28,7 @@ class AlumnoResponse(BaseModel):
     grado: str
     grupo: Optional[str]
 
-class AlumnoEnRiesgoResponse(BaseModel):
+class AlumnoProgresoResponse(BaseModel):
     id_alumno: int
     nombre: str
     apellido_paterno: str
@@ -153,7 +153,7 @@ async def dar_de_baja_alumno(id_alumno: int, current_user: dict = Depends(requir
 
 # Alumnos en riesgo
 
-@router.get("/riesgo/{id_tutor}", response_model=List[AlumnoEnRiesgoResponse])
+@router.get("/riesgo/{id_tutor}", response_model=List[AlumnoProgresoResponse])
 async def obtener_alumnos_en_riesgo(id_tutor: int, current_user: dict = Depends(require_tutor)):
     if current_user["id_usuario"] != id_tutor:
         raise HTTPException(status_code=403, detail="No tiene permiso para ver los alumnos en riesgo de otro tutor.")
@@ -168,15 +168,16 @@ async def obtener_alumnos_en_riesgo(id_tutor: int, current_user: dict = Depends(
             WITH PromedialidadAlumnos AS (
                 SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
                     p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
+                    (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
                 FROM Usuario a
                 JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
                 WHERE a.id_tutor = ? AND a.tipo_usuario = 'alumno'
             )
             SELECT *
             FROM PromedialidadAlumnos
-            WHERE promedio_ortografia < 6.0 
-            OR promedio_legibilidad < 6.0
+            where promedio_general < 6.0;
+           
         """
         cursor.execute(query, id_tutor)
         rows = cursor.fetchall()
@@ -189,7 +190,8 @@ async def obtener_alumnos_en_riesgo(id_tutor: int, current_user: dict = Depends(
                 "apellido_paterno": row[2],
                 "apellido_materno": row[3],
                 "promedio_ortografia": row[4],
-                "promedio_legibilidad": row[5]
+                "promedio_legibilidad": row[5],
+                "promedio_general": row[6]
             })
 
         return alumnos_en_riesgo
@@ -200,6 +202,105 @@ async def obtener_alumnos_en_riesgo(id_tutor: int, current_user: dict = Depends(
         cursor.close()
         conn.close()
 
+#Alumnos regulares
+
+@router.get("/regular/{id_tutor}", response_model=List[AlumnoProgresoResponse])
+async def obtener_alumnos_regular(id_tutor: int, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != id_tutor:
+        raise HTTPException(status_code=403, detail="No tiene permiso para ver los alumnos regulares de otro tutor.")
+    
+    conn = connect_to_database()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    
+    cursor = conn.cursor()
+    try:
+        query = """
+            WITH PromedialidadAlumnos AS (
+                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
+                    p.promedio_ortografia,
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
+                    (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = ? AND a.tipo_usuario = 'alumno'
+            )
+            SELECT *
+            FROM PromedialidadAlumnos
+            where promedio_general >= 6.0
+            and promedio_general <= 8.0;
+        """
+        cursor.execute(query, id_tutor)
+        rows = cursor.fetchall()
+
+        alumnos_regulares = []
+        for row in rows:
+            alumnos_regulares.append({
+                "id_alumno": row[0],
+                "nombre": row[1],
+                "apellido_paterno": row[2],
+                "apellido_materno": row[3],
+                "promedio_ortografia": row[4],
+                "promedio_legibilidad": row[5],
+                "promedio_general": row[6]
+            })
+
+        return alumnos_regulares
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener alumnos regulares: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+        
+#Alumnos de excelencia
+
+@router.get("/excelencia/{id_tutor}", response_model=List[AlumnoProgresoResponse])
+async def obtener_alumnos_excelencia(id_tutor: int, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != id_tutor:
+        raise HTTPException(status_code=403, detail="No tiene permiso para ver los alumnos de excelencia de otro tutor.")
+    
+    conn = connect_to_database()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        query = """
+            WITH PromedialidadAlumnos AS (
+                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
+                    p.promedio_ortografia,
+                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
+                    (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
+                FROM Usuario a
+                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
+                WHERE a.id_tutor = ? AND a.tipo_usuario = 'alumno'
+            )
+            SELECT *
+            FROM PromedialidadAlumnos
+            where promedio_general > 8.0;
+        """
+        cursor.execute(query, id_tutor)
+        rows = cursor.fetchall()
+
+        alumnos_excelencia = []
+        for row in rows:
+            alumnos_excelencia.append({
+                "id_alumno": row[0],
+                "nombre": row[1],
+                "apellido_paterno": row[2],
+                "apellido_materno": row[3],
+                "promedio_ortografia": row[4],
+                "promedio_legibilidad": row[5],
+                "promedio_general": row[6]
+            })
+
+        return alumnos_excelencia
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener alumnos de excelencia: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @router.get("/progreso/{id_tutor}")

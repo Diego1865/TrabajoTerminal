@@ -1,11 +1,13 @@
 ﻿import { useEffect, useState, useRef } from "react";
 import { LogOut, UserPlus, Trash2, Loader2 } from "lucide-react";
-import AlumnosEnRiesgo from "./AlumnosEnRiesgo";
+import AlumnosCategoria from "./AlumnosCategoria";
 import ProgresoAlumnos from "./ProgresoAlumnos";
 import TabEjercicios from "../TabEjercicios";
 import PerfilTutor from "./PerfilTutor"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+
 
 // 1. Función para decodificar el payload del JWT
 const decodificarJwt = (token) => {
@@ -39,9 +41,10 @@ const getNombreTutor = () => getTutorFromStorage()?.nombre || "Tutor";
 
 export default function MainTutor({ onLogout }) {
   const [tab, setTab] = useState("inicio");
-  const [alumnosEnRiesgo, setAlumnosEnRiesgo] = useState([]);
-  const [loadingRiesgo, setLoadingRiesgo] = useState(true);
-  const [errorRiesgo, setErrorRiesgo] = useState(null);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("riesgo"); 
+  const [alumnosCategoria, setAlumnosCategoria] = useState([]);
+  const [loadingCategoria, setLoadingCategoria] = useState(false);
+  const [errorCategoria, setErrorCategoria] = useState(null);
 
   const [alumnosProgreso, setAlumnosProgreso] = useState([]);
   const [loadingProgreso, setLoadingProgreso] = useState(true);
@@ -90,21 +93,20 @@ export default function MainTutor({ onLogout }) {
   useEffect(() => {
     if (!idTutor || tab !== "inicio") return;
 
-    const fetchAlumnosEnRiesgo = async () => {
-      setLoadingRiesgo(true);
-      setErrorRiesgo(null);
+    const fetchAlumnosPorCategoria = async () => {
+      setLoadingCategoria(true);
+      setErrorCategoria(null);
       try {
-        const res = await fetch(`${API_URL}/api/alumnos/riesgo/${idTutor}`, {
-          // 3. Enviar el token en la cabecera
+        const res = await fetch(`${API_URL}/api/alumnos/${categoriaSeleccionada}/${idTutor}`, {
           headers: { "Authorization": `Bearer ${getToken()}` }
         });
-        if (!res.ok) throw new Error("Error al obtener alumnos en riesgo");
         const data = await res.json();
-        setAlumnosEnRiesgo(data);
+        console.log(`Alumnos categoría ${categoriaSeleccionada}:`, data);
+        setAlumnosCategoria(data);
       } catch (err) {
-        setErrorRiesgo(err.message);
+        setErrorCategoria(err.message);
       } finally {
-        setLoadingRiesgo(false);
+        setLoadingCategoria(false);
       }
     };
 
@@ -126,9 +128,9 @@ export default function MainTutor({ onLogout }) {
       }
     };
 
-    fetchAlumnosEnRiesgo();
+    fetchAlumnosPorCategoria();
     fetchProgreso();
-  }, [idTutor, tab]);
+  }, [idTutor, tab, categoriaSeleccionada]);
 
   useEffect(() => {
     if (tab !== "alumnos") return;
@@ -290,16 +292,18 @@ export default function MainTutor({ onLogout }) {
         {tab === "inicio" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="bg-white rounded-2xl shadow-sm">
-              {loadingRiesgo ? (
+              {loadingCategoria ? (
                 <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
                   Cargando alumnos en riesgo...
                 </div>
-              ) : errorRiesgo ? (
+              ) : errorCategoria ? (
                 <div className="flex items-center justify-center h-48 text-red-400 text-sm">
-                  {errorRiesgo}
+                  {errorCategoria}
                 </div>
               ) : (
-                <AlumnosEnRiesgo alumnos={alumnosEnRiesgo} />
+                <AlumnosCategoria alumnos={alumnosCategoria}
+                 categoria={categoriaSeleccionada}
+                 />
               )}
             </div>
 
@@ -313,7 +317,9 @@ export default function MainTutor({ onLogout }) {
                   {errorProgreso}
                 </div>
               ) : (
-                <ProgresoAlumnos progreso={alumnosProgreso} />
+                <ProgresoAlumnos progreso={alumnosProgreso}
+                 onCategoriaClick={(cat) => setCategoriaSeleccionada(cat)}
+                />
               )}
             </div>
           </div>
