@@ -22,6 +22,8 @@ class IntentoTutorResponse(BaseModel):
     fecha_envio: datetime
     imagen_codificada: str
     texto_detectado_ocr: Optional[str] = None
+    puntuacion: Optional[int] = None
+    retroalimentacion: Optional[str] = None
 
 class CalificarIntentoRequest(BaseModel):
     calificacion: int
@@ -35,21 +37,13 @@ async def calificar_intento(
     datos: CalificarIntentoRequest, 
     current_user: dict = Depends(require_tutor)
 ):
-    """
-    Actualiza la calificación y retroalimentación de un intento específico.
-    Verifica que el tutor tenga permiso sobre el alumno del intento.
-    """
     id_tutor = current_user["id_usuario"]
     conn = connect_to_database()
     if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error de conexión a la base de datos"
-        )
+        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
 
     cursor = conn.cursor()
     try:
-        # Verificar que el intento existe y pertenece a un alumno del tutor logueado
         cursor.execute("""
             SELECT i.id_intento 
             FROM Intentos i
@@ -59,12 +53,10 @@ async def calificar_intento(
         
         if not cursor.fetchone():
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, 
-                detail="No tienes permiso para calificar este intento o el intento no existe."
+                status_code=403, 
+                detail="No tiene permiso para calificar este intento o no existe."
             )
 
-        # Actualizar el registro en la tabla Intentos
-        # Nota: Asegúrate de que las columnas 'puntuacion' y 'retroalimentacion' existan en tu tabla
         cursor.execute("""
             UPDATE Intentos
             SET puntuacion = ?, retroalimentacion = ?
@@ -72,98 +64,55 @@ async def calificar_intento(
         """, (datos.calificacion, datos.retroalimentacion, id_intento))
         
         conn.commit()
-
         return {"message": "Calificación registrada correctamente."}
 
     except HTTPException:
         raise
     except Exception as e:
         print(f"Error al calificar: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error al procesar la calificación: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
     finally:
         cursor.close()
         conn.close()
 
 @router.post("/registrar", status_code=status.HTTP_201_CREATED)
 async def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(require_alumno)):
-    
-    # Registra un nuevo intento de escritura realizado por un alumno.
-    
     conn = connect_to_database()
     if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error de conexión a la base de datos"
-        )
+        raise HTTPException(status_code=500, detail="Error de conexión")
 
     cursor = conn.cursor()
     try:
-        # El id_usuario se extrae de forma segura del token JWT
         id_usuario = current_user["id_usuario"]
-
-        # Verificar que el ejercicio_tutor exista y esté activo
-        cursor.execute("""
-            SELECT id_estatus FROM Ejercicios_Tutor 
-            WHERE id_ejercicio_tutor = ?
-        """, (intento_data.id_ejercicio_tutor,))
-        
+        cursor.execute("SELECT id_estatus FROM Ejercicios_Tutor WHERE id_ejercicio_tutor = ?", (intento_data.id_ejercicio_tutor,))
         ejercicio = cursor.fetchone()
+        
         if not ejercicio:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ejercicio no encontrado.")
-        if ejercicio[0] != 1:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El ejercicio no se encuentra activo.")
-
-        # Insertar el intento usando id_usuario según el nuevo esquema
-        query = """
+            raise HTTPException(status_code=404, detail="Ejercicio no encontrado.")
+        
+        cursor.execute("""
             INSERT INTO Intentos (id_usuario, id_ejercicio_tutor, imagen_codificada)
             VALUES (?, ?, ?)
-        """
-        cursor.execute(query, (
-            id_usuario, 
-            intento_data.id_ejercicio_tutor, 
-            intento_data.imagen_codificada
-        ))
+        """, (id_usuario, intento_data.id_ejercicio_tutor, intento_data.imagen_codificada))
         conn.commit()
-
-        return {"message": "Intento registrado exitosamente. Pendiente de revisión automática."}
-
-    except HTTPException:
-        raise
+        return {"message": "Intento registrado."}
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error al registrar el intento: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
 
-
 @router.get("/tutor/{id_tutor}", response_model=List[IntentoTutorResponse])
 async def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends(require_tutor)):
-    
-    # Obtiene el historial de intentos de todos los alumnos asignados a un tutor específico.
-    
-    # Verificar autorización cruzada
     if current_user["id_usuario"] != id_tutor:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="No tiene permiso para consultar los intentos de los alumnos de otro tutor."
-        )
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
 
     conn = connect_to_database()
     if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error de conexión a la base de datos"
-        )
+        raise HTTPException(status_code=500, detail="Error de conexión")
 
     cursor = conn.cursor()
     try:
-        # Consulta JOIN actualizada para usar la tabla Usuario
         query = """
             SELECT 
                 i.id_intento, 
@@ -196,16 +145,14 @@ async def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends
                 "titulo_ejercicio": row[4],
                 "fecha_envio": row[5],
                 "imagen_codificada": row[6],
-                "texto_detectado_ocr": row[7]
+                "texto_detectado_ocr": row[7],
+                "puntuacion": row[8],
+                "retroalimentacion": row[9]
             })
 
         return intentos
-
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error al obtener los intentos: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         cursor.close()
         conn.close()
