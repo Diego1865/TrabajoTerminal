@@ -78,7 +78,9 @@ CREATE TABLE Intentos (
     imagen_codificada    VARCHAR(MAX) NOT NULL,            
     texto_detectado_ocr  VARCHAR(MAX)    NULL,           
     fecha_envio          DATETIME2   NOT NULL DEFAULT GETDATE(),
-    tiempo_respuesta     INT             NULL,           
+    tiempo_respuesta     INT             NULL,
+    puntuacion           INT             NULL,
+    retroalimentacion    VARCHAR(MAX)    NULL,           
     CONSTRAINT PK_Intentos          PRIMARY KEY (id_intento),
     CONSTRAINT FK_Intentos_usuario  FOREIGN KEY (id_usuario)    REFERENCES Usuario(id_usuario),
     CONSTRAINT FK_Intentos_ET       FOREIGN KEY (id_ejercicio_tutor) REFERENCES Ejercicios_Tutor(id_ejercicio_tutor)

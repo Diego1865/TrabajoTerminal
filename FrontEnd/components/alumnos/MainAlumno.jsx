@@ -4,8 +4,8 @@ import { LogOut, ArrowLeft } from 'lucide-react';
 import TabProximos from './TabProximos';
 import TabCompletados from './TabCompletados';
 import TabVencidos from './TabVencidos';
-import LienzoDigital from '../LienzoDigital';
-import CapturaEscritura from '../CapturaEscritura';
+import LienzoDigital from './LienzoDigital';
+import CapturaEscritura from './CapturaEscritura';
 import PerfilAlumno from './PerfilAlumno';
 import { AlertTriangle } from 'lucide-react';
 
@@ -29,7 +29,7 @@ const decodificarJwt = (token) => {
   }
 };
 
-const DashboardAlumno = ({ onLogout }) => {
+const MainAlumno = ({ onLogout }) => {
   const [pestañaActiva, setPestañaActiva] = useState('proximos');
   const [idAlumno, setIdAlumno] = useState(null);
   const [nombreAlumno, setNombreAlumno] = useState('');
@@ -152,7 +152,7 @@ const DashboardAlumno = ({ onLogout }) => {
     );
   }
 
-  // Renderizado del Dashboard principal
+  // Renderizado del Main principal
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col p-6 relative">
       <button
@@ -214,4 +214,4 @@ const DashboardAlumno = ({ onLogout }) => {
   );
 };
 
-export default DashboardAlumno;
+export default MainAlumno;
