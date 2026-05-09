@@ -133,7 +133,7 @@ const Login = ({ onLogin, onNavigateRegister }) => {
                   cursor: loading ? 'not-allowed' : 'pointer'
                 }}>
                 {loading ? '⏳ Cargando...' : (
-                  <><span>¡Entrar!</span> <span style={{ fontSize: '1.3rem' }}>🚀</span></>
+                  <><span>¡Entrar!</span> <span style={{ fontSize: '1.3rem' }}></span></>
                 )}
               </button>
             </form>
@@ -142,7 +142,7 @@ const Login = ({ onLogin, onNavigateRegister }) => {
               <p className="font-semibold text-gray-600">
                 ¿No tienes cuenta?{' '}
                 <button onClick={onNavigateRegister} className="font-black hover:underline" style={{ color: '#7C3AED' }}>
-                  ¡Regístrate! 🎉
+                  ¡Regístrate!
                 </button>
               </p>
             </div>

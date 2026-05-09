@@ -55,10 +55,10 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
   };
 
   const fields = [
-    { label: '😊 Nombre Tutor', icon: User, type: 'text', placeholder: 'Tu nombre completo', value: nombre, onChange: setNombre, required: true },
-    { label: '🧑‍💻 Nombre de Usuario', icon: UserCheck, type: 'text', placeholder: 'usuario_genial123', value: username, onChange: setUsername, required: true },
-    { label: '📧 Correo Electrónico', icon: Mail, type: 'email', placeholder: 'correo@ejemplo.com', value: email, onChange: setEmail, required: true },
-    { label: '🔒 Contraseña', icon: Lock, type: 'password', placeholder: '••••••••', value: password, onChange: setPassword, required: true },
+    { label: 'Nombre Tutor', icon: User, type: 'text', placeholder: 'Tu nombre completo', value: nombre, onChange: setNombre, required: true },
+    { label: 'Nombre de Usuario', icon: UserCheck, type: 'text', placeholder: 'usuario_genial123', value: username, onChange: setUsername, required: true },
+    { label: 'Correo Electrónico', icon: Mail, type: 'email', placeholder: 'correo@ejemplo.com', value: email, onChange: setEmail, required: true },
+    { label: 'Contraseña', icon: Lock, type: 'password', placeholder: '••••••••', value: password, onChange: setPassword, required: true },
   ];
 
   return (
@@ -151,7 +151,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
               <p className="font-semibold text-gray-600">
                 ¿Ya tienes cuenta?{' '}
                 <button onClick={onNavigateLogin} className="font-black hover:underline" style={{ color: '#059669' }}>
-                  Inicia sesión 👋
+                  Inicia sesión
                 </button>
               </p>
             </div>
