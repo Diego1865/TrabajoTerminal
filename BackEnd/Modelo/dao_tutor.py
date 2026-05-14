@@ -1,5 +1,6 @@
 from Modelo.database import connect_to_database
 
+#Funciones relacionadas con el tutor y sus alumnos
 def registrar_alumno_dao(alumno_data, hashed_password):
     conn = connect_to_database()
     if not conn:
@@ -291,6 +292,7 @@ def obtener_progreso_grafico_dao(id_tutor):
         cursor.close()
         conn.close()
 
+#Perfil del tutor
 def actualizar_nombre_tutor_dao(nombre, id_usuario):
     conn = connect_to_database()
     if not conn:
@@ -341,6 +343,100 @@ def eliminar_cuenta_tutor(id_usuario):
         # Cambiar estatus a 3 (eliminado) o 2 (inactivo)
         cursor.execute("UPDATE Usuario SET id_estatus = 3 WHERE id_usuario = ?", (id_usuario,))
         conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+#Intentos relacionados al tutor
+def obtener_intento_tutor_dao(id_intento, id_usuario_tutor):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        # Se hace JOIN con Alumno y Tutor para validar los permisos
+        cursor.execute("""
+            SELECT i.id_intento
+            FROM Intentos i
+            JOIN Alumno a ON i.id_alumno = a.id_alumno
+            JOIN Tutor t ON a.id_tutor = t.id_tutor
+            WHERE i.id_intento = ? AND t.id_usuario = ?
+        """, (id_intento, id_usuario_tutor))
+        
+        row = cursor.fetchone()
+        if not row:
+            raise PermissionError("No tiene permiso para acceder a este intento o no existe.")
+        
+        return True
+    finally:
+        cursor.close()
+        conn.close()
+
+def calificar_intento_dao(id_intento, calificacion, retroalimentacion):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            UPDATE Intentos
+            SET puntuacion = ?, retroalimentacion = ?
+            WHERE id_intento = ?
+        """, (calificacion, retroalimentacion, id_intento))
+        
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+def obtener_intentos_por_tutor_dao(id_usuario_tutor):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        query = """
+            SELECT 
+                i.id_intento, 
+                u.id_usuario,
+                a.id_alumno,
+                LTRIM(RTRIM(CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', a.apellido_materno))) AS nombre_completo,
+                i.id_ejercicio_tutor, 
+                e.titulo, 
+                i.fecha_envio, 
+                i.imagen_codificada,
+                i.texto_detectado_ocr,
+                i.puntuacion,        
+                i.retroalimentacion  
+            FROM Intentos i
+            JOIN Alumno a ON i.id_alumno = a.id_alumno
+            JOIN Usuario u ON a.id_usuario = u.id_usuario
+            JOIN Tutor t ON a.id_tutor = t.id_tutor
+            JOIN Ejercicios_Tutor et ON i.id_ejercicio_tutor = et.id_ejercicio_tutor
+            JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
+            WHERE t.id_usuario = ?
+            ORDER BY i.fecha_envio DESC
+        """
+        cursor.execute(query, (id_usuario_tutor,))
+        rows = cursor.fetchall()
+
+        intentos = []
+        for row in rows:
+            intentos.append({
+                "id_intento": row[0],
+                "id_usuario": row[1],
+                "id_alumno": row[2],
+                "nombre_completo": row[3],
+                "id_ejercicio_tutor": row[4],
+                "titulo_ejercicio": row[5],
+                "fecha_envio": row[6],
+                "imagen_codificada": row[7],
+                "texto_detectado_ocr": row[8],
+                "puntuacion": row[9],
+                "retroalimentacion": row[10]
+            })
+
+        return intentos
     finally:
         cursor.close()
         conn.close()

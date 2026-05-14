@@ -34,3 +34,7 @@ class AlumnoUpdate(BaseModel):
     apellido_paterno: str
     apellido_materno: Optional[str]
     grupo: Optional[str]
+
+class IntentoCreate(BaseModel):
+    id_ejercicio_tutor: int
+    imagen_codificada: str

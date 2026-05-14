@@ -145,7 +145,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar }) => {
       if (!idEjercicioTutor) { setError("Error: Identificador del ejercicio no encontrado."); setEnviando(false); return; }
       const token = localStorage.getItem('token');
       if (!token) { setError("Error: Sesión expirada."); setEnviando(false); return; }
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/intentos/registrar`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/alumno/intento`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ id_ejercicio_tutor: idEjercicioTutor, imagen_codificada: imagenPreview })

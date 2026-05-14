@@ -22,7 +22,6 @@ app.include_router(tutor_router, prefix="/api/tutor", tags=["Tutor"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Autenticacion"])
 app.include_router(alumno_router, prefix="/api/alumno", tags=["Alumno"])
 app.include_router(ejercicios_router, prefix="/api/ejercicios", tags=["ejercicios"])
-app.include_router(intentos_router, prefix="/api/intentos",tags=["Intentos"])
 
 @app.get('/')
 async def read_root():

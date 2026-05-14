@@ -52,7 +52,7 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
     const fetchIntentos = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/api/intentos/tutor/${idTutor}`, {
+        const res = await fetch(`${API_URL}/api/tutor/intentos/${idTutor}`, {
           headers: { "Authorization": `Bearer ${getToken()}` }
         });
         if (!res.ok) throw new Error("Error al obtener intentos del alumno.");
@@ -86,7 +86,7 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
     e.preventDefault();
     setGuardando(true);
     try {
-      const res = await fetch(`${API_URL}/api/intentos/calificar/${intentoActivo.id_intento}`, {
+      const res = await fetch(`${API_URL}/api/tutor/calificar/${intentoActivo.id_intento}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

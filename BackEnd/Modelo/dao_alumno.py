@@ -61,3 +61,28 @@ def verificar_estado_tutor_dao(id_usuario):
     finally:
         cursor.close()
         conn.close()
+
+def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id_estatus FROM Ejercicios_Tutor WHERE id_ejercicio_tutor = ?", (ejercicio_tutor_id,))
+        ejercicio = cursor.fetchone()
+        
+        if not ejercicio:
+            raise Exception("Ejercicio no encontrado.")
+        
+        cursor.execute("""
+            INSERT INTO Intentos (id_alumno, id_ejercicio_tutor, imagen_codificada)
+            VALUES (?, ?, ?)
+        """, (id_alumno, ejercicio_tutor_id, imagen_codificada))
+        conn.commit()
+        
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        cursor.close()
+        conn.close()

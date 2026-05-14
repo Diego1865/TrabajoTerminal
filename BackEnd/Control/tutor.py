@@ -4,12 +4,13 @@ from Control.dependencies import require_tutor
 from typing import List
 from Modelo.schemas_alumno import AlumnoCreate, AlumnoResponse, AlumnoProgresoResponse
 from Modelo.dao_tutor import * 
-from Modelo.schemas_tutor import TutorUpdate, EmailUpdate
+from Modelo.schemas_tutor import *
 from Modelo.schemas_auth import PasswordUpdate, DeleteAccount
 from Modelo.dao_auth import obtener_hash_contrasena_dao
 
 router = APIRouter()
 
+#Funciones relacionadas con el tutor y sus alumnos
 @router.post("/registrar", response_model=dict)
 def registrar_alumno(alumno_data: AlumnoCreate, current_user: dict = Depends(require_tutor)):
     if alumno_data.id_tutor != current_user["id_usuario"]:
@@ -106,6 +107,7 @@ def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(require
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener progreso gráfico: {str(e)}")
 
+#Perfil del tutor
 @router.put("/act/nombre")
 def actualizar_nombre_tutor(data: TutorUpdate, current_user: dict = Depends(require_tutor)):
    
@@ -160,3 +162,30 @@ def eliminar_cuenta_tutor(data: DeleteAccount, current_user: dict = Depends(requ
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al eliminar cuenta: {str(e)}")
+
+#intentos relacionados al tutor
+@router.put("/calificar/{id_intento}")
+def calificar_intento(id_intento: int, datos: CalificarIntentoRequest, current_user: dict = Depends(require_tutor)):
+    try:
+        intento = obtener_intento_tutor_dao(id_intento, current_user["id_usuario"])
+        calificar_intento_dao(id_intento, datos.calificacion, datos.retroalimentacion)
+        return {"message": "Calificación registrada correctamente."}
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print(f"Error al calificar: {e}")
+        raise HTTPException(status_code=500, detail=f"Error interno del servidor")
+
+@router.get("/intentos/{id_tutor}", response_model=List[IntentoTutorResponse])
+def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != id_tutor:
+        raise HTTPException(status_code=403, detail="Acceso denegado.")
+
+    try:
+        return obtener_intentos_por_tutor_dao(id_tutor)
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

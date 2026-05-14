@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from Control.auth import get_password_hash, verify_password
 from Control.dependencies import require_alumno
-from Modelo.schemas_alumno import AlumnoUpdate
+from Modelo.schemas_alumno import AlumnoUpdate, IntentoCreate
 from Modelo.schemas_auth import PasswordUpdate
 from Modelo.dao_alumno import *
 from Modelo.dao_auth import obtener_hash_contrasena_dao
@@ -44,6 +44,17 @@ def verificar_estado_tutor(current_user: dict = Depends(require_alumno)):
             return {"tutor_activo": False}
             
         return {"tutor_activo": stat == 1}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/intento", status_code=status.HTTP_201_CREATED)
+def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(require_alumno)):
+    
+    try:
+        registrar_intento_dao(intento_data.id_ejercicio_tutor, intento_data.imagen_codificada, current_user["id_usuario"])
+        return {"message": "Intento registrado."}
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
