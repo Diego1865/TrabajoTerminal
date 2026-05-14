@@ -71,3 +71,18 @@ def register_dao(username, email, hashed_password, nombre, apellido):
     finally:
         cursor.close()
         conn.close()
+
+def obtener_hash_contrasena_dao(id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT contrasena_cifrada FROM Usuario WHERE id_usuario = ?", (id_usuario,))
+        row = cursor.fetchone()
+        if not row:
+            raise ValueError("Usuario no encontrado")
+        return row[0]
+    finally:
+        cursor.close()
+        conn.close()

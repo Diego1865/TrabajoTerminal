@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from Control.auth import get_password_hash
-from Control.dependencies import require_tutor, require_tutor
+from Control.auth import get_password_hash, verify_password
+from Control.dependencies import require_tutor
 from typing import List
 from Modelo.schemas_alumno import AlumnoCreate, AlumnoResponse, AlumnoProgresoResponse
 from Modelo.dao_tutor import * 
 from Modelo.schemas_tutor import TutorUpdate, EmailUpdate
 from Modelo.schemas_auth import PasswordUpdate, DeleteAccount
+from Modelo.dao_auth import obtener_hash_contrasena_dao
 
 router = APIRouter()
 

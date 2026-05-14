@@ -41,7 +41,7 @@ const MainAlumno = ({ onLogout }) => {
     const verificarTutor = async () => {
       const token = localStorage.getItem('token');
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/perfil/alumno/estado-tutor`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/alumno/estado-tutor`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {

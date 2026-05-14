@@ -28,7 +28,7 @@ export default function PerfilAlumno() {
   const handleActualizarInfo = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/api/perfil/alumno/info`, {
+      const res = await fetch(`${API_URL}/api/alumno/info`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify(formData)
@@ -46,7 +46,7 @@ export default function PerfilAlumno() {
     const passwordError = validatePassword(passwordNueva);
     if (passwordError) return mostrarMensaje('error', passwordError);
     try {
-      const res = await fetch(`${API_URL}/api/perfil/alumno/password`, {
+      const res = await fetch(`${API_URL}/api/alumno/act/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ contrasena_actual: passwordActual, nueva_contrasena: passwordNueva })
