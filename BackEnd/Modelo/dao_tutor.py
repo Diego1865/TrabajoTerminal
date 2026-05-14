@@ -440,3 +440,142 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
     finally:
         cursor.close()
         conn.close()
+
+#ejercicios relacionados al tutor
+def get_ejercicios_dao():
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT id_ejercicio, titulo, descripcion, tipo, contenido_base
+            FROM Ejercicios
+            WHERE id_estatus = 1
+        """)
+        rows = cursor.fetchall()
+        return [
+            {
+                "id_ejercicio": r[0],
+                "titulo": r[1],
+                "descripcion": r[2],
+                "tipo": r[3],
+                "contenido_base": r[4],
+            }
+            for r in rows
+        ]
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_ejercicios_dao():
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT id_ejercicio, titulo, descripcion, tipo, contenido_base
+            FROM Ejercicios
+            WHERE id_estatus = 1
+        """)
+        rows = cursor.fetchall()
+        return [
+            {
+                "id_ejercicio": r[0],
+                "titulo": r[1],
+                "descripcion": r[2],
+                "tipo": r[3],
+                "contenido_base": r[4],
+            }
+            for r in rows
+        ]
+    finally:
+        cursor.close()
+        conn.close()
+
+def get_ejercicios_tutor_dao(id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        # Se añade el JOIN con la tabla Tutor para validar el id_usuario
+        cursor.execute("""
+            SELECT et.id_ejercicio_tutor, e.id_ejercicio, e.titulo, e.descripcion, e.tipo
+            FROM Ejercicios_Tutor et
+            JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
+            JOIN Tutor t ON et.id_tutor = t.id_tutor
+            WHERE t.id_usuario = ? AND et.id_estatus = 1
+        """, (id_usuario,))
+        
+        rows = cursor.fetchall()
+        return [
+            EjercicioTutorResponse(
+                id_ejercicio_tutor=row[0],
+                id_ejercicio=row[1],
+                titulo=row[2],
+                descripcion=row[3],
+                tipo=row[4],
+            )
+            for row in rows
+        ]
+    finally:
+        cursor.close()
+        conn.close()
+
+def activar_ejercicio_tutor_dao(id_ejercicio, id_usuario, fecha_fin):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        # Resolver id_tutor desde id_usuario
+        cursor.execute("SELECT id_tutor FROM Tutor WHERE id_usuario = ?", (id_usuario,))
+        tutor = cursor.fetchone()
+        if not tutor:
+            raise ValueError("El perfil de tutor no existe para este usuario")
+        id_tutor = tutor[0]
+
+        # Verificar duplicados activos
+        cursor.execute("""
+            SELECT id_ejercicio_tutor FROM Ejercicios_Tutor
+            WHERE id_ejercicio = ? AND id_tutor = ? AND id_estatus = 1
+        """, (id_ejercicio, id_tutor))
+        
+        if cursor.fetchone():
+            raise ValueError("El ejercicio ya se encuentra activado")
+
+        # Inserción con el identificador de la tabla Tutor
+        cursor.execute("""
+            INSERT INTO Ejercicios_Tutor (id_ejercicio, id_tutor, id_estatus, fecha_desactivacion)
+            VALUES (?, ?, 1, ?)
+        """, (id_ejercicio, id_tutor, fecha_fin))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+def desactivar_ejercicio_tutor_dao(id_usuario, id_ejercicio):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id_tutor FROM Tutor WHERE id_usuario = ?", (id_usuario,))
+        tutor = cursor.fetchone()
+        if not tutor:
+            raise ValueError("Tutor no encontrado")
+        id_tutor = tutor[0]
+
+        cursor.execute("""
+            UPDATE Ejercicios_Tutor SET id_estatus = 2
+            WHERE id_tutor = ? AND id_ejercicio = ? AND id_estatus = 1
+        """, (id_tutor, id_ejercicio))
+        
+        if cursor.rowcount == 0:
+            raise ValueError("Ejercicio no encontrado o ya se encuentra desactivado")
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()

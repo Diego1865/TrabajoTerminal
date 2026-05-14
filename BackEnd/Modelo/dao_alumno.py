@@ -1,5 +1,6 @@
 from Modelo.database import connect_to_database
 
+#perfil del alumno
 def actualizar_info_alumno_dao(nombre, apellido_paterno, apellido_materno, grupo, id_usuario):
     conn = connect_to_database()
     if not conn:
@@ -62,6 +63,7 @@ def verificar_estado_tutor_dao(id_usuario):
         cursor.close()
         conn.close()
 
+#intentos relacionados al alumno
 def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
     conn = connect_to_database()
     if not conn:

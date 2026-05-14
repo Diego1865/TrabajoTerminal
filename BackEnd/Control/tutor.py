@@ -189,3 +189,53 @@ def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends(requi
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+#ejercicios relacionados al tutor
+@router.get("/ejercicios")
+def get_ejercicios():
+    try:
+        return get_ejercicios_dao()
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener los ejercicios:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener los ejercicios")
+
+@router.get("/ejercicios/{id_usuario}", response_model=List[EjercicioTutorResponse])
+def get_ejercicios_tutor(id_usuario: int, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != id_usuario:
+        raise HTTPException(status_code=403, detail="No tiene permiso para ver los ejercicios de otro tutor.")
+    
+    try:
+        return get_ejercicios_tutor_dao(id_usuario)
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener ejercicios del tutor:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener ejercicios del tutor")
+
+@router.post("/ejercicio/activar", status_code=201)
+def activar_ejercicio(data: EjercicioTutorCreate, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != data.id_usuario:
+        raise HTTPException(status_code=403, detail="No tiene permiso para activar ejercicios para otro tutor")
+    
+    try:
+        activar_ejercicio_tutor_dao(data.id_ejercicio, data.id_usuario, data.fecha_fin)
+        return {"message": "Ejercicio activado correctamente"}
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+@router.delete("/ejercicio/desactivar/{id_usuario}/{id_ejercicio}")
+def desactivar_ejercicio(id_usuario: int, id_ejercicio: int, current_user: dict = Depends(require_tutor)):
+    if current_user["id_usuario"] != id_usuario:
+        raise HTTPException(status_code=403, detail="No tiene permiso para desactivar ejercicios de otro tutor")
+    
+    try:
+        desactivar_ejercicio_tutor_dao(id_usuario, id_ejercicio)
+        return {"message": "Ejercicio desactivado correctamente"}
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")

@@ -24,3 +24,15 @@ class IntentoTutorResponse(BaseModel):
     texto_detectado_ocr: Optional[str] = None
     puntuacion: Optional[int] = None
     retroalimentacion: Optional[str] = None
+
+class EjercicioTutorResponse(BaseModel):
+    id_ejercicio_tutor: int
+    id_ejercicio: int
+    titulo: str
+    descripcion: Optional[str] = None
+    tipo: str
+
+class EjercicioTutorCreate(BaseModel):
+    id_ejercicio: int
+    id_usuario: int
+    fecha_fin: Optional[datetime] = None

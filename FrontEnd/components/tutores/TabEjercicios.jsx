@@ -24,8 +24,8 @@ const TabEjercicios = ({ idTutor }) => {
       try {
         const headers = { 'Authorization': `Bearer ${token}` };
         const [resEjercicios, resActivados] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios`, { headers }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/tutor/${idTutor}`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicios/`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicios/${idTutor}`, { headers }),
         ]);
         if (!resEjercicios.ok || !resActivados.ok) throw new Error('Error al cargar los ejercicios');
         const dataEjercicios = await resEjercicios.json();
@@ -53,14 +53,14 @@ const TabEjercicios = ({ idTutor }) => {
       const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
       if (estaActivado) {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/tutor/${idTutor}/${id_ejercicio}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicio/desactivar/${idTutor}/${id_ejercicio}`,
           { method: 'DELETE', headers }
         );
         if (!res.ok) throw new Error('No se pudo desactivar el ejercicio');
         setActivados((prev) => { const next = new Set(prev); next.delete(id_ejercicio); return next; });
       } else {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/tutor`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicio/activar/`,
           {
             method: 'POST', headers,
             body: JSON.stringify({ id_ejercicio, id_usuario: idTutor, fecha_fin: formatearFechaParaSQL(fechaFin) }),

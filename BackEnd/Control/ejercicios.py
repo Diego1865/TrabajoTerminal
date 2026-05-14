@@ -1,56 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel
-from typing import Optional, List
-from Modelo.database import connect_to_database
-from datetime import datetime
 from Control.dependencies import require_tutor, require_alumno
 
 router = APIRouter()
 
-class EjercicioTutorResponse(BaseModel):
-    id_ejercicio_tutor: int
-    id_ejercicio: int
-    titulo: str
-    descripcion: Optional[str] = None
-    tipo: str
-
-class EjercicioTutorCreate(BaseModel):
-    id_ejercicio: int
-    id_usuario: int
-    fecha_fin: Optional[datetime] = None
-
-@router.get("/")
-async def get_ejercicios():
-    conn = connect_to_database()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Error de conexión a la base de datos")
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT id_ejercicio, titulo, descripcion, tipo, contenido_base
-            FROM Ejercicios
-            WHERE id_estatus = 1
-        """)
-        rows = cursor.fetchall()
-        return [
-            {
-                "id_ejercicio": r[0],
-                "titulo": r[1],
-                "descripcion": r[2],
-                "tipo": r[3],
-                "contenido_base": r[4],
-            }
-            for r in rows
-        ]
-    except Exception as e:
-        print("Error al obtener los ejercicios:", e)
-        raise HTTPException(status_code=500, detail="Error al obtener los ejercicios")
-    finally:
-        cursor.close()
-        conn.close()
-
 @router.get("/tutor/{id_usuario}", response_model=List[EjercicioTutorResponse])
-async def get_ejercicios_tutor(id_usuario: int, current_user: dict = Depends(require_tutor)):
+def get_ejercicios_tutor(id_usuario: int, current_user: dict = Depends(require_tutor)):
     if current_user["id_usuario"] != id_usuario:
         raise HTTPException(status_code=403, detail="No tiene permiso para ver los ejercicios de otro tutor.")
     conn = connect_to_database()
@@ -83,7 +37,7 @@ async def get_ejercicios_tutor(id_usuario: int, current_user: dict = Depends(req
         conn.close()
 
 @router.post("/tutor", status_code=201)
-async def activar_ejercicio(data: EjercicioTutorCreate, current_user: dict = Depends(require_tutor)):
+def activar_ejercicio(data: EjercicioTutorCreate, current_user: dict = Depends(require_tutor)):
     if current_user["id_usuario"] != data.id_usuario:
         raise HTTPException(status_code=403, detail="No tiene permiso para activar ejercicios para otro tutor.")
     conn = connect_to_database()
@@ -113,7 +67,7 @@ async def activar_ejercicio(data: EjercicioTutorCreate, current_user: dict = Dep
         conn.close()
 
 @router.delete("/tutor/{id_usuario}/{id_ejercicio}")
-async def desactivar_ejercicio(id_usuario: int, id_ejercicio: int, current_user: dict = Depends(require_tutor)):
+def desactivar_ejercicio(id_usuario: int, id_ejercicio: int, current_user: dict = Depends(require_tutor)):
     if current_user["id_usuario"] != id_usuario:
         raise HTTPException(status_code=403, detail="No tiene permiso para desactivar ejercicios de otro tutor.")
     conn = connect_to_database()
@@ -139,7 +93,7 @@ async def desactivar_ejercicio(id_usuario: int, id_ejercicio: int, current_user:
         conn.close()
 
 @router.get("/alumno/{id_alumno}/proximos")
-async def get_ejercicios_proximos(id_alumno: int, current_user: dict = Depends(require_alumno)):
+def get_ejercicios_proximos(id_alumno: int, current_user: dict = Depends(require_alumno)):
     if current_user["id_usuario"] != id_alumno:
         raise HTTPException(status_code=403, detail="No tiene permiso para ver los ejercicios de otro alumno.")
     conn = connect_to_database()
@@ -179,7 +133,7 @@ async def get_ejercicios_proximos(id_alumno: int, current_user: dict = Depends(r
         conn.close()
 
 @router.get("/alumno/{id_alumno}/completados")
-async def get_ejercicios_completados(id_alumno: int, current_user: dict = Depends(require_alumno)):
+def get_ejercicios_completados(id_alumno: int, current_user: dict = Depends(require_alumno)):
     if current_user["id_usuario"] != id_alumno:
         raise HTTPException(status_code=403, detail="No tiene permiso para ver los ejercicios completados de otro alumno.")
     conn = connect_to_database()
@@ -240,7 +194,7 @@ async def get_ejercicios_completados(id_alumno: int, current_user: dict = Depend
         conn.close()
 
 @router.get("/alumno/{id_alumno}/vencidos")
-async def get_ejercicios_vencidos(id_alumno: int, current_user: dict = Depends(require_alumno)):
+def get_ejercicios_vencidos(id_alumno: int, current_user: dict = Depends(require_alumno)):
     if current_user["id_usuario"] != id_alumno:
         raise HTTPException(status_code=403, detail="No tiene permiso para ver los ejercicios vencidos de otro alumno.")
     conn = connect_to_database()

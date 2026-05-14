@@ -6,8 +6,9 @@ from Modelo.schemas_auth import PasswordUpdate
 from Modelo.dao_alumno import *
 from Modelo.dao_auth import obtener_hash_contrasena_dao
 
-Router = APIRouter()
+router = APIRouter()
 
+#Perfil del alumno
 @router.put("/info")
 def actualizar_info_alumno(data: AlumnoUpdate, current_user: dict = Depends(require_alumno)):
     
@@ -49,6 +50,7 @@ def verificar_estado_tutor(current_user: dict = Depends(require_alumno)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+#intentos relacionados al alumno
 @router.post("/intento", status_code=status.HTTP_201_CREATED)
 def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(require_alumno)):
     

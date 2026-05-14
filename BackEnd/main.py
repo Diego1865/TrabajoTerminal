@@ -4,7 +4,6 @@ from Control.auth import router as auth_router
 from Control.alumno import router as alumno_router
 from Control.ejercicios import router as ejercicios_router
 from Control.tareas.cerrar_ejercicio import iniciar_scheduler
-from Control.intentos import router as intentos_router
 from Control.tutor import router as tutor_router
 
 app = FastAPI()
