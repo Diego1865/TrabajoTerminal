@@ -12,6 +12,7 @@ class LoginResponse(BaseModel):
 
 class RegisterRequest(BaseModel):
     nombre: str
+    apellido: str
     username: str = Field(..., min_length=6, pattern=r'^[a-zA-Z0-9_]+$')
     email: str
     password: str = Field(..., min_length=8)

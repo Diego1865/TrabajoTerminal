@@ -43,7 +43,13 @@ def login(credentials: LoginRequest):
             raise HTTPException( status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos")
             
         # Generar Token unificado
-        token_payload = { "id_usuario": id_usuario, "nombre": nombre, "tipo_usuario": tipo_usuario}
+        token_payload = {
+            "id_usuario": id_usuario, 
+            "nombre": nombre, 
+            "tipo_usuario": tipo_usuario,
+            "id_tutor": id_tutor,
+            "id_alumno": id_alumno
+        }
 
         token = create_access_token(token_payload)
         return {"message": "Inicio de sesión exitoso", "token": token}
@@ -58,7 +64,7 @@ def login(credentials: LoginRequest):
 def register(user_data: RegisterRequest):
     hashed_password = get_password_hash(user_data.password)
     try:
-        register_dao(user_data.username, user_data.email, hashed_password, user_data.nombre)
+        register_dao(user_data.username, user_data.email, hashed_password, user_data.nombre,user_data.apellido)
         return {"message": "Usuario registrado exitosamente"}
     except ConnectionError as ce:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ce))

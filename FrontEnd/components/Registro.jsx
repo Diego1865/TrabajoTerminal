@@ -4,6 +4,7 @@ import { CheckCircle, Mail, Lock, User, UserCheck } from 'lucide-react';
 
 const Registro = ({ onRegister, onNavigateLogin }) => {
   const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,8 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (!nombre || !username || !email || !password) return;
+    // Se incluye la validación de apellido
+    if (!nombre || !apellido || !username || !email || !password) return;
 
     const usernameError = validateUsername(username);
     const passwordError = validatePassword(password);
@@ -41,7 +43,8 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre, username, email, password }),
+        // Se envía el apellido en el body
+        body: JSON.stringify({ nombre, apellido, username, email, password }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Error al registrar usuario');
@@ -54,8 +57,10 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
     }
   };
 
+  // Se agrega el campo Apellido al arreglo
   const fields = [
-    { label: 'Nombre Tutor', icon: User, type: 'text', placeholder: 'Tu nombre completo', value: nombre, onChange: setNombre, required: true },
+    { label: 'Nombre(s)', icon: User, type: 'text', placeholder: 'Tu nombre', value: nombre, onChange: setNombre, required: true },
+    { label: 'Apellido(s)', icon: User, type: 'text', placeholder: 'Tus apellidos', value: apellido, onChange: setApellido, required: true },
     { label: 'Nombre de Usuario', icon: UserCheck, type: 'text', placeholder: 'usuario_genial123', value: username, onChange: setUsername, required: true },
     { label: 'Correo Electrónico', icon: Mail, type: 'email', placeholder: 'correo@ejemplo.com', value: email, onChange: setEmail, required: true },
     { label: 'Contraseña', icon: Lock, type: 'password', placeholder: '••••••••', value: password, onChange: setPassword, required: true },
@@ -91,7 +96,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
         <div className="float-r mb-3 select-none" style={{ fontSize: '5rem' }}>🚀</div>
         <p className="font-black mb-6 text-xl" style={{ color: '#059669', letterSpacing: '0.05em' }}>¡CREA TU CUENTA!</p>
 
-        <div className="max-w-md w-full">
+        <div className="max-w-md w-full my-4">
           <div className="bg-white p-8"
             style={{
               borderRadius: '28px',
@@ -134,7 +139,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
               <button
                 type="submit"
                 disabled={loading}
-                className="btn-green-kids w-full py-4 font-black text-xl text-white flex items-center justify-center gap-2 mt-2"
+                className="btn-green-kids w-full py-4 font-black text-xl text-white flex items-center justify-center gap-2 mt-4"
                 style={{
                   borderRadius: '18px',
                   background: loading ? '#6EE7B7' : 'linear-gradient(135deg, #10B981, #059669)',

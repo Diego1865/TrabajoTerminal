@@ -21,14 +21,9 @@ CREATE TABLE Usuario (
     id_usuario          INT           NOT NULL IDENTITY(1,1),
     nombre              VARCHAR(50)   NOT NULL,
     apellido_paterno    VARCHAR(50)       NULL,
-    apellido_materno    VARCHAR(50)       NULL,
     username            VARCHAR(75)   NOT NULL UNIQUE,
-    correo              VARCHAR(100)      NULL,
     contrasena_cifrada  VARCHAR(255)  NOT NULL,
     tipo_usuario        VARCHAR(15)   NOT NULL,           -- 'tutor' o 'alumno'
-    grado               VARCHAR(15)       NULL,           -- Para alumnos
-    grupo               VARCHAR(15)       NULL,           -- Para alumnos
-    id_tutor            INT               NULL,           -- Para alumnos: referencia a su tutor
     fecha_registro      DATETIME2     NOT NULL DEFAULT GETDATE(),
     id_estatus          INT           NOT NULL DEFAULT 1,
     CONSTRAINT PK_Usuario           PRIMARY KEY (id_usuario),
@@ -38,8 +33,31 @@ CREATE TABLE Usuario (
     CONSTRAINT CK_tipo_usuario      CHECK (tipo_usuario IN ('tutor', 'alumno'))
 );
 
--- Índice UNIQUE filtrado para correo (permite múltiples NULL)
-CREATE UNIQUE INDEX UX_Usuario_correo ON Usuario(correo) WHERE correo IS NOT NULL;
+IF OBJECT_ID('Tutor', 'U') IS NULL
+CREATE TABLE Tutor (
+    id_tutor            INT           NOT NULL IDENTITY(1,1),
+    id_usuario          INT           NOT NULL UNIQUE,    -- Relación 1:1 con Usuario
+    correo              VARCHAR(100)      NULL,
+    nombre              VARCHAR(50)   NOT NULL,
+    apellido_paterno    VARCHAR(50)       NULL,
+    CONSTRAINT PK_Tutor             PRIMARY KEY (id_tutor),
+    CONSTRAINT FK_Tutor_Usuario     FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+);
+
+IF OBJECT_ID('Alumno', 'U') IS NULL
+CREATE TABLE Alumno (
+    id_alumno           INT           NOT NULL IDENTITY(1,1),
+    id_usuario          INT           NOT NULL UNIQUE,    -- Relación 1:1 con Usuario
+    id_tutor            INT           NOT NULL,           -- Tutor a cargo del alumno
+    nombre              VARCHAR(50)   NOT NULL,
+    apellido_paterno    VARCHAR(50)       NULL,
+    apellido_materno    VARCHAR(50)       NULL,
+    grado               VARCHAR(15)       NULL,           
+    grupo               VARCHAR(15)       NULL,           
+    CONSTRAINT PK_Alumno            PRIMARY KEY (id_alumno),
+    CONSTRAINT FK_Alumno_Usuario    FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario),
+    CONSTRAINT FK_Alumno_Tutor      FOREIGN KEY (id_tutor) REFERENCES Tutor(id_tutor)
+);
 
 -- ── Ejercicios ──────────────────────────────────────────────
 IF OBJECT_ID('Ejercicios', 'U') IS NULL

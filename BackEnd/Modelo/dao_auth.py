@@ -6,11 +6,20 @@ def login_dao(username):
         raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
-        # Consulta unificada a la tabla Usuario
+        # Se agrega LEFT JOIN para recuperar id_tutor e id_alumno dependiendo del tipo de usuario
         query = """
-            SELECT id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus 
-            FROM Usuario
-            WHERE username = ?
+            SELECT 
+                u.id_usuario, 
+                u.contrasena_cifrada, 
+                u.nombre, 
+                u.tipo_usuario, 
+                u.id_estatus,
+                t.id_tutor,
+                a.id_alumno
+            FROM Usuario u
+            LEFT JOIN Tutor t ON u.id_usuario = t.id_usuario
+            LEFT JOIN Alumno a ON u.id_usuario = a.id_usuario
+            WHERE u.username = ?
         """
         cursor.execute(query, (username,))
         user = cursor.fetchone()
@@ -23,28 +32,42 @@ def login_dao(username):
         cursor.close()
         conn.close()
 
-def register_dao(username, email, hashed_password, nombre):
+def register_dao(username, email, hashed_password, nombre, apellido):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
-        # Verificar si el correo ya existe
-        cursor.execute("SELECT id_usuario FROM Usuario WHERE correo = ?", (email,))
-        if cursor.fetchone(): 
-            raise ValueError("El correo electrónico ya está registrado")
-
-        # Verificar si el username ya existe
         cursor.execute("SELECT id_usuario FROM Usuario WHERE username = ?", (username,))
         if cursor.fetchone(): 
             raise ValueError("El nombre de usuario ya está registrado")
+
+        cursor.execute("SELECT id_tutor FROM Tutor WHERE correo = ?", (email,))
+        if cursor.fetchone(): 
+            raise ValueError("El correo electrónico ya está registrado")
         
-        query = """
-            INSERT INTO Usuario (nombre, username, correo, contrasena_cifrada, tipo_usuario, id_estatus)
+        query_usuario = """
+            INSERT INTO Usuario (nombre, apellido_paterno, username, contrasena_cifrada, tipo_usuario, id_estatus)
+            OUTPUT INSERTED.id_usuario
             VALUES (?, ?, ?, ?, 'tutor', 1)
         """
-        cursor.execute(query, (nombre, username, email, hashed_password))
+        cursor.execute(query_usuario, (nombre, apellido, username, hashed_password))
+        resultado_usuario = cursor.fetchone()
+        
+        if not resultado_usuario:
+            raise Exception("No se pudo generar el identificador de usuario.")
+            
+        id_usuario_generado = resultado_usuario[0]
+
+        query_tutor = """
+            INSERT INTO Tutor (id_usuario, correo, nombre, apellido_paterno)
+            VALUES (?, ?, ?, ?)
+        """
+        cursor.execute(query_tutor, (id_usuario_generado, email, nombre, apellido))
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         cursor.close()
         conn.close()
