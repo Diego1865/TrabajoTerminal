@@ -1,43 +1,57 @@
 INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) VALUES
 (
-    'Suma de números del 1 al 10',
-    'Practica la suma básica con números del 1 al 10. Ideal para reforzar el conteo y la adición simple.',
-    'Matemáticas',
-    '{"operaciones": [{"a": 3, "b": 5}, {"a": 7, "b": 2}, {"a": 4, "b": 6}]}',
+    'Trazos básicos: Vocales minúsculas',
+    'Practica la escritura de las vocales minúsculas. El objetivo es mantener las letras dentro del renglón central para mejorar la puntuación de alineación y tamaño.',
+    'Legibilidad',
+    '{"texto_guia": "a e i o u", "imagen_guia": null}',
     1
 ),
 (
-    'Lectura comprensiva: La tortuga y la liebre',
-    'Lee el cuento clásico y responde preguntas sobre los personajes, el problema y la solución de la historia.',
-    'Lectura',
-    '{"cuento": "Había una vez una tortuga y una liebre...", "preguntas": ["¿Quién ganó la carrera?", "¿Por qué perdió la liebre?"]}',
+    'Ortografía: Uso de la B y la V',
+    'Transcribe la oración prestando especial atención a las palabras con B y V para reforzar la memoria ortográfica.',
+    'Ortografía',
+    '{"texto_guia": "El burro valiente busca un barco viejo.", "imagen_guia": null}',
     1
 ),
 (
-    'Tablas de multiplicar del 2 y el 3',
-    'Ejercicio de memorización y práctica de las tablas del 2 y el 3 mediante series de preguntas.',
-    'Matemáticas',
-    '{"tablas": [2, 3], "hasta": 10}',
+    'Práctica de espaciado e inclinación',
+    'Escribe la oración completa. Concéntrate en dejar una separación uniforme entre cada palabra y mantener la misma inclinación en todas las letras verticales.',
+    'Legibilidad',
+    '{"texto_guia": "La rápida zorra marrón salta sobre el perro perezoso.", "imagen_guia": null}',
     1
 ),
 (
-    'Completa la oración',
-    'Selecciona la palabra correcta para completar cada oración y mejorar tu comprensión gramatical.',
-    'Gramática',
-    '{"oraciones": [{"texto": "El perro ___ en el parque.", "opciones": ["corre", "corres", "corremos"], "correcta": "corre"}]}',
+    'Ortografía: Palabras con C, S y Z',
+    'Completa el texto cuidadosamente para practicar la correcta escritura de palabras que suenan similar pero se escriben con C, S o Z.',
+    'Ortografía',
+    '{"texto_guia": "El _apatero hace _apato_ con _inta_ de _eda.", "imagen_guia": null}',
     1
 ),
 (
-    'Identificar vocales y consonantes',
-    'Clasifica las letras de distintas palabras en vocales y consonantes para reforzar el abecedario.',
-    'Lenguaje',
-    '{"palabras": ["casa", "árbol", "escuela", "mariposa"]}',
+    'Ortografía: Uso correcto de las tildes',
+    'Transcribe la oración marcando claramente la tilde en las palabras agudas, graves y esdrújulas.',
+    'Ortografía',
+    '{"texto_guia": "El pajaro canto en el arbol.", "imagen_guia": null}',
     1
 ),
 (
-    'Resta con números del 1 al 20',
-    'Practica la resta básica con números hasta el 20. Incluye ejercicios con y sin reserva.',
-    'Matemáticas',
-    '{"operaciones": [{"a": 15, "b": 7}, {"a": 20, "b": 13}, {"a": 18, "b": 9}]}',
+    'Control de trazo: Mayúsculas y minúsculas',
+    'Escribe las letras en pares (mayúscula y minúscula). Cuida que la mayúscula toque el límite superior del renglón y la minúscula se mantenga en la zona media.',
+    'Legibilidad',
+    '{"texto_guia": "Aa Bb Cc Dd Ee Ff Gg Hh", "imagen_guia": null}',
+    1
+),
+(
+    'Ortografía: Uso de G y J',
+    'Practica la escritura de estas palabras confusas. Asegúrate de trazar correctamente el descenso de las letras g y j por debajo del renglón.',
+    'Ortografía',
+    '{"texto_guia": "El gigante juega con un girasol en el jardín.", "imagen_guia": null}',
+    1
+),
+(
+    'Prueba de caligrafía mixta',
+    'Transcribe el párrafo completo. Se evaluará tu ortografía general, el tamaño de tu letra, la alineación en el renglón y el espaciado entre palabras.',
+    'Mixto',
+    '{"texto_guia": "Aquel zorro pequeño corría feliz por el bosque verde.", "imagen_guia": null}',
     1
 );
