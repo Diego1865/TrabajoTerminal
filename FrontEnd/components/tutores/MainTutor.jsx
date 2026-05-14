@@ -305,7 +305,7 @@ export default function MainTutor({ onLogout }) {
       setLoadingCategoria(true);
       setErrorCategoria(null);
       try {
-        const res = await fetch(`${API_URL}/api/alumnos/${categoriaSeleccionada}/${idTutor}`, {
+        const res = await fetch(`${API_URL}/api/tutor/${categoriaSeleccionada}/${idTutor}`, {
           headers: { "Authorization": `Bearer ${getToken()}` }
         });
         const data = await res.json();
@@ -322,7 +322,7 @@ export default function MainTutor({ onLogout }) {
       setLoadingProgreso(true);
       setErrorProgreso(null);
       try {
-        const res = await fetch(`${API_URL}/api/alumnos/progreso/${idTutor}`, {
+        const res = await fetch(`${API_URL}/api/tutor/progreso/${idTutor}`, {
           headers: { "Authorization": `Bearer ${getToken()}`, "Content-Type": "application/json" }
         });
         if (!res.ok) throw new Error("Error al obtener progreso de alumnos");
@@ -350,7 +350,7 @@ export default function MainTutor({ onLogout }) {
     setErrorAlumnos("");
 
     try {
-      const response = await fetch(`${API_URL}/api/alumnos/tutor/${idTutor}`, {
+      const response = await fetch(`${API_URL}/api/tutor/alumnos/${idTutor}`, {
         headers: { "Authorization": `Bearer ${getToken()}`, "Content-Type": "application/json" }
       });
       if (!response.ok) throw new Error("Error al obtener la lista de alumnos");
@@ -401,7 +401,7 @@ export default function MainTutor({ onLogout }) {
 
     try {
       setLoadingAlumnos(true);
-      const response = await fetch(`${API_URL}/api/alumnos/registrar`, {
+      const response = await fetch(`${API_URL}/api/tutor/registrar`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -438,7 +438,7 @@ export default function MainTutor({ onLogout }) {
     if (!confirm("¿Está seguro de que desea dar de baja a este alumno?")) return;
 
     try {
-      const response = await fetch(`${API_URL}/api/alumnos/baja/${id_alumno}`, {
+      const response = await fetch(`${API_URL}/api/tutor/baja/${id_alumno}`, {
         method: "PUT",
         headers: { "Authorization": `Bearer ${getToken()}` }
       });

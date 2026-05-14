@@ -6,6 +6,7 @@ from Control.ejercicios import router as ejercicios_router
 from Control.tareas.cerrar_ejercicio import iniciar_scheduler
 from Control.perfil import router as perfil_router
 from Control.intentos import router as intentos_router
+from Control.tutor import router as tutor_router
 
 app = FastAPI()
 
@@ -18,6 +19,7 @@ app.add_middleware(
 )
 
 # Incluir las rutas de control
+app.include_router(tutor_router, prefix="/api/tutor", tags=["Tutor"])
 app.include_router(auth_router, prefix="/api/auth", tags=["Autenticacion"])
 app.include_router(alumnos_router, prefix="/api/alumnos", tags=["alumnos"])
 app.include_router(ejercicios_router, prefix="/api/ejercicios", tags=["ejercicios"])

@@ -1,11 +1,10 @@
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
 import re
-from Modelo.database import connect_to_database
 from passlib.context import CryptContext
 import jwt
 from datetime import datetime, timedelta
 import os
+from Modelo.schemas_auth import LoginRequest, LoginResponse, RegisterRequest
 from dotenv import load_dotenv
 
 # Cargar .env desde la raíz del proyecto
@@ -20,29 +19,6 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 horas
 
-# Modelos de Pydantic para la validación de datos
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-# Se modifica la respuesta para devolver el token en lugar de los datos expuestos
-class LoginResponse(BaseModel):
-    message: str
-    token: str
-
-class RegisterRequest(BaseModel):
-    nombre: str
-    username: str = Field(..., min_length=6, pattern=r'^[a-zA-Z0-9_]+$')
-    email: str
-    password: str = Field(..., min_length=8)
-
-    @field_validator('password')
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$'
-        if not re.match(pattern, v):
-            raise ValueError('La contraseña debe contener al menos una minúscula, una mayúscula, un número y un carácter especial.')
-        return v
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
