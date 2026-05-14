@@ -24,3 +24,10 @@ class RegisterRequest(BaseModel):
         if not re.match(pattern, v):
             raise ValueError('La contraseña debe contener al menos una minúscula, una mayúscula, un número y un carácter especial.')
         return v
+
+class PasswordUpdate(BaseModel):
+    contrasena_actual: str
+    nueva_contrasena: str
+
+class DeleteAccount(BaseModel):
+    contrasena_actual: str

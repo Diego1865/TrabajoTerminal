@@ -30,7 +30,7 @@ export default function PerfilTutor({ onLogout }) {
   const handleActualizarNombre = async (e) => {
     e.preventDefault();
     try {
-      const res = await fetch(`${API_URL}/api/perfil/tutor/nombre`, {
+      const res = await fetch(`${API_URL}/api/tutor/act/nombre`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ nombre })
@@ -47,7 +47,7 @@ export default function PerfilTutor({ onLogout }) {
     e.preventDefault();
     if (!passwordActualCorreo) return mostrarMensaje('error', 'Se requiere contraseña actual para cambiar el correo.');
     try {
-      const res = await fetch(`${API_URL}/api/perfil/tutor/correo`, {
+      const res = await fetch(`${API_URL}/api/tutor/act/correo`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ correo, contrasena_actual: passwordActualCorreo })
@@ -66,7 +66,7 @@ export default function PerfilTutor({ onLogout }) {
     const passwordError = validatePassword(passwordNueva);
     if (passwordError) return mostrarMensaje('error', passwordError);
     try {
-      const res = await fetch(`${API_URL}/api/perfil/tutor/password`, {
+      const res = await fetch(`${API_URL}/api/tutor/act/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ contrasena_actual: passwordActualClave, nueva_contrasena: passwordNueva })
@@ -84,7 +84,7 @@ export default function PerfilTutor({ onLogout }) {
     const pass = prompt('Para desactivar tu cuenta, ingresa tu contraseña actual:');
     if (!pass) return;
     try {
-      const res = await fetch(`${API_URL}/api/perfil/tutor/cuenta`, {
+      const res = await fetch(`${API_URL}/api/tutor/eliminar`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ contrasena_actual: pass })

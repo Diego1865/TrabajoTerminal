@@ -1,9 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from Control.auth import get_password_hash
-from Control.dependencies import require_tutor
+from Control.dependencies import require_tutor, require_tutor
 from typing import List
 from Modelo.schemas_alumno import AlumnoCreate, AlumnoResponse, AlumnoProgresoResponse
-from Modelo.dao_tutor import registrar_alumno_dao, obtener_alumnos_por_tutor_dao, dar_de_baja_alumno_dao, obtener_alumnos_en_riesgo_dao, obtener_alumnos_regular_dao, obtener_alumnos_excelencia_dao, obtener_progreso_grafico_dao
+from Modelo.dao_tutor import * 
+from Modelo.schemas_tutor import TutorUpdate, EmailUpdate
+from Modelo.schemas_auth import PasswordUpdate, DeleteAccount
 
 router = APIRouter()
 
@@ -102,3 +104,58 @@ def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(require
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener progreso gráfico: {str(e)}")
+
+@router.put("/act/nombre")
+def actualizar_nombre_tutor(data: TutorUpdate, current_user: dict = Depends(require_tutor)):
+   
+    try:
+        actualizar_nombre_tutor_dao(data.nombre, current_user["id_usuario"])
+        return {"message": "Nombre actualizado correctamente"}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar nombre: {str(e)}")
+
+@router.put("/act/correo")
+def actualizar_correo_tutor(data: EmailUpdate, current_user: dict = Depends(require_tutor)):
+    
+    try:
+        hash_db = obtener_hash_contrasena_dao(current_user["id_usuario"])
+        if not verify_password(data.contrasena_actual, hash_db):
+            raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
+        actualizar_correo_tutor_dao(current_user["id_usuario"], data.correo)
+        return {"message": "Correo actualizado correctamente"}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar correo: {str(e)}")
+
+@router.put("/act/password")
+def actualizar_password_tutor(data: PasswordUpdate, current_user: dict = Depends(require_tutor)):
+    
+    try:
+        hash_db = obtener_hash_contrasena_dao(current_user["id_usuario"])
+        if not verify_password(data.contrasena_actual, hash_db):
+            raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
+            
+        actualizar_password_tutor_dao(data.nueva_contrasena, current_user["id_usuario"])
+        conn.commit()
+        return {"message": "Contraseña actualizada correctamente"}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al actualizar contraseña: {str(e)}")
+
+@router.delete("/eliminar")
+def eliminar_cuenta_tutor(data: DeleteAccount, current_user: dict = Depends(require_tutor)):
+    
+    try:
+        hash_db = obtener_hash_contrasena_dao(current_user["id_usuario"])
+        if not verify_password(data.contrasena_actual, hash_db):
+            raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
+        eliminar_cuenta_tutor(current_user["id_usuario"])
+        return {"message": "Cuenta eliminada/desactivada correctamente"}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al eliminar cuenta: {str(e)}")

@@ -28,3 +28,9 @@ class AlumnoProgresoResponse(BaseModel):
     apellido_materno: str
     promedio_ortografia: Decimal
     promedio_legibilidad: Decimal
+
+class AlumnoUpdate(BaseModel):
+    nombre: str
+    apellido_paterno: str
+    apellido_materno: Optional[str]
+    grupo: Optional[str]

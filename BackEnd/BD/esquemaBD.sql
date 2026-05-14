@@ -14,8 +14,7 @@ CREATE TABLE Estatus (
     descripcion  VARCHAR(15)   NOT NULL,
     CONSTRAINT PK_Estatus PRIMARY KEY (id_estatus)
 );
-
--- ── Usuario (tutores, administradores y alumnos) ──────────
+1
 IF OBJECT_ID('Usuario', 'U') IS NULL
 CREATE TABLE Usuario (
     id_usuario          INT           NOT NULL IDENTITY(1,1),
@@ -38,8 +37,6 @@ CREATE TABLE Tutor (
     id_tutor            INT           NOT NULL IDENTITY(1,1),
     id_usuario          INT           NOT NULL UNIQUE,    -- Relación 1:1 con Usuario
     correo              VARCHAR(100)      NULL,
-    nombre              VARCHAR(50)   NOT NULL,
-    apellido_paterno    VARCHAR(50)       NULL,
     CONSTRAINT PK_Tutor             PRIMARY KEY (id_tutor),
     CONSTRAINT FK_Tutor_Usuario     FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
 );
@@ -49,8 +46,6 @@ CREATE TABLE Alumno (
     id_alumno           INT           NOT NULL IDENTITY(1,1),
     id_usuario          INT           NOT NULL UNIQUE,    -- Relación 1:1 con Usuario
     id_tutor            INT           NOT NULL,           -- Tutor a cargo del alumno
-    nombre              VARCHAR(50)   NOT NULL,
-    apellido_paterno    VARCHAR(50)       NULL,
     apellido_materno    VARCHAR(50)       NULL,
     grado               VARCHAR(15)       NULL,           
     grupo               VARCHAR(15)       NULL,           
