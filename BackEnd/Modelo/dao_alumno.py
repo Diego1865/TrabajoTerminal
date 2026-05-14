@@ -70,16 +70,25 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
         raise ConnectionError("No se pudo conectar a la base de datos")
     cursor = conn.cursor()
     try:
+        cursor.execute("SELECT id_alumno FROM Alumno WHERE id_usuario = ?", (id_usuario,))
+        alumno_row = cursor.fetchone()
+        
+        if not alumno_row:
+            raise ValueError("No se encontró el perfil de alumno asociado a este usuario.")
+            
+        id_alumno = alumno_row[0]
+
         cursor.execute("SELECT id_estatus FROM Ejercicios_Tutor WHERE id_ejercicio_tutor = ?", (ejercicio_tutor_id,))
         ejercicio = cursor.fetchone()
         
         if not ejercicio:
-            raise Exception("Ejercicio no encontrado.")
+            raise ValueError("Ejercicio no encontrado.")
         
         cursor.execute("""
             INSERT INTO Intentos (id_alumno, id_ejercicio_tutor, imagen_codificada)
             VALUES (?, ?, ?)
         """, (id_alumno, ejercicio_tutor_id, imagen_codificada))
+        
         conn.commit()
         
     except Exception as e:

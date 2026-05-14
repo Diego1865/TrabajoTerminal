@@ -15,7 +15,7 @@ class CalificarIntentoRequest(BaseModel):
 
 class IntentoTutorResponse(BaseModel):
     id_intento: int
-    id_usuario: int
+    id_alumno: int
     nombre_completo: str
     id_ejercicio_tutor: int
     titulo_ejercicio: str

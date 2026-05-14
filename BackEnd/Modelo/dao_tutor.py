@@ -398,9 +398,8 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
         query = """
             SELECT 
                 i.id_intento, 
-                u.id_usuario,
-                a.id_alumno,
-                LTRIM(RTRIM(CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', a.apellido_materno))) AS nombre_completo,
+                a.id_alumno, -- ¡Cambiado! Ahora enviamos el id_alumno
+                LTRIM(RTRIM(CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', ISNULL(a.apellido_materno, '')))) AS nombre_completo,
                 i.id_ejercicio_tutor, 
                 e.titulo, 
                 i.fecha_envio, 
@@ -424,16 +423,15 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
         for row in rows:
             intentos.append({
                 "id_intento": row[0],
-                "id_usuario": row[1],
-                "id_alumno": row[2],
-                "nombre_completo": row[3],
-                "id_ejercicio_tutor": row[4],
-                "titulo_ejercicio": row[5],
-                "fecha_envio": row[6],
-                "imagen_codificada": row[7],
-                "texto_detectado_ocr": row[8],
-                "puntuacion": row[9],
-                "retroalimentacion": row[10]
+                "id_alumno": row[1],
+                "nombre_completo": row[2],
+                "id_ejercicio_tutor": row[3],
+                "titulo_ejercicio": row[4],
+                "fecha_envio": row[5],
+                "imagen_codificada": row[6],
+                "texto_detectado_ocr": row[7],
+                "puntuacion": row[8],
+                "retroalimentacion": row[9]
             })
 
         return intentos
@@ -442,32 +440,6 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
         conn.close()
 
 #ejercicios relacionados al tutor
-def get_ejercicios_dao():
-    conn = connect_to_database()
-    if not conn:
-        raise ConnectionError("Error de conexión a la base de datos")
-    cursor = conn.cursor()
-    try:
-        cursor.execute("""
-            SELECT id_ejercicio, titulo, descripcion, tipo, contenido_base
-            FROM Ejercicios
-            WHERE id_estatus = 1
-        """)
-        rows = cursor.fetchall()
-        return [
-            {
-                "id_ejercicio": r[0],
-                "titulo": r[1],
-                "descripcion": r[2],
-                "tipo": r[3],
-                "contenido_base": r[4],
-            }
-            for r in rows
-        ]
-    finally:
-        cursor.close()
-        conn.close()
-
 def get_ejercicios_dao():
     conn = connect_to_database()
     if not conn:
@@ -511,13 +483,13 @@ def get_ejercicios_tutor_dao(id_usuario):
         
         rows = cursor.fetchall()
         return [
-            EjercicioTutorResponse(
-                id_ejercicio_tutor=row[0],
-                id_ejercicio=row[1],
-                titulo=row[2],
-                descripcion=row[3],
-                tipo=row[4],
-            )
+            {
+                "id_ejercicio_tutor": row[0],
+                "id_ejercicio": row[1],
+                "titulo": row[2],
+                "descripcion": row[3],
+                "tipo": row[4],
+            }
             for row in rows
         ]
     finally:

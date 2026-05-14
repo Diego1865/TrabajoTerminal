@@ -57,7 +57,10 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
         });
         if (!res.ok) throw new Error("Error al obtener intentos del alumno.");
         const data = await res.json();
-        const intentosDelAlumno = data.filter(i => i.id_usuario === alumno.id_alumno);
+        
+        // ¡CORRECCIÓN AQUÍ!
+        const intentosDelAlumno = data.filter(i => i.id_alumno === alumno.id_alumno);
+        
         setIntentos(intentosDelAlumno);
       } catch (err) {
         setError(err.message);
