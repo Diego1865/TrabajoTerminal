@@ -1,13 +1,11 @@
 from fastapi import APIRouter, HTTPException, status
-import re
 from passlib.context import CryptContext
 import jwt
 from datetime import datetime, timedelta
 import os
 from Modelo.schemas_auth import LoginRequest, LoginResponse, RegisterRequest
+from Modelo.dao_auth import login_dao, register_dao
 from dotenv import load_dotenv
-
-# Cargar .env desde la raíz del proyecto
 
 load_dotenv()
 router = APIRouter()
@@ -34,117 +32,37 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 @router.post("/login", response_model=LoginResponse)
-async def login(credentials: LoginRequest):
-    conn = connect_to_database()
-    if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error de conexión a la base de datos"
-        )
-
-    cursor = conn.cursor()
+def login(credentials: LoginRequest):
+    
     try:
-        # Consulta unificada a la tabla Usuario
-        query = """
-            SELECT id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus 
-            FROM Usuario
-            WHERE username = ?
-        """
-        cursor.execute(query, credentials.username)
-        user = cursor.fetchone()
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Usuario o contraseña incorrectos"
-            )
-
+        user = login_dao(credentials.username)
         id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus = user
-
-        # Verificar estatus activo (id_estatus = 1 según catálogo)
         if id_estatus != 1:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="El usuario no se encuentra activo"
-            )
-
-        # Verificar la contraseña
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El usuario no se encuentra activo")
         if not verify_password(credentials.password, contrasena_cifrada):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Usuario o contraseña incorrectos"
-            )
-
+            raise HTTPException( status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos")
+            
         # Generar Token unificado
-        token_payload = {
-            "id_usuario": id_usuario,
-            "nombre": nombre,
-            "tipo_usuario": tipo_usuario
-        }
-        
+        token_payload = { "id_usuario": id_usuario, "nombre": nombre, "tipo_usuario": tipo_usuario}
+
         token = create_access_token(token_payload)
-
-        return {
-            "message": "Inicio de sesión exitoso",
-            "token": token
-        }
-
-    except HTTPException:
-        raise
+        return {"message": "Inicio de sesión exitoso", "token": token}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ce))
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(ve))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error: {str(e)}"
-        )
-    finally:
-        cursor.close()
-        conn.close()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error: {str(e)}")
 
 @router.post("/register")
-async def register(user_data: RegisterRequest):
-    conn = connect_to_database()
-    if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error de conexión a la base de datos"
-        )
-
-    cursor = conn.cursor()
+def register(user_data: RegisterRequest):
+    hashed_password = get_password_hash(user_data.password)
     try:
-        # Verificar si el correo ya existe
-        cursor.execute("SELECT id_usuario FROM Usuario WHERE correo = ?", user_data.email)
-        if cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El correo electrónico ya está registrado"
-            )
-
-        # Verificar si el username ya existe
-        cursor.execute("SELECT id_usuario FROM Usuario WHERE username = ?", user_data.username)
-        if cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El nombre de usuario ya está registrado"
-            )
-
-        hashed_password = get_password_hash(user_data.password)
-        
-        query = """
-            INSERT INTO Usuario (nombre, username, correo, contrasena_cifrada, tipo_usuario, id_estatus)
-            VALUES (?, ?, ?, ?, 'tutor', 1)
-        """
-        cursor.execute(query, (user_data.nombre, user_data.username, user_data.email, hashed_password))
-        conn.commit()
-
+        register_dao(user_data.username, user_data.email, hashed_password, user_data.nombre)
         return {"message": "Usuario registrado exitosamente"}
-
-    except HTTPException:
-        raise
+    except ConnectionError as ce:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ce))
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error al registrar usuario: {str(e)}"
-        )
-    finally:
-        cursor.close()
-        conn.close()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error: {str(e)}")

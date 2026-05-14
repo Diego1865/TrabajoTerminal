@@ -1,6 +1,6 @@
 from Modelo.database import connect_to_database
 
-def registrar_alumno_db(alumno_data, hashed_password):
+def registrar_alumno_dao(alumno_data, hashed_password):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -31,7 +31,7 @@ def registrar_alumno_db(alumno_data, hashed_password):
         cursor.close()
         conn.close()
 
-def obtener_alumnos_por_tutor_db(id_tutor):
+def obtener_alumnos_por_tutor_dao(id_tutor):
     
     conn = connect_to_database()
     if not conn:
@@ -64,7 +64,7 @@ def obtener_alumnos_por_tutor_db(id_tutor):
         cursor.close()
         conn.close()
 
-def dar_de_baja_alumno(id_alumno,id_tutor):
+def dar_de_baja_alumno_dao(id_alumno,id_tutor):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -88,7 +88,7 @@ def dar_de_baja_alumno(id_alumno,id_tutor):
         cursor.close()
         conn.close()
 
-def obtener_alumnos_en_riesgo_db(id_tutor):
+def obtener_alumnos_en_riesgo_dao(id_tutor):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -130,7 +130,7 @@ def obtener_alumnos_en_riesgo_db(id_tutor):
         cursor.close()
         conn.close()
 
-def obtener_alumnos_regular_db(id_tutor):
+def obtener_alumnos_regular_dao(id_tutor):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -171,7 +171,7 @@ def obtener_alumnos_regular_db(id_tutor):
         cursor.close()
         conn.close()
 
-def obtener_alumnos_excelencia_db(id_tutor):
+def obtener_alumnos_excelencia_dao(id_tutor):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -212,7 +212,7 @@ def obtener_alumnos_excelencia_db(id_tutor):
         conn.close()
 
 
-def obtener_progreso_grafico_db(id_tutor):
+def obtener_progreso_grafico_dao(id_tutor):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
