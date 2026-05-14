@@ -14,7 +14,7 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
       const token = localStorage.getItem('token');
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/alumno/${idAlumno}/proximos`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/alumno/ejercicios/proximos`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         if (!res.ok) throw new Error('Error al cargar los ejercicios');

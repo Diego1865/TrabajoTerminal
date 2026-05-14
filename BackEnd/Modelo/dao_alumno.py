@@ -88,3 +88,150 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
     finally:
         cursor.close()
         conn.close()
+
+#ejercicios relacionados al alumno
+def obtener_ejercicios_proximos_dao(id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        query = """
+            SELECT 
+                et.id_ejercicio_tutor, 
+                e.id_ejercicio, 
+                e.titulo, 
+                e.descripcion, 
+                e.tipo, 
+                e.contenido_base, 
+                et.fecha_desactivacion as fecha_fin
+            FROM Ejercicios_Tutor et
+            JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
+            JOIN Alumno a ON a.id_tutor = et.id_tutor
+            WHERE a.id_usuario = ?
+              AND et.id_estatus = 1
+              AND et.id_ejercicio_tutor NOT IN (
+                  SELECT id_ejercicio_tutor FROM Intentos WHERE id_alumno = a.id_alumno
+              )
+        """
+        cursor.execute(query, (id_usuario,))
+        rows = cursor.fetchall()
+        
+        return [
+            {
+                "id_ejercicio_tutor": r[0],
+                "id_ejercicio":       r[1],
+                "titulo":             r[2],
+                "descripcion":        r[3],
+                "tipo":               r[4],
+                "contenido_base":     r[5],
+                "fecha_fin":          r[6],
+            }
+            for r in rows
+        ]
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def obtener_ejercicios_completados_dao(id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        query = """
+            WITH UltimosIntentos AS (
+                SELECT 
+                    i.id_ejercicio_tutor,
+                    i.fecha_envio,
+                    i.imagen_codificada,
+                    i.texto_detectado_ocr,
+                    i.puntuacion,         
+                    i.retroalimentacion,  
+                    ROW_NUMBER() OVER(PARTITION BY i.id_ejercicio_tutor ORDER BY i.fecha_envio DESC) as rn
+                FROM Intentos i
+                JOIN Alumno a ON i.id_alumno = a.id_alumno
+                WHERE a.id_usuario = ?
+            )
+            SELECT 
+                et.id_ejercicio_tutor, 
+                e.id_ejercicio, 
+                e.titulo,
+                e.descripcion, 
+                e.tipo, 
+                et.fecha_desactivacion as fecha_fin,
+                ui.fecha_envio,
+                ui.imagen_codificada,
+                ui.texto_detectado_ocr,
+                ui.puntuacion,
+                ui.retroalimentacion
+            FROM UltimosIntentos ui
+            JOIN Ejercicios_Tutor et ON ui.id_ejercicio_tutor = et.id_ejercicio_tutor
+            JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
+            WHERE ui.rn = 1
+        """
+        cursor.execute(query, (id_usuario,))
+        rows = cursor.fetchall()
+        
+        return [
+            {
+                "id_ejercicio_tutor":  r[0],
+                "id_ejercicio":        r[1],
+                "titulo":              r[2],
+                "descripcion":         r[3],
+                "tipo":                r[4],
+                "fecha_desactivacion": r[5],
+                "fecha_envio":         r[6],
+                "imagen_codificada":   r[7],
+                "texto_detectado_ocr": r[8],
+                "puntuacion":          r[9],
+                "retroalimentacion":   r[10]
+            }
+            for r in rows
+        ]
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def obtener_ejercicios_vencidos_dao(id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        query = """
+            SELECT
+                et.id_ejercicio_tutor, 
+                e.id_ejercicio, 
+                e.titulo,
+                e.descripcion, 
+                e.tipo, 
+                et.fecha_desactivacion
+            FROM Ejercicios_Tutor et
+            JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
+            JOIN Alumno a ON a.id_tutor = et.id_tutor
+            WHERE a.id_usuario = ?
+              AND et.id_estatus = 2
+              AND et.id_ejercicio_tutor NOT IN (
+                  SELECT id_ejercicio_tutor FROM Intentos WHERE id_alumno = a.id_alumno
+              )
+        """
+        cursor.execute(query, (id_usuario,))
+        rows = cursor.fetchall()
+        
+        return [
+            {
+                "id_ejercicio_tutor":   r[0],
+                "id_ejercicio":         r[1],
+                "titulo":               r[2],
+                "descripcion":          r[3],
+                "tipo":                 r[4],
+                "fecha_desactivacion":  r[5],
+            }
+            for r in rows
+        ]
+    finally:
+        cursor.close()
+        conn.close()

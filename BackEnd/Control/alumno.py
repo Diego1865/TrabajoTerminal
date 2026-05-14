@@ -61,3 +61,37 @@ def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+#ejercicios relacionados al alumno
+@router.get("/ejercicios/proximos")
+def get_ejercicios_proximos(current_user: dict = Depends(require_alumno)):
+    try:
+        id_usuario = current_user["id_usuario"]
+        return obtener_ejercicios_proximos_dao(id_usuario)
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener ejercicios próximos:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener ejercicios")
+
+@router.get("/ejercicios/completados")
+def get_ejercicios_completados(current_user: dict = Depends(require_alumno)):
+    try:
+        id_usuario = current_user["id_usuario"]
+        return obtener_ejercicios_completados_dao(id_usuario)
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener ejercicios completados:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener ejercicios completados")
+
+@router.get("/ejercicios/vencidos")
+def get_ejercicios_vencidos(current_user: dict = Depends(require_alumno)):
+    try:
+        id_usuario = current_user["id_usuario"]
+        return obtener_ejercicios_vencidos_dao(id_usuario)
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener ejercicios vencidos:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener ejercicios vencidos")

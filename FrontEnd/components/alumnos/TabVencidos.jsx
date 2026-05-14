@@ -14,7 +14,7 @@ const TabVencidos = ({ idAlumno }) => {
       const token = localStorage.getItem('token');
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/ejercicios/alumno/${idAlumno}/vencidos`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/alumno/ejercicios/vencidos`,
           { headers: { 'Authorization': `Bearer ${token}` } }
         );
         if (!res.ok) throw new Error('Error al cargar los ejercicios vencidos');
