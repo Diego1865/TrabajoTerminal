@@ -135,7 +135,7 @@ def obtener_alumnos_regular_dao(id_tutor):
     cursor = conn.cursor()
     try:
         query = """
-            WWITH PromedialidadAlumnos AS (
+            WITH PromedialidadAlumnos AS (
                 SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
                     p.promedio_ortografia,
                     (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,

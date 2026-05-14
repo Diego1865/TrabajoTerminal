@@ -1,45 +1,81 @@
--- Insertar alumnos de ejemplo en la tabla Usuario con tipo_usuario = 'alumno'
-INSERT INTO Usuario (nombre, apellido_paterno, apellido_materno, username, contrasena_cifrada, tipo_usuario, grado, grupo, id_tutor, id_estatus)
-VALUES
-('Juan', 'García', 'López', 'juangarc23', 'hashed_password_1', 'alumno', '3', 'A', 2, 1),
-('María', 'Rodríguez', 'Martínez', 'mariarod45', 'hashed_password_2', 'alumno', '3', 'A', 2, 1),
-('Carlos', 'Hernández', 'Pérez', 'carloshe78', 'hashed_password_3', 'alumno', '3', 'B', 1, 1),
-('Ana', 'López', 'González', 'analopez12', 'hashed_password_4', 'alumno', '4', 'A', 1, 1),
-('Luis', 'Martínez', 'Sánchez', 'luismart67', 'hashed_password_5', 'alumno', '4', 'B', 1, 1),
-('Sofia', 'Pérez', 'Ramírez', 'sofiape89', 'hashed_password_6', 'alumno', '4', 'A', 1, 1),
-('Diego', 'González', 'Torres', 'diegogon34', 'hashed_password_7', 'alumno', '3', 'C', 1, 1),
-('Laura', 'Fernández', 'Díaz', 'laurafe56', 'hashed_password_8', 'alumno', '3', 'A', 1, 1),
-('Miguel', 'Sánchez', 'Ruiz', 'miguelsa90', 'hashed_password_9', 'alumno', '4', 'B', 1, 1),
-('Isabel', 'Jiménez', 'Vargas', 'isabelji41', 'hashed_password_10', 'alumno', '3', 'A', 1, 1),
-('Roberto', 'Morales', 'Campos', 'robertomo28', 'hashed_password_11', 'alumno', '4', 'C', 1, 1),
-('Valentina', 'Romero', 'Navarro', 'valentinar73', 'hashed_password_12', 'alumno', '3', 'A', 1, 1),
-('Fernando', 'Castro', 'Ortiz', 'fernandoca55', 'hashed_password_13', 'alumno', '4', 'B', 1, 1),
-('Camila', 'Núñez', 'Flores', 'camilanu82', 'hashed_password_14', 'alumno', '3', 'A', 1, 1),
-('Pablo', 'Vargas', 'Medina', 'pablovar19', 'hashed_password_15', 'alumno', '4', 'C', 1, 1),
-('Gabriela', 'Aguilar', 'Salazar', 'gabrielag64', 'hashed_password_16', 'alumno', '3', 'B', 1, 1),
-('Andrés', 'Ibáñez', 'Reyes', 'andresib37', 'hashed_password_17', 'alumno', '4', 'B', 1, 1),
-('Mariana', 'Domínguez', 'Vega', 'marianadom51', 'hashed_password_18', 'alumno', '3', 'A', 1, 1),
-('Ricardo', 'Escobar', 'Montes', 'ricardoes72', 'hashed_password_19', 'alumno', '4', 'C', 1, 1),
-('Alejandra', 'Quintero', 'Acosta', 'alejandraq26', 'hashed_password_20', 'alumno', '3', 'A', 1, 1),
-('Francisco', 'Salinas', 'Bernal', 'franciscosal48', 'hashed_password_21', 'alumno', '4', 'B', 1, 1),
-('Daniela', 'Medrano', 'Gómez', 'danielamed93', 'hashed_password_22', 'alumno', '3', 'A', 1, 1),
-('Javier', 'Cortés', 'Lara', 'javiercor85', 'hashed_password_23', 'alumno', '4', 'C', 1, 1),
-('Natalia', 'Benavides', 'Hidalgo', 'nataliaben61', 'hashed_password_24', 'alumno', '3', 'A', 1, 1),
-('Eduardo', 'Molina', 'Ponce', 'eduardomol39', 'hashed_password_25', 'alumno', '4', 'B', 1, 1),
-('Lucía', 'Vázquez', 'Arias', 'luciavaz76', 'hashed_password_26', 'alumno', '3', 'A', 1, 1),
-('Mauricio', 'Riquelme', 'Carrillo', 'mauriciorit44', 'hashed_password_27', 'alumno', '4', 'C', 1, 1),
-('Catalina', 'Cifuentes', 'Durán', 'catalinacif88', 'hashed_password_28', 'alumno', '3', 'A', 1, 1),
-('Rodrigo', 'Valenzuela', 'Espinoza', 'rodrigoval57', 'hashed_password_29', 'alumno', '4', 'B', 1, 1),
-('Francisca', 'Tapia', 'Bravo', 'franciscatap70', 'hashed_password_30', 'alumno', '3', 'A', 1, 1);
+-- 1. Insertar alumnos de ejemplo separando Auth (Usuario) y Perfil (Alumno)
+-- Se utiliza una tabla temporal para manejar la carga masiva y relacionar los IDs
+
+CREATE TABLE #MockAlumnos (
+    nombre VARCHAR(50), apellido_paterno VARCHAR(50), apellido_materno VARCHAR(50),
+    username VARCHAR(75), contrasena_cifrada VARCHAR(255), 
+    grado VARCHAR(15), grupo VARCHAR(15), id_tutor INT
+);
+CREATE TABLE #MockTutor (nombre VARCHAR(50), apellido_paterno VARCHAR(50),username VARCHAR(75), 
+    contrasena_cifrada VARCHAR(255), correo VARCHAR(50));
+
+INSERT INTO #MockTutor VALUES ('Diego','Barragán','diegob1','$2b$12$6aJuvv1Kt/qoBsDJev5.bekdZCd3xwm0N0Pv3RlHQZMkkP5ZwXGdW','correo@correo.com'),
+('Ana','Martínez','anamart2','$2b$12$6aJuvv1Kt/qoBsDJev5.bekdZCd3xwm0N0Pv3RlHQZMkkP5ZwXGdW','correo2@correo.com'); 
+INSERT INTO #MockAlumnos VALUES
+('Juan', 'García', 'López', 'juangarc23', 'hashed_password_1', '3', 'A', 2),
+('María', 'Rodríguez', 'Martínez', 'mariarod45', 'hashed_password_2', '3', 'A', 2),
+('Carlos', 'Hernández', 'Pérez', 'carloshe78', 'hashed_password_3', '3', 'B', 2),
+('Ana', 'López', 'González', 'analopez12', 'hashed_password_4', '4', 'A', 2),
+('Luis', 'Martínez', 'Sánchez', 'luismart67', 'hashed_password_5', '4', 'B', 2),
+('Sofia', 'Pérez', 'Ramírez', 'sofiape89', 'hashed_password_6', '4', 'A', 2),
+('Diego', 'González', 'Torres', 'diegogon34', 'hashed_password_7', '3', 'C', 2),
+('Laura', 'Fernández', 'Díaz', 'laurafe56', 'hashed_password_8', '3', 'A', 2),
+('Miguel', 'Sánchez', 'Ruiz', 'miguelsa90', 'hashed_password_9', '4', 'B', 2),
+('Isabel', 'Jiménez', 'Vargas', 'isabelji41', 'hashed_password_10', '3', 'A', 2),
+('Roberto', 'Morales', 'Campos', 'robertomo28', 'hashed_password_11', '4', 'C', 2),
+('Valentina', 'Romero', 'Navarro', 'valentinar73', 'hashed_password_12', '3', 'A', 2),
+('Fernando', 'Castro', 'Ortiz', 'fernandoca55', 'hashed_password_13', '4', 'B', 2),
+('Camila', 'Núñez', 'Flores', 'camilanu82', 'hashed_password_14', '3', 'A', 2),
+('Pablo', 'Vargas', 'Medina', 'pablovar19', 'hashed_password_15', '4', 'C', 2),
+('Gabriela', 'Aguilar', 'Salazar', 'gabrielag64', 'hashed_password_16', '3', 'B', 2),
+('Andrés', 'Ibáñez', 'Reyes', 'andresib37', 'hashed_password_17', '4', 'B', 1),
+('Mariana', 'Domínguez', 'Vega', 'marianadom51', 'hashed_password_18', '3', 'A', 1),
+('Ricardo', 'Escobar', 'Montes', 'ricardoes72', 'hashed_password_19', '4', 'C', 1),
+('Alejandra', 'Quintero', 'Acosta', 'alejandraq26', 'hashed_password_20', '3', 'A', 1),
+('Francisco', 'Salinas', 'Bernal', 'franciscosal48', 'hashed_password_21', '4', 'B', 1),
+('Daniela', 'Medrano', 'Gómez', 'danielamed93', 'hashed_password_22', '3', 'A', 1),
+('Javier', 'Cortés', 'Lara', 'javiercor85', 'hashed_password_23', '4', 'C', 1),
+('Natalia', 'Benavides', 'Hidalgo', 'nataliaben61', 'hashed_password_24', '3', 'A', 1),
+('Eduardo', 'Molina', 'Ponce', 'eduardomol39', 'hashed_password_25', '4', 'B', 1),
+('Lucía', 'Vázquez', 'Arias', 'luciavaz76', 'hashed_password_26', '3', 'A', 1),
+('Mauricio', 'Riquelme', 'Carrillo', 'mauriciorit44', 'hashed_password_27', '4', 'C', 1),
+('Catalina', 'Cifuentes', 'Durán', 'catalinacif88', 'hashed_password_28', '3', 'A', 1),
+('Rodrigo', 'Valenzuela', 'Espinoza', 'rodrigoval57', 'hashed_password_29', '4', 'B', 1),
+('Francisca', 'Tapia', 'Bravo', 'franciscatap70', 'hashed_password_30', '3', 'A', 1);
+
+DECLARE @MapeoUsuarios TABLE (id_usuario INT, username VARCHAR(75));
+
+-- Insertar en Usuario y obtener los IDs generados
+
+INSERT INTO Usuario (nombre,apellido_paterno, username,contrasena_cifrada, tipo_usuario,id_estatus)
+OUTPUT inserted.id_usuario, inserted.username INTO @MapeoUsuarios
+SELECT nombre,apellido_paterno,username,contrasena_cifrada, 'tutor', 1 FROM #MockTutor;
+
+INSERT INTO Usuario (nombre, apellido_paterno, username, contrasena_cifrada, tipo_usuario, id_estatus)
+OUTPUT inserted.id_usuario, inserted.username INTO @MapeoUsuarios
+SELECT nombre, apellido_paterno, username, contrasena_cifrada, 'alumno', 1
+FROM #MockAlumnos;
+
+INSERT INTO Tutor(id_usuario,correo)
+SELECT mu.id_usuario,mo.correo FROM #MockTutor mo JOIN @MapeoUsuarios mu ON mo.username = mu.username; 
+
+-- Insertar en Alumno utilizando el mapeo
+INSERT INTO Alumno (id_usuario, id_tutor, apellido_materno, grado, grupo)
+SELECT mu.id_usuario, ma.id_tutor, ma.apellido_materno, ma.grado, ma.grupo
+FROM #MockAlumnos ma
+JOIN @MapeoUsuarios mu ON ma.username = mu.username;
+
+DROP TABLE #MockTutor;
+DROP TABLE #MockAlumnos;
 
 
---- Insertar Historial de progreso del alumno solo es ejemplo
--- Ahora usando id_usuario en lugar de id_usuario
+--- 2. Insertar Historial de progreso del alumno
+-- Cambiado de id_usuario a id_alumno
 
-INSERT INTO Historial_Alumno (id_usuario, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha)
+INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha)
 VALUES
 -- Alumno 1
-(5, 8.75, 7.50, 8.25, 7.80, 8.40, '2026-03-15 10:30:00'),  -- Se requiere obtener id_usuario correcto de Usuario
+(5, 8.75, 7.50, 8.25, 7.80, 8.40, '2026-03-15 10:30:00'),  
 (5, 8.90, 7.75, 8.50, 8.10, 8.65, '2026-03-22 11:15:00'),
 (5, 9.15, 8.00, 8.75, 8.35, 8.90, '2026-03-29 09:45:00'),
 -- Alumno 2
@@ -159,7 +195,7 @@ VALUES
 (30, 9.30, 8.70, 9.20, 8.90, 9.40, '2026-03-23 17:15:00'),
 (30, 9.50, 8.95, 9.40, 9.15, 9.60, '2026-03-30 17:15:00');
 
--- Actualice el promedio y scores para prueba de alumnos en riesgo:
+-- 3. Actualice el promedio y scores para prueba de alumnos en riesgo:
 UPDATE Historial_Alumno SET promedio_ortografia = 3.45, alineacion_score = 2.80, tamano_letra_score = 3.20, espaciado_score = 2.90, inclinacion_score = 3.10 WHERE id_historial = 1;
 UPDATE Historial_Alumno SET promedio_ortografia = 4.20, alineacion_score = 3.50, tamano_letra_score = 4.10, espaciado_score = 3.75, inclinacion_score = 4.05 WHERE id_historial = 2;
 UPDATE Historial_Alumno SET promedio_ortografia = 5.15, alineacion_score = 4.40, tamano_letra_score = 5.05, espaciado_score = 4.75, inclinacion_score = 5.25 WHERE id_historial = 3;
@@ -185,20 +221,20 @@ UPDATE Historial_Alumno SET promedio_ortografia = 5.05, alineacion_score = 4.35,
 UPDATE Historial_Alumno SET promedio_ortografia = 5.90, alineacion_score = 5.20, tamano_letra_score = 5.80, espaciado_score = 5.50, inclinacion_score = 6.00 WHERE id_historial = 57;
 
 
--- Progreso alumno, posiblemente lo ocupemos esto para el backend:
+-- 4. Progreso alumno, modificado a id_alumno:
 MERGE INTO Progreso_Alumno AS target
 USING (
     SELECT 
-        id_usuario,
+        id_alumno,
         AVG(promedio_ortografia) AS promedio_ortografia,
         AVG(alineacion_score) AS alineacion_score,
         AVG(tamano_letra_score) AS tamano_letra_score,
         AVG(espaciado_score) AS espaciado_score,
         AVG(inclinacion_score) AS inclinacion_score
     FROM Historial_Alumno
-    GROUP BY id_usuario
+    GROUP BY id_alumno
 ) AS source
-ON target.id_usuario = source.id_usuario
+ON target.id_alumno = source.id_alumno
 WHEN MATCHED THEN
     UPDATE SET 
         promedio_ortografia = source.promedio_ortografia,
@@ -208,57 +244,55 @@ WHEN MATCHED THEN
         inclinacion_score = source.inclinacion_score,
         fecha_modificacion = GETDATE()
 WHEN NOT MATCHED THEN
-    INSERT (id_usuario, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha_modificacion)
-    VALUES (source.id_usuario, source.promedio_ortografia, source.alineacion_score, source.tamano_letra_score, source.espaciado_score, source.inclinacion_score, GETDATE());
+    INSERT (id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score, espaciado_score, inclinacion_score, fecha_modificacion)
+    VALUES (source.id_alumno, source.promedio_ortografia, source.alineacion_score, source.tamano_letra_score, source.espaciado_score, source.inclinacion_score, GETDATE());
 
 SELECT * FROM Progreso_Alumno;
 
+-- 5. Consultas con JOINs corregidos a las nuevas tablas Alumno y Usuario
 
 WITH PromedialidadAlumnos AS (
-    SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
+    SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
            p.promedio_ortografia,
            (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
-    FROM Usuario tu
-    JOIN Usuario a ON tu.id_usuario = a.id_tutor AND a.tipo_usuario = 'alumno'
-    JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
-    WHERE tu.id_usuario = 1 -- Reemplaza con el ID del tutor específico que deseas consultar
+    FROM Alumno a
+    JOIN Usuario u ON a.id_usuario = u.id_usuario
+    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    WHERE a.id_tutor = 1 -- Reemplaza con el ID del tutor específico que deseas consultar
 )
 SELECT *
 FROM PromedialidadAlumnos
 WHERE promedio_ortografia < 6.0 
-   OR promedio_legibilidad < 6.0
+   OR promedio_legibilidad < 6.0;
 
 
--- Consulta para obtener todo el progreso.
-
+-- Consulta para obtener todo el progreso agrupado (ortografía).
 SELECT 
     CASE 
-        WHEN promedio_ortografia > 8 THEN 'Buen Promedio'
-        WHEN promedio_ortografia BETWEEN 6 AND 8 THEN 'Promedio Regular'
+        WHEN p.promedio_ortografia > 8 THEN 'Buen Promedio'
+        WHEN p.promedio_ortografia BETWEEN 6 AND 8 THEN 'Promedio Regular'
         ELSE 'Mal Promedio'
     END AS categoria,
-    COUNT(DISTINCT p.id_usuario) AS cantidad_alumnos
-FROM Usuario tu
-JOIN Usuario a ON tu.id_usuario = a.id_tutor AND a.tipo_usuario = 'alumno'
-JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
-WHERE tu.id_usuario = 1 -- Reemplaza con el ID del tutor específico que deseas
+    COUNT(DISTINCT p.id_alumno) AS cantidad_alumnos
+FROM Alumno a
+JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+WHERE a.id_tutor = 1 -- Reemplaza con el ID del tutor específico que deseas
 GROUP BY 
     CASE 
-        WHEN promedio_ortografia > 8 THEN 'Buen Promedio'
-        WHEN promedio_ortografia BETWEEN 6 AND 8 THEN 'Promedio Regular'
+        WHEN p.promedio_ortografia > 8 THEN 'Buen Promedio'
+        WHEN p.promedio_ortografia BETWEEN 6 AND 8 THEN 'Promedio Regular'
         ELSE 'Mal Promedio'
     END
 ORDER BY cantidad_alumnos DESC;
 
 
-WITH ProgresoLegibilidad AS(
+-- Consulta de legibilidad
+WITH ProgresoLegibilidad AS (
     SELECT
-        (alineacion_score + tamano_letra_score + espaciado_score + inclinacion_score) / 4 AS promedio_legibilidad
-    FROM Usuario tu
-    JOIN Usuario a ON tu.id_usuario = a.id_tutor AND a.tipo_usuario = 'alumno'
-    JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
-    WHERE tu.id_usuario = 1 -- Reemplaza con el ID del tutor específico que
-    
+        (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+    FROM Alumno a
+    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    WHERE a.id_tutor = 1 -- Reemplaza con el ID del tutor específico
 )
 SELECT 
     CASE 
@@ -277,58 +311,66 @@ GROUP BY
 ORDER BY cantidad_alumnos DESC;
 
 
+-- Alumnos de Excelencia
 WITH PromedialidadAlumnos AS (
-                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
-                    p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
-                FROM Usuario a
-                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
-                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
-            )
-            SELECT *
-            FROM PromedialidadAlumnos
-            WHERE promedio_ortografia > 8.0 
-            AND promedio_legibilidad > 8.0;
+    SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
+        p.promedio_ortografia,
+        (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+    FROM Alumno a
+    JOIN Usuario u ON a.id_usuario = u.id_usuario
+    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    WHERE a.id_tutor = 1 
+)
+SELECT *
+FROM PromedialidadAlumnos
+WHERE promedio_ortografia > 8.0 
+AND promedio_legibilidad > 8.0;
 
 
+-- Alumnos Regulares
 WITH PromedialidadAlumnos AS (
-                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
-                    p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
-                FROM Usuario a
-                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
-                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
-            )
-            SELECT *
-            FROM PromedialidadAlumnos
-            where promedio_ortografia + promedio_legibilidad / 2 >= 6.0
-            or promedio_ortografia + promedio_legibilidad / 2 <= 8.0;
+    SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
+        p.promedio_ortografia,
+        (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+    FROM Alumno a
+    JOIN Usuario u ON a.id_usuario = u.id_usuario
+    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    WHERE a.id_tutor = 1 
+)
+SELECT *
+FROM PromedialidadAlumnos
+WHERE (promedio_ortografia + promedio_legibilidad) / 2 >= 6.0
+  AND (promedio_ortografia + promedio_legibilidad) / 2 <= 8.0;
 
 
+-- Alumnos en Riesgo (condición de < 6.0)
 WITH PromedialidadAlumnos AS (
-                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
-                    p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
-                FROM Usuario a
-                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
-                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
-            )
-            SELECT *
-            FROM PromedialidadAlumnos
-            WHERE promedio_ortografia + promedio_legibilidad / 2 < 6.0;
+    SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
+        p.promedio_ortografia,
+        (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+    FROM Alumno a
+    JOIN Usuario u ON a.id_usuario = u.id_usuario
+    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    WHERE a.id_tutor = 1
+)
+SELECT *
+FROM PromedialidadAlumnos
+WHERE (promedio_ortografia + promedio_legibilidad) / 2 < 6.0;
 
+-- Alumnos en Excelencia Global
 WITH PromedialidadAlumnos AS (
-                SELECT a.id_usuario, a.nombre, a.apellido_paterno, a.apellido_materno, 
-                    p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
-                FROM Usuario a
-                JOIN Progreso_Alumno p ON a.id_usuario = p.id_usuario
-                WHERE a.id_tutor = 1 AND a.tipo_usuario = 'alumno'
-            )
-            SELECT *
-            FROM PromedialidadAlumnos
-            where (promedio_ortografia + promedio_legibilidad) / 2 > 8.0;
+    SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
+        p.promedio_ortografia,
+        (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
+    FROM Alumno a
+    JOIN Usuario u ON a.id_usuario = u.id_usuario
+    JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+    WHERE a.id_tutor = 1 
+)
+SELECT *
+FROM PromedialidadAlumnos
+WHERE (promedio_ortografia + promedio_legibilidad) / 2 > 8.0;
             
+SELECT * FROM Progreso_Alumno;
 
-SELECT * from Progreso_Alumno
-
+SELECT * FROM Usuario

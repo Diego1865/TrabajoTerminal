@@ -60,10 +60,10 @@ def register_dao(username, email, hashed_password, nombre, apellido):
         id_usuario_generado = resultado_usuario[0]
 
         query_tutor = """
-            INSERT INTO Tutor (id_usuario, correo, nombre, apellido_paterno)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO Tutor (id_usuario, correo)
+            VALUES (?, ?)
         """
-        cursor.execute(query_tutor, (id_usuario_generado, email, nombre, apellido))
+        cursor.execute(query_tutor, (id_usuario_generado, email))
         conn.commit()
     except Exception:
         conn.rollback()

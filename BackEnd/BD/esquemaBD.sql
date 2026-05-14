@@ -14,7 +14,7 @@ CREATE TABLE Estatus (
     descripcion  VARCHAR(15)   NOT NULL,
     CONSTRAINT PK_Estatus PRIMARY KEY (id_estatus)
 );
-1
+
 IF OBJECT_ID('Usuario', 'U') IS NULL
 CREATE TABLE Usuario (
     id_usuario          INT           NOT NULL IDENTITY(1,1),
@@ -27,7 +27,6 @@ CREATE TABLE Usuario (
     id_estatus          INT           NOT NULL DEFAULT 1,
     CONSTRAINT PK_Usuario           PRIMARY KEY (id_usuario),
     CONSTRAINT UQ_Usuario_username  UNIQUE      (username),
-    CONSTRAINT FK_Usuario_Tutor     FOREIGN KEY (id_tutor) REFERENCES Usuario(id_usuario),
     CONSTRAINT FK_Usuario_Estatus   FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus),
     CONSTRAINT CK_tipo_usuario      CHECK (tipo_usuario IN ('tutor', 'alumno'))
 );
@@ -87,7 +86,7 @@ CREATE TABLE Ejercicios_Tutor (
 IF OBJECT_ID('Intentos', 'U') IS NULL
 CREATE TABLE Intentos (
     id_intento           INT         NOT NULL IDENTITY(1,1),
-    id_usuario           INT         NOT NULL,           -- Alumno que realiza el intento
+    id_alumno            INT         NOT NULL,           
     id_ejercicio_tutor   INT         NOT NULL,
     imagen_codificada    VARCHAR(MAX) NOT NULL,            
     texto_detectado_ocr  VARCHAR(MAX)    NULL,           
@@ -96,7 +95,7 @@ CREATE TABLE Intentos (
     puntuacion           INT             NULL,
     retroalimentacion    VARCHAR(MAX)    NULL,           
     CONSTRAINT PK_Intentos          PRIMARY KEY (id_intento),
-    CONSTRAINT FK_Intentos_usuario  FOREIGN KEY (id_usuario)    REFERENCES Usuario(id_usuario),
+    CONSTRAINT FK_Intentos_alumno   FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno),
     CONSTRAINT FK_Intentos_ET       FOREIGN KEY (id_ejercicio_tutor) REFERENCES Ejercicios_Tutor(id_ejercicio_tutor)
 );
 
@@ -104,7 +103,7 @@ CREATE TABLE Intentos (
 IF OBJECT_ID('Progreso_Alumno', 'U') IS NULL
 CREATE TABLE Progreso_Alumno (
     id_progreso          INT            NOT NULL IDENTITY(1,1),
-    id_usuario           INT            NOT NULL,           -- Usuario tipo 'alumno'
+    id_alumno            INT            NOT NULL,           
     promedio_ortografia  DECIMAL(5,2)       NULL,
     alineacion_score     DECIMAL(5,2)       NULL,
     tamano_letra_score   DECIMAL(5,2)       NULL,
@@ -112,15 +111,15 @@ CREATE TABLE Progreso_Alumno (
     inclinacion_score    DECIMAL(5,2)       NULL,
     fecha_modificacion   DATETIME2      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_Progreso_Alumno   PRIMARY KEY (id_progreso),
-    CONSTRAINT UQ_Progreso_usuario  UNIQUE      (id_usuario),   
-    CONSTRAINT FK_Progreso_usuario  FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+    CONSTRAINT UQ_Progreso_alumno   UNIQUE      (id_alumno),   
+    CONSTRAINT FK_Progreso_alumno   FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno)
 );
 
 -- ── Historial del alumno ────────────────────────────────────
 IF OBJECT_ID('Historial_Alumno', 'U') IS NULL
 CREATE TABLE Historial_Alumno (
     id_historial         INT            NOT NULL IDENTITY(1,1),
-    id_usuario           INT            NOT NULL,           -- Usuario tipo 'alumno'
+    id_alumno            INT            NOT NULL,           
     promedio_ortografia  DECIMAL(5,2)       NULL,
     alineacion_score     DECIMAL(5,2)       NULL,
     tamano_letra_score   DECIMAL(5,2)       NULL,
@@ -128,7 +127,7 @@ CREATE TABLE Historial_Alumno (
     inclinacion_score    DECIMAL(5,2)       NULL,
     fecha                DATETIME2      NOT NULL DEFAULT GETDATE(),
     CONSTRAINT PK_Historial_Alumno PRIMARY KEY (id_historial),
-    CONSTRAINT FK_Historial_usuario FOREIGN KEY (id_usuario) REFERENCES Usuario(id_usuario)
+    CONSTRAINT FK_Historial_alumno FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno)
 );
 
 -- ── Análisis caligráfico ────────────────────────────────────

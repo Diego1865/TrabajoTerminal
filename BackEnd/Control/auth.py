@@ -36,7 +36,7 @@ def login(credentials: LoginRequest):
     
     try:
         user = login_dao(credentials.username)
-        id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus = user
+        id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus, id_tutor, id_alumno = user
         if id_estatus != 1:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El usuario no se encuentra activo")
         if not verify_password(credentials.password, contrasena_cifrada):

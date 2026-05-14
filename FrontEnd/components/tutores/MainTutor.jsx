@@ -305,14 +305,27 @@ export default function MainTutor({ onLogout }) {
       setLoadingCategoria(true);
       setErrorCategoria(null);
       try {
+        // Asegúrate de que la URL coincida con tu backend (agregué /alumno/ si ese es tu prefijo)
         const res = await fetch(`${API_URL}/api/tutor/${categoriaSeleccionada}/${idTutor}`, {
           headers: { "Authorization": `Bearer ${getToken()}` }
         });
+        
         const data = await res.json();
+        
+        // 1. Validar si la respuesta del backend fue un error (400, 404, 500, etc.)
+        if (!res.ok) {
+          throw new Error(data.detail || "Error al obtener la categoría de alumnos");
+        }
+
         console.log(`Alumnos categoría ${categoriaSeleccionada}:`, data);
-        setAlumnosCategoria(data);
+        
+        // 2. Seguridad extra: asegurarnos de que data sea un arreglo
+        setAlumnosCategoria(Array.isArray(data) ? data : []);
+        
       } catch (err) {
         setErrorCategoria(err.message);
+        // Si hay error, vaciamos la lista para que no rompa el componente hijo
+        setAlumnosCategoria([]); 
       } finally {
         setLoadingCategoria(false);
       }
