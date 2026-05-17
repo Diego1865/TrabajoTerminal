@@ -43,9 +43,7 @@ def obtener_alumnos_por_tutor(id_tutor: int, current_user: dict = Depends(requir
 
 @router.put("/baja/{id_alumno}")
 def dar_de_baja_alumno(id_alumno: int, current_user: dict = Depends(require_tutor)):
-    if alumno_data.id_tutor != current_user["id_usuario"]:
-        raise HTTPException(status_code=403, detail="No tiene permiso para dar de baja alumnos para otro tutor.")
-
+   
     try:
         dar_de_baja_alumno_dao(id_alumno, current_user["id_usuario"])
         return {"message": "Alumno dado de baja exitosamente"}
