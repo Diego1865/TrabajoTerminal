@@ -26,7 +26,7 @@ sudo docker start TT
 echo "[*] Iniciando Backend (FastAPI)..."
 if [ -d "BackEnd" ]; then
     cd BackEnd || exit
-    source ../env/bin/activate
+    source env/bin/activate
     # Usamos python -m uvicorn para asegurar que use el del venv
     python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload &
     BACK_PID=$!
