@@ -141,9 +141,7 @@ CREATE TABLE Intentos (
 );
 
 GO
-CREATE UNIQUE INDEX UQ_Intentos_original
-ON Intentos (id_alumno, id_ejercicio_tutor)
-WHERE id_recomendacion IS NULL;
+
 
 --  Progreso del alumno 
 IF OBJECT_ID('Progreso_Alumno', 'U') IS NULL
@@ -173,7 +171,20 @@ CREATE TABLE Analisis_Caligrafico (
     inclinacion_score       DECIMAL(5,2)       NULL,
     observaciones           VARCHAR(MAX)       NULL,
     CONSTRAINT PK_Analisis_Caligrafico  PRIMARY KEY (id_analisis_caligrafico),
-    CONSTRAINT UQ_Analisis_Cal_intento  UNIQUE      (id_intento),  
+    CONSTRAINT UQ_Analisis_Cal_intento  UNIQUE      (id_intento),
+    
+    
+    CONSTRAINT CK_alineacion_score CHECK (alineacion_score IS NULL
+            OR (alineacion_score >= 0 AND alineacion_score <= 10)),
+    CONSTRAINT CK_tamano_letra_score CHECK (tamano_letra_score IS NULL
+            OR (tamano_letra_score >= 0 AND tamano_letra_score <= 10)),
+    CONSTRAINT CK_espaciado_score CHECK (espaciado_score IS NULL
+            OR (espaciado_score >= 0 AND espaciado_score <= 10)),
+    CONSTRAINT CK_inclinacion_score CHECK (inclinacion_score IS NULL
+            OR (inclinacion_score >= 0 AND inclinacion_score <= 10)),
+    
+    
+    
     CONSTRAINT FK_Analisis_Cal_intento  FOREIGN KEY (id_intento) REFERENCES Intentos(id_intento)
 );
 
@@ -188,6 +199,10 @@ CREATE TABLE Analisis_Ortografico (
     CONSTRAINT PK_Analisis_Ortografico  PRIMARY KEY (id_analisis_ortografico),
     CONSTRAINT UQ_Analisis_Ort_intento  UNIQUE      (id_intento),
     CONSTRAINT FK_Analisis_Ort_intento  FOREIGN KEY (id_intento) REFERENCES Intentos(id_intento),
+
+    CONSTRAINT CK_ortografia_score CHECK (ortografia_score IS NULL
+            OR (ortografia_score >= 0 AND ortografia_score <= 10)),
+
     CONSTRAINT CK_sugerencias_json      CHECK (sugerencias_json IS NULL OR ISJSON(sugerencias_json) = 1)
 );
 GO
