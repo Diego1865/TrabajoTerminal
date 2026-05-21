@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { CheckCircle, Mail, Lock, User, UserCheck } from 'lucide-react';
 
-const Registro = ({ onRegister, onNavigateLogin }) => {
+const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [username, setUsername] = useState('');
@@ -49,6 +49,7 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Error al registrar usuario');
       if (typeof onNavigateLogin === 'function') onNavigateLogin();
+      else if (typeof onNavigateAviso === 'function') onNavigateAviso();
       else if (typeof onRegister === 'function') onRegister();
     } catch (err) {
       setError(err.message);
@@ -106,7 +107,12 @@ const Registro = ({ onRegister, onNavigateLogin }) => {
 
             <div className="text-center mb-7">
               <h2 className="font-black mb-1" style={{ fontSize: '2.2rem', color: '#059669' }}>¡Regístrate! 🎊</h2>
-              <p className="font-semibold text-gray-500 text-base">Únete como tutor ahora</p>
+              <p className="font-semibold text-gray-500 text-base">Únete como Docente/Tutor ahora</p>
+              <p className="font-semibold text-gray-500 text-base">Consulta nuestro {' '}
+                <button onClick={onNavigateAviso} className="font-black hover:underline" style={{ color: '#059669' }}>
+                  Aviso de Privacidad
+                </button>
+                 </p>
             </div>
 
             {error && (

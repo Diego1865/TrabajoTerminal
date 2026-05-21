@@ -4,7 +4,7 @@ import { LogOut, ArrowLeft } from 'lucide-react';
 import TabProximos      from './TabProximos';
 import TabCompletados   from './TabCompletados';
 import TabVencidos      from './TabVencidos';
-import TabProgreso      from './TabProgreso';       // ← NUEVO
+//import TabProgreso      from './TabProgreso';       // ← NUEVO
 import LienzoDigital    from './LienzoDigital';
 import CapturaEscritura from './CapturaEscritura';
 import PerfilAlumno     from './PerfilAlumno';
@@ -13,7 +13,7 @@ const TABS = [
   { id: 'proximos',    label: '📋 Próximos',    color: '#3B82F6', shadow: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
   { id: 'completados', label: '✅ Completados',  color: '#10B981', shadow: '#065F46', bg: '#ECFDF5', border: '#A7F3D0' },
   { id: 'vencidos',    label: '⏰ Vencidos',     color: '#F97316', shadow: '#C2410C', bg: '#FFF7ED', border: '#FED7AA' },
-  { id: 'progreso',    label: '📈 Mi Progreso',  color: '#EC4899', shadow: '#9D174D', bg: '#FDF2F8', border: '#FBCFE8' }, // ← NUEVO
+  //{ id: 'progreso',    label: '📈 Mi Progreso',  color: '#EC4899', shadow: '#9D174D', bg: '#FDF2F8', border: '#FBCFE8' }, // ← NUEVO
   { id: 'perfil',      label: '👤 Perfil',       color: '#8B5CF6', shadow: '#4C1D95', bg: '#F5F3FF', border: '#DDD6FE' },
 ];
 
@@ -208,9 +208,9 @@ const MainAlumno = ({ onLogout }) => {
         <div className="w-full max-w-4xl mx-auto">
           {pestañaActiva === 'perfil' ? (
             <PerfilAlumno />
-          ) : pestañaActiva === 'progreso' ? (
+          ) /*: pestañaActiva === 'progreso' ? (
             <TabProgreso idAlumno={idAlumno} />                     // ← NUEVO
-          ) : !tutorActivo ? (
+          ) */: !tutorActivo ? (
             <div className="p-8 text-center mt-6"
               style={{ background: '#FFF7ED', border: '3px solid #FED7AA', borderRadius: '24px' }}>
               <div style={{ fontSize: '4rem' }} className="mb-4">😔</div>

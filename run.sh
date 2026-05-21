@@ -26,7 +26,7 @@ sudo docker start TT
 echo "[*] Iniciando Backend (FastAPI)..."
 if [ -d "BackEnd" ]; then
     cd BackEnd || exit
-    source env/bin/activate
+    source ../env/bin/activate
     # Usamos python -m uvicorn para asegurar que use el del venv
     python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload &
     BACK_PID=$!
@@ -41,7 +41,7 @@ echo "[*] Iniciando Frontend (Next.js)..."
 if [ -d "FrontEnd" ]; then
     cd FrontEnd || exit
     # Usamos npx para asegurar que encuentre el comando 'next' local
-    npx next dev &
+    npm run dev &
     FRONT_PID=$!
     cd ..
 else

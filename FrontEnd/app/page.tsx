@@ -4,6 +4,7 @@ import Login from "@/components/Login";
 import Registro from "@/components/Registro";
 import MainTutor from "@/components/tutores/MainTutor";
 import MainAlumno from "@/components/alumnos/MainAlumno";
+import AvisoDePrivacida from "@/components/Aviso";
 
 const decodificarJwt = (token: string) => {
   try {
@@ -63,11 +64,20 @@ export default function App() {
     );
   }
 
+  if (vistaActual === 'aviso') {
+  return (
+    <AvisoDePrivacida 
+      onNavigateBack={() => setVistaActual('registro')} 
+      />
+    );
+  }
+
   if (vistaActual === 'registro') {
-    return (
-      <Registro 
-        onRegister={() => setVistaActual('login')} 
-        onNavigateLogin={() => setVistaActual('login')} 
+  return (
+    <Registro 
+      onRegister={() => setVistaActual('login')} 
+      onNavigateLogin={() => setVistaActual('login')} 
+      onNavigateAviso={() => setVistaActual('aviso')} 
       />
     );
   }
