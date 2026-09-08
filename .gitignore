@@ -1,2 +1,5 @@
 .env
 actualizardocker.ps1
+update_db.sh
+*.tex
+*.md

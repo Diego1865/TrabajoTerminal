@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "OrtoApp",
+  title: "Graf-IA",
   description: "Aplicación Web para la Ortografía y calidad de letra",
 };
 

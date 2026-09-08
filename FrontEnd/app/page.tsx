@@ -1,12 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import CapturaEscritura from "@/components/CapturaEscritura";
-import LienzoDigital from "@/components/LienzoDigital";
 import Login from "@/components/Login";
 import Registro from "@/components/Registro";
-//import DashboardTutor from "@/components/DashboardTutor";
 import MainTutor from "@/components/tutores/MainTutor";
-import DashboardAlumno from "@/components/alumnos/DashboardAlumno";
+import MainAlumno from "@/components/alumnos/MainAlumno";
+import AvisoDePrivacida from "@/components/Aviso";
 
 const decodificarJwt = (token: string) => {
   try {
@@ -66,11 +64,20 @@ export default function App() {
     );
   }
 
+  if (vistaActual === 'aviso') {
+  return (
+    <AvisoDePrivacida 
+      onNavigateBack={() => setVistaActual('registro')} 
+      />
+    );
+  }
+
   if (vistaActual === 'registro') {
-    return (
-      <Registro 
-        onRegister={() => setVistaActual('login')} 
-        onNavigateLogin={() => setVistaActual('login')} 
+  return (
+    <Registro 
+      onRegister={() => setVistaActual('login')} 
+      onNavigateLogin={() => setVistaActual('login')} 
+      onNavigateAviso={() => setVistaActual('aviso')} 
       />
     );
   }
@@ -81,7 +88,7 @@ export default function App() {
     if (tipoUsuario === 'tutor') {
       return <MainTutor onLogout={handleLogout} />;
     } else if (tipoUsuario === 'alumno') {
-      return <DashboardAlumno onLogout={handleLogout} />;
+      return <MainAlumno onLogout={handleLogout} />;
     } else {
       console.warn('tipoUsuario inválido:', tipoUsuario);
       // Si no hay tipo_usuario válido, volver al login

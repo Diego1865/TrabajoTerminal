@@ -1,14 +1,11 @@
 from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel, Field, field_validator
-import re
-from Modelo.database import connect_to_database
 from passlib.context import CryptContext
 import jwt
 from datetime import datetime, timedelta
 import os
+from Modelo.schemas_auth import LoginRequest, LoginResponse, RegisterRequest
+from Modelo.dao_auth import login_dao, register_dao
 from dotenv import load_dotenv
-
-# Cargar .env desde la raíz del proyecto
 
 load_dotenv()
 router = APIRouter()
@@ -20,29 +17,6 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440  # 24 horas
 
-# Modelos de Pydantic para la validación de datos
-class LoginRequest(BaseModel):
-    username: str
-    password: str
-
-# Se modifica la respuesta para devolver el token en lugar de los datos expuestos
-class LoginResponse(BaseModel):
-    message: str
-    token: str
-
-class RegisterRequest(BaseModel):
-    nombre: str
-    username: str = Field(..., min_length=6, pattern=r'^[a-zA-Z0-9_]+$')
-    email: str
-    password: str = Field(..., min_length=8)
-
-    @field_validator('password')
-    @classmethod
-    def validate_password(cls, v: str) -> str:
-        pattern = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$'
-        if not re.match(pattern, v):
-            raise ValueError('La contraseña debe contener al menos una minúscula, una mayúscula, un número y un carácter especial.')
-        return v
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -58,117 +32,43 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 @router.post("/login", response_model=LoginResponse)
-async def login(credentials: LoginRequest):
-    conn = connect_to_database()
-    if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error de conexión a la base de datos"
-        )
-
-    cursor = conn.cursor()
+def login(credentials: LoginRequest):
+    
     try:
-        # Consulta unificada a la tabla Usuario
-        query = """
-            SELECT id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus 
-            FROM Usuario
-            WHERE username = ?
-        """
-        cursor.execute(query, credentials.username)
-        user = cursor.fetchone()
-
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Usuario o contraseña incorrectos"
-            )
-
-        id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus = user
-
-        # Verificar estatus activo (id_estatus = 1 según catálogo)
+        user = login_dao(credentials.username)
+        id_usuario, contrasena_cifrada, nombre, tipo_usuario, id_estatus, id_tutor, id_alumno = user
         if id_estatus != 1:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="El usuario no se encuentra activo"
-            )
-
-        # Verificar la contraseña
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="El usuario no se encuentra activo")
         if not verify_password(credentials.password, contrasena_cifrada):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Usuario o contraseña incorrectos"
-            )
-
+            raise HTTPException( status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario o contraseña incorrectos")
+            
         # Generar Token unificado
         token_payload = {
-            "id_usuario": id_usuario,
-            "nombre": nombre,
-            "tipo_usuario": tipo_usuario
+            "id_usuario": id_usuario, 
+            "nombre": nombre, 
+            "tipo_usuario": tipo_usuario,
+            "id_tutor": id_tutor,
+            "id_alumno": id_alumno
         }
-        
+
         token = create_access_token(token_payload)
-
-        return {
-            "message": "Inicio de sesión exitoso",
-            "token": token
-        }
-
-    except HTTPException:
-        raise
+        return {"message": "Inicio de sesión exitoso", "token": token}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ce))
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(ve))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error: {str(e)}"
-        )
-    finally:
-        cursor.close()
-        conn.close()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error: {str(e)}")
 
 @router.post("/register")
-async def register(user_data: RegisterRequest):
-    conn = connect_to_database()
-    if not conn:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Error de conexión a la base de datos"
-        )
-
-    cursor = conn.cursor()
+def register(user_data: RegisterRequest):
+    hashed_password = get_password_hash(user_data.password)
     try:
-        # Verificar si el correo ya existe
-        cursor.execute("SELECT id_usuario FROM Usuario WHERE correo = ?", user_data.email)
-        if cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El correo electrónico ya está registrado"
-            )
-
-        # Verificar si el username ya existe
-        cursor.execute("SELECT id_usuario FROM Usuario WHERE username = ?", user_data.username)
-        if cursor.fetchone():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="El nombre de usuario ya está registrado"
-            )
-
-        hashed_password = get_password_hash(user_data.password)
-        
-        query = """
-            INSERT INTO Usuario (nombre, username, correo, contrasena_cifrada, tipo_usuario, id_estatus)
-            VALUES (?, ?, ?, ?, 'tutor', 1)
-        """
-        cursor.execute(query, (user_data.nombre, user_data.username, user_data.email, hashed_password))
-        conn.commit()
-
+        register_dao(user_data.username, user_data.email, hashed_password, user_data.nombre,user_data.apellido)
         return {"message": "Usuario registrado exitosamente"}
-
-    except HTTPException:
-        raise
+    except ConnectionError as ce:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ce))
+    except ValueError as ve:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error al registrar usuario: {str(e)}"
-        )
-    finally:
-        cursor.close()
-        conn.close()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Error: {str(e)}")

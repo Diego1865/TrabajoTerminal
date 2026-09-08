@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+pyodbc
+python-dotenv
+bcrypt==4.0.1
+passlib[bcrypt]
+apscheduler
+PyJWT
