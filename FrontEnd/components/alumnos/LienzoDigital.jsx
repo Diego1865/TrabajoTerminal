@@ -253,7 +253,15 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
     try {
       if (!canvasRef.current) return;
       setEnviando(true);
-      const imagenDataUrl = canvasRef.current.toDataURL('image/png');
+      const original = canvasRef.current;
+      const exportacion = document.createElement('canvas');
+      exportacion.width = original.width;
+      exportacion.height = original.height;
+      const ctx = exportacion.getContext('2d');
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, exportacion.width, exportacion.height);
+      ctx.drawImage(original, 0, 0);
+      const imagenDataUrl = exportacion.toDataURL('image/png');
       if (!idEjercicioTutor) { mostrarMensaje('Error: No se especificó el ejercicio.', 'error'); return; }
       const token = localStorage.getItem('token');
       if (!token) { mostrarMensaje('Error: Sesión expirada.', 'error'); return; }

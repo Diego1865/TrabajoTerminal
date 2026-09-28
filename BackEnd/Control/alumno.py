@@ -5,6 +5,7 @@ from Modelo.schemas_alumno import AlumnoUpdate, IntentoCreate
 from Modelo.schemas_auth import PasswordUpdate
 from Modelo.dao_alumno import *
 from Modelo.dao_auth import obtener_hash_contrasena_dao
+from Servicios.ocr import OcrError
 
 router = APIRouter()
 
@@ -55,8 +56,12 @@ def verificar_estado_tutor(current_user: dict = Depends(require_alumno)):
 def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(require_alumno)):
     
     try:
-        registrar_intento_dao(intento_data.id_ejercicio_tutor, intento_data.imagen_codificada, current_user["id_usuario"])
-        return {"message": "Intento registrado."}
+        ocr = registrar_intento_dao(intento_data.id_ejercicio_tutor, intento_data.imagen_codificada, current_user["id_usuario"])
+        return {"message": "Intento registrado.", "ocr": ocr}
+    except OcrError as error:
+        raise HTTPException(status_code=error.status_code, detail=str(error))
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:

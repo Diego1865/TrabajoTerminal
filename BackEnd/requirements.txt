@@ -6,3 +6,5 @@ bcrypt==4.0.1
 passlib[bcrypt]
 apscheduler
 PyJWT
+google-cloud-vision>=3.10,<4
+Pillow>=11.3,<13

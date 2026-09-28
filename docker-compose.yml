@@ -46,6 +46,8 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY}
+      - GOOGLE_VISION_ENABLED=${GOOGLE_VISION_ENABLED:-false}
+      - GOOGLE_VISION_LANGUAGE_HINTS=${GOOGLE_VISION_LANGUAGE_HINTS:-}
 
   frontend:
     build:

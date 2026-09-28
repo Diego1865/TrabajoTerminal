@@ -3,3 +3,8 @@ actualizardocker.ps1
 update_db.sh
 *.tex
 *.md
+!BackEnd/OCR_SETUP.md
+__pycache__/
+.venv/
+credentials/
+*-credentials.json
