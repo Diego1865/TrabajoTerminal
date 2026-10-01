@@ -8,3 +8,8 @@ __pycache__/
 .venv/
 credentials/
 *-credentials.json
+.env.demo
+deploy/*.tar.gz
+deploy/*.bak
+!deploy/README.md
+backups/

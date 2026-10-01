@@ -5,6 +5,7 @@ import AlumnosCategoria from "./AlumnosCategoria";
 import ProgresoAlumnos from "./ProgresoAlumnos";
 import TabEjercicios from "./TabEjercicios";
 import PerfilTutor from "./PerfilTutor";
+import EvaluacionPreliminar from "./EvaluacionPreliminar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -189,6 +190,8 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                     )}
                   </div>
 
+                  <EvaluacionPreliminar evaluacion={intentoActivo.evaluacion_preliminar}
+                    onUsarSugerencia={(texto) => setRetroalimentacion(actual => actual ? `${actual}\n\n${texto}` : texto)} />
                   {intentoActivo.texto_detectado_ocr && (
                     <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
                       <p className="text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Texto Detectado (OCR)</p>

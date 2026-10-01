@@ -1,5 +1,28 @@
 # Google Cloud Vision: configuración y prueba
 
+## Evaluación automática preliminar
+
+Las nuevas entregas comparan el texto OCR con referencias explícitas en
+`contenido_base.evaluacion`: `{"modo":"copia","respuestas_aceptadas":["Texto esperado."]}`.
+El modo `completar` exige escribir la oración completa y acepta una o varias
+soluciones definidas por el docente. No infiere soluciones a partir de guiones.
+Para el catálogo existente, aplicar `BD/migraciones/002_evaluacion_preliminar.sql`:
+configura siete ejercicios conocidos y respeta configuraciones propias existentes.
+El archivo de ejemplos ya incluye esas referencias para instalaciones nuevas.
+
+El resultado queda dentro de `resultado_ocr_json.evaluacion_preliminar` y se muestra
+en el detalle de intentos del panel de tutor, junto a la imagen y la transcripción.
+El docente puede copiar la propuesta a sus comentarios, editarla y guardar su nota
+mediante el formulario existente. No se asigna nota automática ni se alteran promedios.
+Las entregas anteriores conservan su resultado original y no se reprocesan.
+
+Se normalizan espacios/saltos de línea y Unicode NFC, conservando mayúsculas,
+acentos y puntuación. Se alinean tokens para identificar diferencias, no para
+diagnosticar errores de aprendizaje. `ñ` y `n` se consideran letras distintas.
+El aviso de confianza OCR inferior a 0.8 es una heurística de revisión sin validar
+con muestras; nunca representa una nota. Incluso una coincidencia requiere revisión.
+Los ejercicios de trazado sin referencia configurada quedan fuera de esta evaluación.
+
 La entrega existente (`POST /api/alumno/intento`, con JWT de alumno) procesa tanto
 fotografías como dibujos. `GOOGLE_VISION_ENABLED=false` es el valor predeterminado:
 permite seguir entregando sin llamar a Google. Con `true`, se utiliza

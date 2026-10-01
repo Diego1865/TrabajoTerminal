@@ -90,12 +90,13 @@ class PersistenciaTests(unittest.TestCase):
     @patch("Modelo.dao_alumno.connect_to_database")
     def test_guarda_texto_y_json_en_misma_transaccion(self, conectar, reconocer):
         cursor = conectar.return_value.cursor.return_value
-        cursor.fetchone.side_effect = [(3,), (1,)]
+        cursor.fetchone.side_effect = [(3,), (1, '{"evaluacion":{"modo":"copia","respuestas_aceptadas":["niño"]}}')]
         reconocer.return_value = {"texto": "niño", "estado": "procesado"}
         self.assertEqual(registrar_intento_dao(4, "imagen", 5)["texto"], "niño")
         valores = cursor.execute.call_args.args[1]
         self.assertEqual(valores[3], "niño")
         self.assertIn("niño", valores[4])
+        self.assertIn("evaluacion_preliminar", valores[4])
         conectar.return_value.commit.assert_called_once()
 
     @patch("Modelo.dao_alumno.reconocer_escritura")
@@ -111,7 +112,7 @@ class PersistenciaTests(unittest.TestCase):
     @patch("Modelo.dao_alumno.connect_to_database")
     def test_fallo_ocr_no_inserta_intento(self, conectar, reconocer):
         cursor = conectar.return_value.cursor.return_value
-        cursor.fetchone.side_effect = [(3,), (1,)]
+        cursor.fetchone.side_effect = [(3,), (1, '{}')]
         with self.assertRaises(OcrError):
             registrar_intento_dao(4, "imagen", 5)
         self.assertEqual(cursor.execute.call_count, 2)

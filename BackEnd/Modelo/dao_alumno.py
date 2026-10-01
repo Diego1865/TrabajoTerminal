@@ -1,6 +1,7 @@
 from Modelo.database import connect_to_database
 import json
 from Servicios.ocr import reconocer_escritura
+from Servicios.evaluacion import evaluar
 
 #perfil del alumno
 def actualizar_info_alumno_dao(nombre, apellido_paterno, apellido_materno, grupo, id_usuario):
@@ -81,7 +82,8 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
         id_alumno = alumno_row[0]
 
         cursor.execute("""
-            SELECT et.id_estatus FROM Ejercicios_Tutor et
+            SELECT et.id_estatus, e.contenido_base FROM Ejercicios_Tutor et
+            JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
             JOIN Alumno a ON a.id_tutor = et.id_tutor
             WHERE et.id_ejercicio_tutor = ? AND a.id_alumno = ?
         """, (ejercicio_tutor_id, id_alumno))
@@ -93,6 +95,11 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
             raise ValueError("El ejercicio ya no está activo.")
 
         ocr = reconocer_escritura(imagen_codificada)
+        try:
+            contenido = json.loads(ejercicio[1])
+        except (TypeError, ValueError):
+            contenido = {}
+        ocr["evaluacion_preliminar"] = evaluar(contenido if isinstance(contenido, dict) else {}, ocr)
         
         cursor.execute("""
             INSERT INTO Intentos (id_alumno, id_ejercicio_tutor, imagen_codificada,
