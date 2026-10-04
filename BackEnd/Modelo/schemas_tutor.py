@@ -22,6 +22,7 @@ class IntentoTutorResponse(BaseModel):
     fecha_envio: datetime
     imagen_codificada: str
     texto_detectado_ocr: Optional[str] = None
+    evaluacion_preliminar: Optional[dict] = None
     puntuacion: Optional[int] = None
     retroalimentacion: Optional[str] = None
 

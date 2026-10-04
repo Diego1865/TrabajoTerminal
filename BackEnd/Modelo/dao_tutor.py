@@ -1,4 +1,5 @@
 from Modelo.database import connect_to_database
+import json
 
 #Funciones relacionadas con el tutor y sus alumnos
 def registrar_alumno_dao(alumno_data, hashed_password):
@@ -406,7 +407,8 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 i.imagen_codificada,
                 i.texto_detectado_ocr,
                 i.puntuacion,        
-                i.retroalimentacion  
+                i.retroalimentacion,
+                i.resultado_ocr_json
             FROM Intentos i
             JOIN Alumno a ON i.id_alumno = a.id_alumno
             JOIN Usuario u ON a.id_usuario = u.id_usuario
@@ -431,7 +433,8 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 "imagen_codificada": row[6],
                 "texto_detectado_ocr": row[7],
                 "puntuacion": row[8],
-                "retroalimentacion": row[9]
+                "retroalimentacion": row[9],
+                "evaluacion_preliminar": (json.loads(row[10]) if row[10] else {}).get("evaluacion_preliminar")
             })
 
         return intentos

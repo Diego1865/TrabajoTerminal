@@ -1,4 +1,5 @@
-CREATE DATABASE TT;
+IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'TT')
+    CREATE DATABASE TT ;
 GO
 
 USE TT;
@@ -95,7 +96,8 @@ CREATE TABLE Intentos (
     id_ejercicio_tutor   INT         NOT NULL,
     id_recomendacion     INT         NULL,
     imagen_codificada    VARCHAR(MAX) NOT NULL,            
-    texto_detectado_ocr  VARCHAR(MAX)    NULL,           
+    texto_detectado_ocr  NVARCHAR(MAX)   NULL,
+    resultado_ocr_json   NVARCHAR(MAX)   NULL,
     fecha_envio          DATETIME2   NOT NULL DEFAULT GETDATE(),
     tiempo_respuesta     INT             NULL,
     puntuacion           INT             NULL,

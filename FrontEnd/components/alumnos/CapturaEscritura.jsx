@@ -91,7 +91,10 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
         if (width > height && width > MAX) { height *= MAX / width; width = MAX; }
         else if (height > MAX) { width *= MAX / height; height = MAX; }
         canvas.width = width; canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
         setImagenPreview(canvas.toDataURL('image/jpeg', 0.8));
       };
       img.src = reader.result;
