@@ -140,7 +140,7 @@ def actualizar_password_tutor(data: PasswordUpdate, current_user: dict = Depends
             raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
             
         actualizar_password_tutor_dao(data.nueva_contrasena, current_user["id_usuario"])
-        conn.commit()
+        
         return {"message": "Contraseña actualizada correctamente"}
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
