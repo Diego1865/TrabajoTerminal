@@ -39,7 +39,7 @@ def registrar_alumno_dao(alumno_data, hashed_password):
             alumno_data.grupo
         ))
 
-        cursor.execute("INSERT INTO Progreso_Alumno (id_alumno) SELECT id_alumno FROM Alumno WHERE id_usuario = ?", (id_usuario,))
+        cursor.execute("INSERT INTO vw_progreso_alumno (id_alumno) SELECT id_alumno FROM Alumno WHERE id_usuario = ?", (id_usuario,))
         
         conn.commit()
     except Exception:
@@ -102,7 +102,7 @@ def obtener_alumnos_en_riesgo_dao(id_tutor):
                     (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+                JOIN vw_progreso_alumno p ON a.id_alumno = p.id_alumno
                 WHERE a.id_tutor = ?
             )
             SELECT *
@@ -144,7 +144,7 @@ def obtener_alumnos_regular_dao(id_tutor):
                     (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+                JOIN vw_progreso_alumno p ON a.id_alumno = p.id_alumno
                 WHERE a.id_tutor = ?
             )
             SELECT *
@@ -186,7 +186,7 @@ def obtener_alumnos_excelencia_dao(id_tutor):
                     (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+                JOIN vw_progreso_alumno p ON a.id_alumno = p.id_alumno
                 WHERE a.id_tutor = ?
             )
             SELECT *
@@ -220,7 +220,7 @@ def obtener_progreso_grafico_dao(id_tutor):
         raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
-        # Corrección: Uso de la tabla Alumno (a) y Progreso_Alumno (p) mediante id_alumno
+        # Corrección: Uso de la tabla Alumno (a) y vw_progreso_alumno (p) mediante id_alumno
         query1 = """
             SELECT 
                 CASE 
@@ -230,7 +230,7 @@ def obtener_progreso_grafico_dao(id_tutor):
                 END AS categoria,
                 COUNT(DISTINCT p.id_alumno) AS cantidad_alumnos
             FROM Alumno a
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+                JOIN vw_progreso_alumno p ON a.id_alumno = p.id_alumno
             WHERE a.id_tutor = ?
             GROUP BY 
                 CASE 
@@ -256,7 +256,7 @@ def obtener_progreso_grafico_dao(id_tutor):
                 SELECT
                     (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
                 FROM Alumno a
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
+                JOIN vw_progreso_alumno p ON a.id_alumno = p.id_alumno
                 WHERE a.id_tutor = ?
             )
             SELECT 
