@@ -106,6 +106,10 @@ cd /opt/grafia
 sudo bash deploy/backup.sh
 ```
 
+En una instalación nueva, antes del primer respaldo, dar el volumen al usuario de SQL Server
+(si no, falla con "Operating system error 5"):
+`sudo docker compose --env-file .env.demo -f compose.demo.yml exec -u 0 database chown mssql /var/opt/mssql/backup`.
+
 El script hace BACKUP con checksum y RESTORE VERIFYONLY; guarda una copia `.bak`
 en `backups/`. Eso comprueba el archivo, no sustituye un ensayo de restauración.
 Descargarlo a una ubicación privada fuera de la VM. No se ha programado un respaldo
