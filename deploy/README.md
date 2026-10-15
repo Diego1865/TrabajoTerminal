@@ -1,8 +1,8 @@
 # Demo en Google Cloud
 
-Plan preparado para `trabajoterminal-510018`: una VM e2-standard-2 (2 vCPU, 8 GB),
+Plan preparado para `trabajoterminal-510019`: una VM e2-medium (2 vCPU compartidas, 4 GB),
 Ubuntu 24.04 x86_64, disco balanced de 40 GB y una IPv4 fija en us-central1-a.
-Estimación orientativa: USD 60–80/mes encendida 24/7, tráfico ligero y pocos OCR.
+Estimación orientativa: USD 30–40/mes encendida 24/7, tráfico ligero y pocos OCR.
 Verificar la calculadora, saldo y fecha de vencimiento antes de crear recursos.
 Los créditos de prueba vencen a los 90 días del alta. Detener la VM reduce el
 cómputo, pero discos y direcciones IP pueden seguir generando cargos.
@@ -41,7 +41,7 @@ No se habilita SSH público. El firewall solo permite el rango oficial de IAP pa
 La instalación inicial de Docker tarda unos minutos. Consultar su estado:
 
 ```powershell
-gcloud compute ssh grafia-demo --project trabajoterminal-510018 --zone us-central1-a --tunnel-through-iap
+gcloud compute ssh grafia-demo --project trabajoterminal-510019 --zone us-central1-a --tunnel-through-iap
 ```
 
 En la VM: `sudo journalctl -u google-startup-scripts.service` y `sudo docker version`.
@@ -52,7 +52,7 @@ Desde PowerShell en la raíz del repositorio (incluye cambios aún sin commit):
 
 ```powershell
 tar --exclude=.env --exclude='.env.*' --exclude=.venv --exclude=__pycache__ --exclude=node_modules --exclude=.next --exclude=credentials --exclude='*-credentials.json' -czf deploy/demo.tar.gz BackEnd FrontEnd deploy/Caddyfile deploy/configure.py deploy/backup.sh compose.demo.yml
-gcloud compute scp deploy/demo.tar.gz grafia-demo:demo.tar.gz --project trabajoterminal-510018 --zone us-central1-a --tunnel-through-iap
+gcloud compute scp deploy/demo.tar.gz grafia-demo:demo.tar.gz --project trabajoterminal-510019 --zone us-central1-a --tunnel-through-iap
 ```
 
 La lista de rutas es deliberada: no incluye `.git`, credenciales personales, backups
@@ -68,7 +68,7 @@ Caddy obtiene HTTPS cuando el nombre apunta al servidor y 80/443 están accesibl
 ```bash
 sudo tar -xzf "$HOME/demo.tar.gz" -C /opt/grafia
 cd /opt/grafia
-sudo python3 deploy/configure.py --domain IP_PUBLICA.sslip.io --project trabajoterminal-510018
+sudo python3 deploy/configure.py --domain IP_PUBLICA.sslip.io --project trabajoterminal-510019
 sudo docker compose --env-file .env.demo -f compose.demo.yml up -d --build
 sudo docker compose --env-file .env.demo -f compose.demo.yml ps -a
 sudo docker compose --env-file .env.demo -f compose.demo.yml logs --tail=50 db-init web
@@ -84,6 +84,8 @@ La inicialización crea TT si no existe, carga diez ejercicios solo si el catál
 está vacío y registra las migraciones aplicadas. Un fallo detiene db-init y evita
 arrancar el backend. No elimina tablas ni crea usuarios o entregas ficticias.
 Si falta memoria al compilar, construir los servicios secuencialmente antes del `up`.
+Con e2-medium (4 GB) conviene crear antes un swap de 2 GB:
+`sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab`.
 
 ## 4. Prueba de aceptación
 

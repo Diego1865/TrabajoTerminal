@@ -1,5 +1,5 @@
 param(
-    [string]$Project = 'trabajoterminal-510018',
+    [string]$Project = 'trabajoterminal-510019',
     [string]$Region = 'us-central1',
     [string]$Zone = 'us-central1-a',
     [switch]$Apply
@@ -9,9 +9,9 @@ if ($Project -notmatch '^[a-z][a-z0-9-]+$' -or $Region -notmatch '^[a-z]+-[a-z]+
     throw 'Revisa proyecto, región y zona (se usa la zona a de la región).'
 }
 Write-Output "Proyecto: $Project; VM: grafia-demo; zona: $Zone"
-Write-Output 'Plan: e2-standard-2 (2 vCPU, 8 GB), Ubuntu 24.04, disco balanced 40 GB, IPv4 regional fija.'
+Write-Output 'Plan: e2-medium (2 vCPU compartidas, 4 GB), Ubuntu 24.04, disco balanced 40 GB, IPv4 regional fija.'
 Write-Output 'Red propia; puertos web 80/443; SSH solo a través de IAP; cuenta de servicio para Vision.'
-Write-Output 'Estimación orientativa: USD 60-80/mes encendida 24/7; verificar precios y saldo antes de aplicar.'
+Write-Output 'Estimación orientativa: USD 30-40/mes encendida 24/7; verificar precios y saldo antes de aplicar.'
 if (-not $Apply) {
     Write-Output 'Solo plan. Para crear recursos facturables, volver a ejecutar con -Apply.'
     exit 0
@@ -37,7 +37,7 @@ Invoke-Gcloud -Arguments @('compute','addresses','create','grafia-demo',"--regio
 $address = & $gcloudPath compute addresses describe grafia-demo --project=$Project --region=$Region '--format=value(address)'
 if ($LASTEXITCODE -ne 0 -or $address -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw 'No se pudo obtener la dirección IP.' }
 $startup = Join-Path $PSScriptRoot 'install-docker.sh'
-Invoke-Gcloud -Arguments @('compute','instances','create','grafia-demo',"--zone=$Zone",'--machine-type=e2-standard-2',
+Invoke-Gcloud -Arguments @('compute','instances','create','grafia-demo',"--zone=$Zone",'--machine-type=e2-medium',
     '--image-family=ubuntu-2404-lts-amd64','--image-project=ubuntu-os-cloud','--boot-disk-size=40GB',
     '--boot-disk-type=pd-balanced','--no-boot-disk-auto-delete','--subnet=grafia-demo',"--address=$address",
     '--tags=grafia-demo',"--service-account=$serviceAccount",'--scopes=cloud-platform',
