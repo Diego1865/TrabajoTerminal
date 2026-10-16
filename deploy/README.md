@@ -142,8 +142,12 @@ desde la plantilla, cada día a las 08:00 UTC. Para forzarlo: `sudo bash deploy/
 Si la VM se borró, crear otra con la misma IP fija:
 
 ```powershell
-gcloud compute instances create grafia-demo --source-instance-template=grafia-demo-plantilla --zone us-central1-a --address=34.121.15.214 --project trabajoterminal-510019
+gcloud compute instances create grafia-demo --source-instance-template=grafia-demo-plantilla --zone us-central1-a --subnet=grafia-demo --address=34.121.15.214 --project trabajoterminal-510019
 ```
+
+`--subnet` es obligatorio junto con `--address`: sin él, gcloud reemplaza la red de la plantilla
+por la red `default`, donde 80/443 están cerrados. Antes, borrar la VM anterior con
+`--delete-disks=all`: su disco no se borra solo y tiene el mismo nombre.
 
 `deploy/startup.sh` hace la instalación sola en unos 15 minutos:
 1. Docker, swap y clon de la rama del metadato `grafia-branch`.
