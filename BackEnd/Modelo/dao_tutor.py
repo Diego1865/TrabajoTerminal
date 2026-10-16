@@ -26,14 +26,21 @@ def registrar_alumno_dao(alumno_data, hashed_password):
         ))
         id_usuario = cursor.fetchone()[0]
 
+        # Resolver id_tutor desde id_usuario (el frontend envía el id_usuario del tutor)
+        cursor.execute("SELECT id_tutor FROM Tutor WHERE id_usuario = ?", (alumno_data.id_tutor,))
+        tutor = cursor.fetchone()
+        if not tutor:
+            raise ValueError("Tutor no encontrado")
+        id_tutor = tutor[0]
+
         # 2. Insertar en Alumno (perfil específico)
         query_alumno = """
             INSERT INTO Alumno (id_usuario, id_tutor, apellido_materno, grado, grupo)
             VALUES (?, ?, ?, ?, ?)
         """
         cursor.execute(query_alumno, (
-            id_usuario, 
-            alumno_data.id_tutor, 
+            id_usuario,
+            id_tutor,
             alumno_data.apellido_materno, 
             alumno_data.grado, 
             alumno_data.grupo
@@ -59,7 +66,8 @@ def obtener_alumnos_por_tutor_dao(id_tutor):
             SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, u.username, a.grado, a.grupo 
             FROM Alumno a
             JOIN Usuario u ON a.id_usuario = u.id_usuario
-            WHERE a.id_tutor = ? AND u.id_estatus = 1
+            JOIN Tutor t ON a.id_tutor = t.id_tutor
+            WHERE t.id_usuario = ? AND u.id_estatus = 1
         """
         cursor.execute(query, (id_tutor,))
         rows = cursor.fetchall()
@@ -76,7 +84,12 @@ def dar_de_baja_alumno_dao(id_alumno, id_tutor):
     cursor = conn.cursor()
     try:
         # Validar que el alumno pertenece al tutor
-        cursor.execute("SELECT id_usuario FROM Alumno WHERE id_alumno = ? AND id_tutor = ?", (id_alumno, id_tutor))
+        cursor.execute("""
+            SELECT a.id_usuario
+            FROM Alumno a
+            JOIN Tutor t ON a.id_tutor = t.id_tutor
+            WHERE a.id_alumno = ? AND t.id_usuario = ?
+        """, (id_alumno, id_tutor))
         row = cursor.fetchone()
         if not row:
             raise PermissionError("Alumno no encontrado o no pertenece a este tutor.")
@@ -103,7 +116,8 @@ def obtener_alumnos_en_riesgo_dao(id_tutor):
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                WHERE a.id_tutor = ?
+                JOIN Tutor t ON a.id_tutor = t.id_tutor
+                WHERE t.id_usuario = ?
             )
             SELECT *
             FROM PromedialidadAlumnos
@@ -145,7 +159,8 @@ def obtener_alumnos_regular_dao(id_tutor):
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                WHERE a.id_tutor = ?
+                JOIN Tutor t ON a.id_tutor = t.id_tutor
+                WHERE t.id_usuario = ?
             )
             SELECT *
             FROM PromedialidadAlumnos
@@ -187,7 +202,8 @@ def obtener_alumnos_excelencia_dao(id_tutor):
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                WHERE a.id_tutor = ?
+                JOIN Tutor t ON a.id_tutor = t.id_tutor
+                WHERE t.id_usuario = ?
             )
             SELECT *
             FROM PromedialidadAlumnos
@@ -231,7 +247,8 @@ def obtener_progreso_grafico_dao(id_tutor):
                 COUNT(DISTINCT p.id_alumno) AS cantidad_alumnos
             FROM Alumno a
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-            WHERE a.id_tutor = ?
+                JOIN Tutor t ON a.id_tutor = t.id_tutor
+            WHERE t.id_usuario = ?
             GROUP BY 
                 CASE 
                     WHEN p.promedio_ortografia > 8 THEN 'Buen Promedio'
@@ -257,7 +274,8 @@ def obtener_progreso_grafico_dao(id_tutor):
                     (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
                 FROM Alumno a
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                WHERE a.id_tutor = ?
+                JOIN Tutor t ON a.id_tutor = t.id_tutor
+                WHERE t.id_usuario = ?
             )
             SELECT 
                 CASE 
