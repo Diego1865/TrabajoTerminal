@@ -121,6 +121,51 @@ Configurar presupuesto con alertas al 50/80/100% y revisar costos diarios al ini
 Una alerta no es un corte de consumo. Revisar también el saldo y la fecha de los créditos.
 No usar `down -v` sobre la demo: eliminaría los volúmenes de datos y certificados.
 
+## 6. Recrear desde la plantilla
+
+`deploy/template.ps1` (sin `-Apply` solo imprime el plan) crea:
+- el bucket `gs://trabajoterminal-510019-grafia-respaldos`, que borra respaldos de más de 30 días;
+- permiso de la cuenta de servicio de la VM solo sobre ese bucket;
+- la plantilla `grafia-demo-plantilla`.
+
+También agrega a la VM actual el respaldo al apagar. Crea recursos y cambia permisos:
+lo ejecuta una cuenta con rol de propietario.
+
+```powershell
+.\deploy\template.ps1 -Apply
+```
+
+Respaldos a Cloud Storage: `deploy/respaldo-nube.sh` ejecuta `backup.sh` y sube el `.bak` al bucket.
+Corre al apagar la VM (shutdown-script; Google no garantiza que termine) y, en VMs creadas
+desde la plantilla, cada día a las 08:00 UTC. Para forzarlo: `sudo bash deploy/respaldo-nube.sh`.
+
+Si la VM se borró, crear otra con la misma IP fija:
+
+```powershell
+gcloud compute instances create grafia-demo --source-instance-template=grafia-demo-plantilla --zone us-central1-a --address=34.121.15.214 --project trabajoterminal-510019
+```
+
+`deploy/startup.sh` hace la instalación sola en unos 15 minutos:
+1. Docker, swap y clon de la rama del metadato `grafia-branch`.
+2. `.env.demo` con secretos nuevos.
+3. Restaura el `.bak` más reciente del bucket.
+4. Construye y arranca.
+
+Seguimiento: `sudo journalctl -u google-startup-scripts.service -f`.
+
+En arranques posteriores solo comprueba que los contenedores estén arriba. No modifica una
+`/opt/grafia` instalada a mano (sin `.git`).
+
+Se pierde lo ocurrido después del último respaldo. Los secretos son nuevos, así que las
+sesiones abiertas se cierran. El disco de una VM borrada se conserva y se sigue cobrando
+hasta eliminarlo (`gcloud compute disks list`).
+
+Actualizar una VM creada desde la plantilla (respaldar antes):
+
+```bash
+cd /opt/grafia && sudo git pull && sudo docker compose --env-file .env.demo -f compose.demo.yml up -d --build
+```
+
 Referencias:
 - https://cloud.google.com/products/compute/pricing/general-purpose
 - https://docs.cloud.google.com/free/docs/free-cloud-features
