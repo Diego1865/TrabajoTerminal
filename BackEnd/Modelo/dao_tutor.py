@@ -81,6 +81,8 @@ def obtener_alumnos_por_tutor_dao(id_tutor):
 
 def dar_de_baja_alumno_dao(id_alumno, id_tutor):
     conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
         # Validar que el alumno pertenece al tutor

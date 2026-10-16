@@ -126,6 +126,8 @@ def actualizar_correo_tutor(data: EmailUpdate, current_user: dict = Depends(requ
             raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
         actualizar_correo_tutor_dao(current_user["id_usuario"], data.correo)
         return {"message": "Correo actualizado correctamente"}
+    except HTTPException:
+        raise
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
@@ -194,7 +196,7 @@ def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends(requi
 
 #ejercicios relacionados al tutor
 @router.get("/ejercicios")
-def get_ejercicios():
+def get_ejercicios(current_user: dict = Depends(require_tutor)):
     try:
         return get_ejercicios_dao()
     except ConnectionError as ce:

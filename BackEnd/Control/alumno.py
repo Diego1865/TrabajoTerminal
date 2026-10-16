@@ -32,6 +32,8 @@ def actualizar_password_alumno(data: PasswordUpdate, current_user: dict = Depend
         nuevo_hash = get_password_hash(data.nueva_contrasena)
         actualizar_password_alumno_dao(nuevo_hash, current_user["id_usuario"])
         return {"message": "Contraseña actualizada correctamente"}
+    except HTTPException:
+        raise
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
