@@ -353,7 +353,7 @@ def actualizar_password_tutor_dao(nueva_contrasena, id_usuario):
         cursor.close()
         conn.close()
 
-def eliminar_cuenta_tutor(id_usuario):
+def eliminar_cuenta_tutor_dao(id_usuario):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")

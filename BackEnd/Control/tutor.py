@@ -139,9 +139,11 @@ def actualizar_password_tutor(data: PasswordUpdate, current_user: dict = Depends
         if not verify_password(data.contrasena_actual, hash_db):
             raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
             
-        actualizar_password_tutor_dao(data.nueva_contrasena, current_user["id_usuario"])
-        conn.commit()
+        nuevo_hash = get_password_hash(data.nueva_contrasena)
+        actualizar_password_tutor_dao(nuevo_hash, current_user["id_usuario"])
         return {"message": "Contraseña actualizada correctamente"}
+    except HTTPException:
+        raise
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
@@ -154,8 +156,10 @@ def eliminar_cuenta_tutor(data: DeleteAccount, current_user: dict = Depends(requ
         hash_db = obtener_hash_contrasena_dao(current_user["id_usuario"])
         if not verify_password(data.contrasena_actual, hash_db):
             raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
-        eliminar_cuenta_tutor(current_user["id_usuario"])
+        eliminar_cuenta_tutor_dao(current_user["id_usuario"])
         return {"message": "Cuenta eliminada/desactivada correctamente"}
+    except HTTPException:
+        raise
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
