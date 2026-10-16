@@ -40,6 +40,14 @@ EOF
     systemctl enable --now docker
 fi
 
+# Al apagar, el shutdown-script (respaldo) debe correr antes de que se detenga Docker.
+orden=/etc/systemd/system/google-shutdown-scripts.service.d/grafia.conf
+if [ ! -f "$orden" ]; then
+    install -d "$(dirname "$orden")"
+    printf '[Unit]\nAfter=docker.service\nWants=docker.service\n' > "$orden"
+    systemctl daemon-reload
+fi
+
 if ! swapon --show=NAME --noheadings | grep -qx /swapfile; then
     echo '== Creando swap de 2 GB'
     [ -f /swapfile ] || { fallocate -l 2G /swapfile; chmod 600 /swapfile; mkswap /swapfile; }
