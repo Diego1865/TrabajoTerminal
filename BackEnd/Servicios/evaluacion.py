@@ -2,6 +2,7 @@
 import re
 import unicodedata
 from difflib import SequenceMatcher
+from Servicios.cls import calcular_cls
 
 
 def tokens(texto):
@@ -60,6 +61,8 @@ def evaluar(contenido, ocr):
     return {**base, "estado": "preliminar", "modo": config["modo"],
             "texto_esperado": referencia, "texto_detectado": texto,
             "observaciones": observaciones, "simbolos_baja_confianza": dudosos,
+            "cls": calcular_cls(referencia, texto),
             "resumen": ("Se encontraron diferencias que necesitan revisión." if observaciones else
                         "La transcripción coincide con la respuesta esperada; confirma el resultado en la imagen."),
-            "aviso": "Las diferencias pueden provenir del OCR. No constituyen una calificación ni evalúan la caligrafía."}
+            "aviso": ("Las diferencias pueden provenir del OCR. No constituyen una calificación ni evalúan la caligrafía. "
+                      "El CLS es una sugerencia: solo cuenta para el progreso cuando el tutor lo confirma.")}

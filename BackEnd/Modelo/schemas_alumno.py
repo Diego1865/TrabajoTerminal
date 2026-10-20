@@ -25,9 +25,11 @@ class AlumnoProgresoResponse(BaseModel):
     id_alumno: int
     nombre: str
     apellido_paterno: str
-    apellido_materno: str
-    promedio_ortografia: Decimal
-    promedio_legibilidad: Decimal
+    apellido_materno: Optional[str] = None
+    promedio_ortografia: Optional[Decimal] = None
+    # Sin análisis caligráfico todavía, la legibilidad es NULL y el general usa solo ortografía.
+    promedio_legibilidad: Optional[Decimal] = None
+    promedio_general: Optional[Decimal] = None
 
 class AlumnoUpdate(BaseModel):
     nombre: str

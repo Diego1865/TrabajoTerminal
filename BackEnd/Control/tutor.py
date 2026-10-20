@@ -172,7 +172,8 @@ def eliminar_cuenta_tutor(data: DeleteAccount, current_user: dict = Depends(requ
 def calificar_intento(id_intento: int, datos: CalificarIntentoRequest, current_user: dict = Depends(require_tutor)):
     try:
         intento = obtener_intento_tutor_dao(id_intento, current_user["id_usuario"])
-        calificar_intento_dao(id_intento, datos.calificacion, datos.retroalimentacion)
+        calificar_intento_dao(id_intento, datos.calificacion, datos.retroalimentacion,
+                              datos.cls_correctas, datos.cls_posibles)
         return {"message": "Calificación registrada correctamente."}
     except PermissionError as pe:
         raise HTTPException(status_code=403, detail=str(pe))

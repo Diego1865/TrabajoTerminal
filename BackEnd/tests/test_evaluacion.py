@@ -43,6 +43,14 @@ class EvaluacionTests(unittest.TestCase):
                     {"estado": "procesado", "texto": "zapatos"})
         self.assertEqual(r["observaciones"], [])
 
+    def test_cls_solo_como_sugerencia(self):
+        r = self.comparar("El perro come carne", "El pero come")
+        self.assertEqual((r["cls"]["correctas"], r["cls"]["posibles"]), (13, 20))
+        self.assertTrue(r["requiere_revision"])
+        self.assertNotIn("puntuacion", r)
+        sin_texto = evaluar({"evaluacion": {"modo": "copia", "respuestas_aceptadas": ["hola"]}}, {"estado": "sin_texto", "texto": ""})
+        self.assertNotIn("cls", sin_texto)
+
     def test_confianza_no_es_nota(self):
         r = self.comparar("hola", "hola")
         self.assertTrue(r["requiere_revision"])

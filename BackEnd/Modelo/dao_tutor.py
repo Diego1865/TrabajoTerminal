@@ -114,7 +114,9 @@ def obtener_alumnos_en_riesgo_dao(id_tutor):
                 SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
                     p.promedio_ortografia,
                     (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
-                    (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
+                    COALESCE((p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2,
+                             p.promedio_ortografia,
+                             (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) AS promedio_general
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
@@ -157,7 +159,9 @@ def obtener_alumnos_regular_dao(id_tutor):
                 SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
                     p.promedio_ortografia,
                     (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
-                    (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
+                    COALESCE((p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2,
+                             p.promedio_ortografia,
+                             (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) AS promedio_general
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
@@ -200,7 +204,9 @@ def obtener_alumnos_excelencia_dao(id_tutor):
                 SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
                     p.promedio_ortografia,
                     (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
-                    (p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2 AS promedio_general
+                    COALESCE((p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2,
+                             p.promedio_ortografia,
+                             (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) AS promedio_general
                 FROM Alumno a
                 JOIN Usuario u ON a.id_usuario = u.id_usuario
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
@@ -250,8 +256,8 @@ def obtener_progreso_grafico_dao(id_tutor):
             FROM Alumno a
                 JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
                 JOIN Tutor t ON a.id_tutor = t.id_tutor
-            WHERE t.id_usuario = ?
-            GROUP BY 
+            WHERE t.id_usuario = ? AND p.promedio_ortografia IS NOT NULL
+            GROUP BY
                 CASE 
                     WHEN p.promedio_ortografia > 8 THEN 'Buen Promedio'
                     WHEN p.promedio_ortografia BETWEEN 6 AND 8 THEN 'Promedio Regular'
@@ -279,15 +285,16 @@ def obtener_progreso_grafico_dao(id_tutor):
                 JOIN Tutor t ON a.id_tutor = t.id_tutor
                 WHERE t.id_usuario = ?
             )
-            SELECT 
-                CASE 
+            SELECT
+                CASE
                     WHEN promedio_legibilidad > 8 THEN 'Buena Legibilidad'
                     WHEN promedio_legibilidad BETWEEN 6 AND 8 THEN 'Legibilidad Regular'
                     ELSE 'Mala Legibilidad'
                 END AS categoria,
                 COUNT(*) AS cantidad_alumnos
             FROM ProgresoLegibilidad
-            GROUP BY 
+            WHERE promedio_legibilidad IS NOT NULL
+            GROUP BY
                 CASE 
                     WHEN promedio_legibilidad > 8 THEN 'Buena Legibilidad'
                     WHEN promedio_legibilidad BETWEEN 6 AND 8 THEN 'Legibilidad Regular'
@@ -393,7 +400,7 @@ def obtener_intento_tutor_dao(id_intento, id_usuario_tutor):
         cursor.close()
         conn.close()
 
-def calificar_intento_dao(id_intento, calificacion, retroalimentacion):
+def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_correctas=None, cls_posibles=None):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -404,8 +411,56 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion):
             SET puntuacion = ?, retroalimentacion = ?
             WHERE id_intento = ?
         """, (calificacion, retroalimentacion, id_intento))
-        
+
+        if cls_posibles is not None:
+            # CLS confirmado por el tutor: se guarda en columnas existentes de Analisis_Ortografico
+            # (sin cambiar el esquema) y actualiza el promedio de ortografía del alumno.
+            cursor.execute("SELECT id_alumno, resultado_ocr_json FROM Intentos WHERE id_intento = ?", (id_intento,))
+            id_alumno, resultado = cursor.fetchone()
+            try:
+                sugerido = (json.loads(resultado) if resultado else {}).get("evaluacion_preliminar", {}).get("cls")
+            except (TypeError, ValueError, AttributeError):
+                sugerido = None
+            if isinstance(sugerido, dict):
+                sugerido = {k: sugerido.get(k) for k in ("correctas", "posibles", "puntaje_sugerido")}
+            detalle = json.dumps({"metrica": "CLS", "correctas": cls_correctas, "posibles": cls_posibles,
+                                  "sugerido": sugerido, "confirmado_por_tutor": True}, ensure_ascii=False)
+            puntaje = round(cls_correctas / cls_posibles * 10, 2)
+            cursor.execute("""
+                MERGE Analisis_Ortografico AS destino
+                USING (SELECT ? AS id_intento) AS origen ON destino.id_intento = origen.id_intento
+                WHEN MATCHED THEN UPDATE SET ortografia_score = ?, cantidad_errores = ?, sugerencias_json = ?
+                WHEN NOT MATCHED THEN INSERT (id_intento, ortografia_score, cantidad_errores, sugerencias_json)
+                    VALUES (origen.id_intento, ?, ?, ?);
+            """, (id_intento, puntaje, cls_posibles - cls_correctas, detalle,
+                  puntaje, cls_posibles - cls_correctas, detalle))
+
+            cursor.execute("""
+                SELECT CAST(AVG(ao.ortografia_score) AS DECIMAL(5,2))
+                FROM Analisis_Ortografico ao
+                JOIN Intentos i ON i.id_intento = ao.id_intento
+                WHERE i.id_alumno = ? AND ao.ortografia_score IS NOT NULL
+            """, (id_alumno,))
+            promedio = cursor.fetchone()[0]
+            cursor.execute("""
+                UPDATE Progreso_Alumno SET promedio_ortografia = ?, fecha_modificacion = GETDATE()
+                WHERE id_alumno = ?
+            """, (promedio, id_alumno))
+            if cursor.rowcount == 0:
+                cursor.execute("INSERT INTO Progreso_Alumno (id_alumno, promedio_ortografia) VALUES (?, ?)",
+                               (id_alumno, promedio))
+            cursor.execute("""
+                INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, alineacion_score,
+                    tamano_letra_score, espaciado_score, inclinacion_score)
+                SELECT id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score,
+                    espaciado_score, inclinacion_score
+                FROM Progreso_Alumno WHERE id_alumno = ?
+            """, (id_alumno,))
+
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         cursor.close()
         conn.close()
@@ -428,8 +483,10 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 i.texto_detectado_ocr,
                 i.puntuacion,        
                 i.retroalimentacion,
-                i.resultado_ocr_json
+                i.resultado_ocr_json,
+                ao.sugerencias_json
             FROM Intentos i
+            LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
             JOIN Alumno a ON i.id_alumno = a.id_alumno
             JOIN Usuario u ON a.id_usuario = u.id_usuario
             JOIN Tutor t ON a.id_tutor = t.id_tutor
@@ -454,7 +511,8 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 "texto_detectado_ocr": row[7],
                 "puntuacion": row[8],
                 "retroalimentacion": row[9],
-                "evaluacion_preliminar": (json.loads(row[10]) if row[10] else {}).get("evaluacion_preliminar")
+                "evaluacion_preliminar": (json.loads(row[10]) if row[10] else {}).get("evaluacion_preliminar"),
+                "cls_confirmado": json.loads(row[11]) if row[11] else None
             })
 
         return intentos

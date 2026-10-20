@@ -132,13 +132,17 @@ export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo" })
                   {[
                     { label: "Ortografía", val: alumno.promedio_ortografia },
                     { label: "Legibilidad", val: alumno.promedio_legibilidad },
-                    { label: "Promedio", val: (Number(alumno.promedio_ortografia) + Number(alumno.promedio_legibilidad)) / 2 },
+                    { label: "Promedio", val: alumno.promedio_general },
                   ].map(({ label, val }) => (
                     <p key={label} className="text-xs font-semibold text-gray-500">
                       {label}:{" "}
-                      <span className="font-black" style={{ color: colorScore(Number(val)) }}>
-                        {Number(val).toFixed(1)}
-                      </span>
+                      {val === null || val === undefined ? (
+                        <span className="font-black text-gray-400">Sin datos</span>
+                      ) : (
+                        <span className="font-black" style={{ color: colorScore(Number(val)) }}>
+                          {Number(val).toFixed(1)}
+                        </span>
+                      )}
                     </p>
                   ))}
                 </div>

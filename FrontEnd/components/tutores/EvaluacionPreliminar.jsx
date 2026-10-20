@@ -9,7 +9,13 @@ export default function EvaluacionPreliminar({ evaluacion, onUsarSugerencia }) {
       <h3 className="font-bold">Evaluación preliminar · Pendiente de revisión</h3>
       <p className="text-sm mt-2">{evaluacion.resumen}</p>
       {evaluacion.texto_esperado && <p className="text-sm mt-2"><strong>Respuesta esperada:</strong> {evaluacion.texto_esperado}</p>}
-      {evaluacion.simbolos_baja_confianza > 0 && <p className="text-sm mt-2">Hay caracteres con reconocimiento incierto. Contrasta la transcripción con la imagen.</p>}
+      {evaluacion.cls?.posibles > 0 && (
+        <p className="text-sm mt-2">
+          <strong>Ortografía (CLS sugerido):</strong> {evaluacion.cls.correctas}/{evaluacion.cls.posibles} secuencias
+          correctas → {Number(evaluacion.cls.puntaje_sugerido).toFixed(1)}. Calculado sobre el OCR; confírmalo al calificar.
+        </p>
+      )}
+      {evaluacion.simbolos_baja_confianza > 0 &&<p className="text-sm mt-2">Hay caracteres con reconocimiento incierto. Contrasta la transcripción con la imagen.</p>}
       {observaciones.length > 0 && (
         <div className="overflow-x-auto mt-3">
           <table className="w-full text-sm text-left">
