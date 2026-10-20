@@ -48,21 +48,22 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
   const [calificacion, setCalificacion] = useState("");
   const [retroalimentacion, setRetroalimentacion] = useState("");
   const [clsCorrectas, setClsCorrectas] = useState("");
-  const [clsPosibles, setClsPosibles] = useState("");
   const [guardando, setGuardando] = useState(false);
 
+  // Las secuencias posibles son fijas (dependen de la respuesta esperada); el tutor solo corrige las correctas.
   // El CLS confirmado tiene prioridad; si no hay, se propone el sugerido por el OCR.
+  const clsBase = intentoActivo?.cls_confirmado || intentoActivo?.cls_sugerido;
+  const clsPosibles = clsBase?.posibles > 0 ? Number(clsBase.posibles) : null;
   const seleccionarIntento = (intento) => {
-    const cls = intento.cls_confirmado || intento.evaluacion_preliminar?.cls;
+    const cls = intento.cls_confirmado || intento.cls_sugerido;
     setIntentoActivo(intento);
-    setCalificacion(intento.puntuacion || "");
+    setCalificacion(intento.puntuacion ?? "");
     setRetroalimentacion(intento.retroalimentacion || "");
     setClsCorrectas(cls?.posibles > 0 ? String(cls.correctas) : "");
-    setClsPosibles(cls?.posibles > 0 ? String(cls.posibles) : "");
   };
-  const clsCompleto = clsCorrectas !== "" && clsPosibles !== "";
-  const clsValido = clsCompleto && Number(clsPosibles) > 0 && Number(clsCorrectas) >= 0
-    && Number(clsCorrectas) <= Number(clsPosibles);
+  const clsValido = clsPosibles !== null && clsCorrectas !== "" && Number.isInteger(Number(clsCorrectas))
+    && Number(clsCorrectas) >= 0 && Number(clsCorrectas) <= clsPosibles;
+  const calificacionSugerida = clsValido ? Math.round(Number(clsCorrectas) / clsPosibles * 100) : null;
 
   useEffect(() => {
     const fetchIntentos = async () => {
@@ -103,12 +104,12 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
 
   const handleGuardarCalificacion = async (e) => {
     e.preventDefault();
-    if ((clsCorrectas !== "" || clsPosibles !== "") && !clsValido) {
-      alert("Revisa el CLS: llena ambos campos, con correctas entre 0 y las posibles (mayores que 0), o deja ambos vacíos.");
+    if (clsCorrectas !== "" && !clsValido) {
+      alert(`Revisa el CLS: las secuencias correctas deben ser un número entero entre 0 y ${clsPosibles}, o deja el campo vacío.`);
       return;
     }
     const clsConfirmado = clsValido
-      ? { metrica: "CLS", correctas: Number(clsCorrectas), posibles: Number(clsPosibles), confirmado_por_tutor: true }
+      ? { metrica: "CLS", correctas: Number(clsCorrectas), posibles: clsPosibles, confirmado_por_tutor: true }
       : intentoActivo.cls_confirmado;
     setGuardando(true);
     try {
@@ -121,11 +122,14 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
         body: JSON.stringify({
           calificacion: Number(calificacion),
           retroalimentacion: retroalimentacion,
-          ...(clsValido ? { cls_correctas: Number(clsCorrectas), cls_posibles: Number(clsPosibles) } : {})
+          ...(clsValido ? { cls_correctas: Number(clsCorrectas) } : {})
         })
       });
 
-      if (!res.ok) throw new Error("Error al guardar la calificación.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data.detail === "string" ? data.detail : "Error al guardar la calificación.");
+      }
       
       alert("Calificación guardada correctamente.");
       
@@ -215,6 +219,9 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                   </div>
 
                   <EvaluacionPreliminar evaluacion={intentoActivo.evaluacion_preliminar}
+                    cls={intentoActivo.cls_sugerido}
+                    calificacionSugerida={calificacionSugerida}
+                    onUsarCalificacion={() => setCalificacion(String(calificacionSugerida))}
                     onUsarSugerencia={(texto) => setRetroalimentacion(actual => actual ? `${actual}\n\n${texto}` : texto)} />
                   {intentoActivo.texto_detectado_ocr && (
                     <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
@@ -258,22 +265,25 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                       <p className="text-xs font-semibold text-gray-600 mb-2">
                         Ortografía · CLS (secuencias de letras correctas). Revisa la propuesta del OCR con la imagen; solo cuenta para el progreso al guardar.
                       </p>
-                      <div className="flex flex-wrap items-end gap-3">
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">Secuencias correctas</label>
-                          <input type="number" min="0" value={clsCorrectas} onChange={(e) => setClsCorrectas(e.target.value)}
-                            className="w-28 p-2 border border-gray-300 rounded outline-none focus:border-blue-500 bg-white text-gray-900" />
+                      {clsPosibles === null ? (
+                        <p className="text-sm text-gray-500">Este ejercicio no tiene respuesta configurada; no se puede calcular el CLS.</p>
+                      ) : (
+                        <div className="flex flex-wrap items-end gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Secuencias correctas</label>
+                            <input type="number" min="0" max={clsPosibles} step="1" value={clsCorrectas}
+                              onChange={(e) => setClsCorrectas(e.target.value)}
+                              className="w-28 p-2 border border-gray-300 rounded outline-none focus:border-blue-500 bg-white text-gray-900" />
+                          </div>
+                          <p className="text-sm text-gray-700 pb-2">
+                            de <strong>{clsPosibles}</strong> posibles
+                          </p>
+                          <p className="text-sm text-gray-700 pb-2">
+                            {clsValido ? `→ Ortografía: ${(Number(clsCorrectas) / clsPosibles * 10).toFixed(1)} / 10`
+                              : clsCorrectas === "" ? "Sin CLS (no cambia el progreso)" : `Debe ser un entero entre 0 y ${clsPosibles}`}
+                          </p>
                         </div>
-                        <div>
-                          <label className="block text-xs text-gray-600 mb-1">Secuencias posibles</label>
-                          <input type="number" min="1" value={clsPosibles} onChange={(e) => setClsPosibles(e.target.value)}
-                            className="w-28 p-2 border border-gray-300 rounded outline-none focus:border-blue-500 bg-white text-gray-900" />
-                        </div>
-                        <p className="text-sm text-gray-700 pb-2">
-                          {clsValido ? `Ortografía: ${(Number(clsCorrectas) / Number(clsPosibles) * 10).toFixed(1)} / 10`
-                            : clsCorrectas === "" && clsPosibles === "" ? "Sin CLS (no cambia el progreso)" : "Valores inválidos"}
-                        </p>
-                      </div>
+                      )}
                     </div>
                     <div className="flex justify-end">
                       <button

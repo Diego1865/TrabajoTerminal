@@ -1,5 +1,5 @@
 import unittest
-from Servicios.evaluacion import evaluar
+from Servicios.evaluacion import evaluar, cls_de_intento
 
 
 class EvaluacionTests(unittest.TestCase):
@@ -50,6 +50,17 @@ class EvaluacionTests(unittest.TestCase):
         self.assertNotIn("puntuacion", r)
         sin_texto = evaluar({"evaluacion": {"modo": "copia", "respuestas_aceptadas": ["hola"]}}, {"estado": "sin_texto", "texto": ""})
         self.assertNotIn("cls", sin_texto)
+
+    def test_cls_de_intento(self):
+        contenido = {"evaluacion": {"modo": "copia", "respuestas_aceptadas": ["El perro come carne"]}}
+        guardado = {"cls": {"correctas": 1, "posibles": 20}}
+        self.assertEqual(cls_de_intento(contenido, "El pero come", guardado), guardado["cls"])
+        calculado = cls_de_intento(contenido, "El pero come", {"estado": "preliminar"})
+        self.assertEqual((calculado["correctas"], calculado["posibles"]), (13, 20))
+        self.assertEqual(cls_de_intento(contenido, "", None)["posibles"], 20)
+        self.assertEqual(cls_de_intento(contenido, "", None)["correctas"], 0)
+        self.assertIsNone(cls_de_intento({"texto_guia": "x"}, "hola", None))
+        self.assertIsNone(cls_de_intento(None, "hola", None))
 
     def test_confianza_no_es_nota(self):
         r = self.comparar("hola", "hola")

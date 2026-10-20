@@ -1,4 +1,4 @@
-export default function EvaluacionPreliminar({ evaluacion, onUsarSugerencia }) {
+export default function EvaluacionPreliminar({ evaluacion, cls, calificacionSugerida, onUsarCalificacion, onUsarSugerencia }) {
   if (!evaluacion) return <p className="mt-4 text-sm text-gray-500">Este intento es anterior a la evaluación automática.</p>;
   const observaciones = evaluacion.observaciones || [];
   const sugerencia = [evaluacion.resumen, ...observaciones.map(o =>
@@ -9,10 +9,10 @@ export default function EvaluacionPreliminar({ evaluacion, onUsarSugerencia }) {
       <h3 className="font-bold">Evaluación preliminar · Pendiente de revisión</h3>
       <p className="text-sm mt-2">{evaluacion.resumen}</p>
       {evaluacion.texto_esperado && <p className="text-sm mt-2"><strong>Respuesta esperada:</strong> {evaluacion.texto_esperado}</p>}
-      {evaluacion.cls?.posibles > 0 && (
+      {cls?.posibles > 0 && (
         <p className="text-sm mt-2">
-          <strong>Ortografía (CLS sugerido):</strong> {evaluacion.cls.correctas}/{evaluacion.cls.posibles} secuencias
-          correctas → {Number(evaluacion.cls.puntaje_sugerido).toFixed(1)}. Calculado sobre el OCR; confírmalo al calificar.
+          <strong>Ortografía (CLS sugerido):</strong> {cls.correctas}/{cls.posibles} secuencias
+          correctas → {Number(cls.puntaje_sugerido).toFixed(1)}. Calculado sobre el OCR; confírmalo al calificar.
         </p>
       )}
       {evaluacion.simbolos_baja_confianza > 0 &&<p className="text-sm mt-2">Hay caracteres con reconocimiento incierto. Contrasta la transcripción con la imagen.</p>}
@@ -27,10 +27,19 @@ export default function EvaluacionPreliminar({ evaluacion, onUsarSugerencia }) {
         </div>
       )}
       {evaluacion.aviso && <p className="text-xs mt-3">{evaluacion.aviso}</p>}
-      {evaluacion.estado === 'preliminar' && <button type="button" onClick={() => onUsarSugerencia(sugerencia)}
-        className="mt-3 px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold">
-        Copiar propuesta a comentarios
-      </button>}
+      <div className="flex flex-wrap gap-2">
+        {evaluacion.estado === 'preliminar' && <button type="button" onClick={() => onUsarSugerencia(sugerencia)}
+          className="mt-3 px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold">
+          Copiar propuesta a comentarios
+        </button>}
+        {calificacionSugerida !== null && calificacionSugerida !== undefined && (
+          <button type="button" onClick={onUsarCalificacion}
+            title="Porcentaje de secuencias correctas (CLS) según las correctas indicadas abajo"
+            className="mt-3 px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold">
+            Copiar calificación ({calificacionSugerida})
+          </button>
+        )}
+      </div>
     </section>
   );
 }

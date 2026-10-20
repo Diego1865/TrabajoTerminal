@@ -9,6 +9,22 @@ def tokens(texto):
     return re.findall(r"\w+|[^\w\s]", unicodedata.normalize("NFC", texto), re.UNICODE)
 
 
+def cls_de_intento(contenido, texto, evaluacion_guardada=None):
+    """CLS sugerido de un intento: el guardado o, para intentos anteriores al CLS, uno calculado al
+    momento (no se guarda). Las secuencias posibles dependen solo de la respuesta esperada."""
+    guardado = evaluacion_guardada.get("cls") if isinstance(evaluacion_guardada, dict) else None
+    if isinstance(guardado, dict) and guardado.get("posibles"):
+        return guardado
+    if not isinstance(contenido, dict):
+        return None
+    resultado = evaluar(contenido, {"estado": "procesado", "texto": texto or ""})
+    if resultado["estado"] == "preliminar":
+        return resultado["cls"]
+    if resultado["estado"] == "sin_texto":
+        return calcular_cls(contenido["evaluacion"]["respuestas_aceptadas"][0], "")
+    return None
+
+
 def evaluar(contenido, ocr):
     config = contenido.get("evaluacion")
     base = {"version": 1, "requiere_revision": True, "observaciones": []}

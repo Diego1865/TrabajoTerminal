@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
@@ -13,16 +13,8 @@ class CalificarIntentoRequest(BaseModel):
     calificacion: int
     retroalimentacion: Optional[str] = None
     # CLS confirmado por el tutor; solo así cuenta para el promedio de ortografía.
-    cls_correctas: Optional[int] = None
-    cls_posibles: Optional[int] = None
-
-    @model_validator(mode="after")
-    def validar_cls(self):
-        if (self.cls_correctas is None) != (self.cls_posibles is None):
-            raise ValueError("Indica las secuencias correctas y las posibles, o ninguna de las dos.")
-        if self.cls_posibles is not None and not 0 <= self.cls_correctas <= self.cls_posibles or self.cls_posibles == 0:
-            raise ValueError("Las secuencias correctas deben estar entre 0 y las posibles, y las posibles deben ser mayores que 0.")
-        return self
+    # Las secuencias posibles las calcula el servidor a partir de la respuesta esperada.
+    cls_correctas: Optional[int] = Field(default=None, ge=0)
 
 class IntentoTutorResponse(BaseModel):
     id_intento: int
@@ -37,6 +29,7 @@ class IntentoTutorResponse(BaseModel):
     puntuacion: Optional[int] = None
     retroalimentacion: Optional[str] = None
     cls_confirmado: Optional[dict] = None
+    cls_sugerido: Optional[dict] = None
 
 class EjercicioTutorResponse(BaseModel):
     id_ejercicio_tutor: int

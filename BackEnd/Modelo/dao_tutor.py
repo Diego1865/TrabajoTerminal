@@ -1,5 +1,14 @@
 from Modelo.database import connect_to_database
+from Servicios.evaluacion import cls_de_intento
 import json
+
+
+def _json(texto):
+    try:
+        valor = json.loads(texto) if texto else None
+    except (TypeError, ValueError):
+        return None
+    return valor if isinstance(valor, dict) else None
 
 #Funciones relacionadas con el tutor y sus alumnos
 def registrar_alumno_dao(alumno_data, hashed_password):
@@ -400,7 +409,7 @@ def obtener_intento_tutor_dao(id_intento, id_usuario_tutor):
         cursor.close()
         conn.close()
 
-def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_correctas=None, cls_posibles=None):
+def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_correctas=None):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -412,17 +421,24 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
             WHERE id_intento = ?
         """, (calificacion, retroalimentacion, id_intento))
 
-        if cls_posibles is not None:
-            # CLS confirmado por el tutor: se guarda en columnas existentes de Analisis_Ortografico
-            # (sin cambiar el esquema) y actualiza el promedio de ortografía del alumno.
-            cursor.execute("SELECT id_alumno, resultado_ocr_json FROM Intentos WHERE id_intento = ?", (id_intento,))
-            id_alumno, resultado = cursor.fetchone()
-            try:
-                sugerido = (json.loads(resultado) if resultado else {}).get("evaluacion_preliminar", {}).get("cls")
-            except (TypeError, ValueError, AttributeError):
-                sugerido = None
-            if isinstance(sugerido, dict):
-                sugerido = {k: sugerido.get(k) for k in ("correctas", "posibles", "puntaje_sugerido")}
+        if cls_correctas is not None:
+            # CLS confirmado por el tutor: las posibles las fija la respuesta esperada (no el cliente).
+            # Se guarda en columnas existentes de Analisis_Ortografico y actualiza el promedio del alumno.
+            cursor.execute("""
+                SELECT i.id_alumno, i.resultado_ocr_json, i.texto_detectado_ocr, e.contenido_base
+                FROM Intentos i
+                JOIN Ejercicios_Tutor et ON et.id_ejercicio_tutor = i.id_ejercicio_tutor
+                JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
+                WHERE i.id_intento = ?
+            """, (id_intento,))
+            id_alumno, resultado, texto, contenido = cursor.fetchone()
+            sugerido = cls_de_intento(_json(contenido), texto, (_json(resultado) or {}).get("evaluacion_preliminar"))
+            if not sugerido or not sugerido.get("posibles"):
+                raise ValueError("Este ejercicio no tiene respuesta configurada; no se puede registrar el CLS.")
+            cls_posibles = sugerido["posibles"]
+            if not 0 <= cls_correctas <= cls_posibles:
+                raise ValueError(f"Las secuencias correctas deben estar entre 0 y {cls_posibles}.")
+            sugerido = {k: sugerido.get(k) for k in ("correctas", "posibles", "puntaje_sugerido")}
             detalle = json.dumps({"metrica": "CLS", "correctas": cls_correctas, "posibles": cls_posibles,
                                   "sugerido": sugerido, "confirmado_por_tutor": True}, ensure_ascii=False)
             puntaje = round(cls_correctas / cls_posibles * 10, 2)
@@ -484,7 +500,8 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 i.puntuacion,        
                 i.retroalimentacion,
                 i.resultado_ocr_json,
-                ao.sugerencias_json
+                ao.sugerencias_json,
+                e.contenido_base
             FROM Intentos i
             LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
             JOIN Alumno a ON i.id_alumno = a.id_alumno
@@ -500,6 +517,7 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
 
         intentos = []
         for row in rows:
+            evaluacion = (_json(row[10]) or {}).get("evaluacion_preliminar")
             intentos.append({
                 "id_intento": row[0],
                 "id_alumno": row[1],
@@ -511,8 +529,9 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 "texto_detectado_ocr": row[7],
                 "puntuacion": row[8],
                 "retroalimentacion": row[9],
-                "evaluacion_preliminar": (json.loads(row[10]) if row[10] else {}).get("evaluacion_preliminar"),
-                "cls_confirmado": json.loads(row[11]) if row[11] else None
+                "evaluacion_preliminar": evaluacion,
+                "cls_confirmado": _json(row[11]),
+                "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion)
             })
 
         return intentos
