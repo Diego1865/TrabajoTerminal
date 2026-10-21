@@ -69,6 +69,17 @@ def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+#progreso del alumno (solo cuenta el CLS confirmado por el tutor)
+@router.get("/progreso")
+def obtener_progreso_alumno(current_user: dict = Depends(require_alumno)):
+    try:
+        return obtener_progreso_alumno_dao(current_user["id_usuario"])
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener el progreso:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener el progreso")
+
 #ejercicios relacionados al alumno
 @router.get("/ejercicios/proximos")
 def get_ejercicios_proximos(current_user: dict = Depends(require_alumno)):

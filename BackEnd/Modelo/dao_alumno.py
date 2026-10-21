@@ -2,6 +2,7 @@ from Modelo.database import connect_to_database
 import json
 from Servicios.ocr import reconocer_escritura
 from Servicios.evaluacion import evaluar
+from Servicios.progreso import resumir_progreso
 
 #perfil del alumno
 def actualizar_info_alumno_dao(nombre, apellido_paterno, apellido_materno, grupo, id_usuario):
@@ -261,6 +262,29 @@ def obtener_ejercicios_vencidos_dao(id_usuario):
             }
             for r in rows
         ]
+    finally:
+        cursor.close()
+        conn.close()
+
+#progreso del alumno
+def obtener_progreso_alumno_dao(id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        # Sin imagen_codificada: solo hace falta fecha, ejercicio y el CLS confirmado (0-10).
+        cursor.execute("""
+            SELECT i.fecha_envio, e.titulo, e.tipo, ao.ortografia_score
+            FROM Intentos i
+            JOIN Alumno a ON a.id_alumno = i.id_alumno
+            JOIN Ejercicios_Tutor et ON et.id_ejercicio_tutor = i.id_ejercicio_tutor
+            JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
+            LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
+            WHERE a.id_usuario = ?
+        """, (id_usuario,))
+        filas = [{"fecha": r[0], "titulo": r[1], "tipo": r[2], "puntaje": r[3]} for r in cursor.fetchall()]
+        return resumir_progreso(filas)
     finally:
         cursor.close()
         conn.close()
