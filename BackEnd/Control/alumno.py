@@ -5,6 +5,7 @@ from Modelo.schemas_alumno import AlumnoUpdate, IntentoCreate
 from Modelo.schemas_auth import PasswordUpdate
 from Modelo.dao_alumno import *
 from Modelo.dao_auth import obtener_hash_contrasena_dao
+from Servicios.ocr import OcrError
 
 router = APIRouter()
 
@@ -31,6 +32,8 @@ def actualizar_password_alumno(data: PasswordUpdate, current_user: dict = Depend
         nuevo_hash = get_password_hash(data.nueva_contrasena)
         actualizar_password_alumno_dao(nuevo_hash, current_user["id_usuario"])
         return {"message": "Contraseña actualizada correctamente"}
+    except HTTPException:
+        raise
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
@@ -55,12 +58,27 @@ def verificar_estado_tutor(current_user: dict = Depends(require_alumno)):
 def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(require_alumno)):
     
     try:
-        registrar_intento_dao(intento_data.id_ejercicio_tutor, intento_data.imagen_codificada, current_user["id_usuario"])
-        return {"message": "Intento registrado."}
+        ocr = registrar_intento_dao(intento_data.id_ejercicio_tutor, intento_data.imagen_codificada, current_user["id_usuario"])
+        return {"message": "Intento registrado.", "ocr": ocr}
+    except OcrError as error:
+        raise HTTPException(status_code=error.status_code, detail=str(error))
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+#progreso del alumno (solo cuenta el CLS confirmado por el tutor)
+@router.get("/progreso")
+def obtener_progreso_alumno(current_user: dict = Depends(require_alumno)):
+    try:
+        return obtener_progreso_alumno_dao(current_user["id_usuario"])
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener el progreso:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener el progreso")
 
 #ejercicios relacionados al alumno
 @router.get("/ejercicios/proximos")

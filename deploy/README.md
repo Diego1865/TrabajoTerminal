@@ -1,0 +1,178 @@
+# Demo en Google Cloud
+
+Plan preparado para `trabajoterminal-510019`: una VM e2-medium (2 vCPU compartidas, 4 GB),
+Ubuntu 24.04 x86_64, disco balanced de 40 GB y una IPv4 fija en us-central1-a.
+Estimación orientativa: USD 30–40/mes encendida 24/7, tráfico ligero y pocos OCR.
+Verificar la calculadora, saldo y fecha de vencimiento antes de crear recursos.
+Los créditos de prueba vencen a los 90 días del alta. Detener la VM reduce el
+cómputo, pero discos y direcciones IP pueden seguir generando cargos.
+
+## Arquitectura
+
+Internet → Caddy (80/443, HTTPS) → frontend Next.js y `/api/*` → FastAPI → SQL Server.
+Solo Caddy publica puertos. SQL Server Express y FastAPI no son accesibles desde
+Internet. Express permite esta demo sin licencia comercial de SQL Server; tiene
+límites de memoria y de tamaño de base (SQL Server 2022: 10 GB por base).
+Los archivos e imágenes base64 guardados en la base consumen ese espacio.
+
+Compose `compose.demo.yml` es INDEPENDIENTE de los archivos locales. No combinarlo
+con `docker-compose.yml` ni `docker-compose.ocr.yml`. No reutiliza tus volúmenes locales.
+Vision usa ADC con la cuenta de servicio adjunta a la VM; no subir claves JSON.
+El frontend usa la misma dirección HTTPS que la API; no incorpora localhost:8000.
+
+## 1. Crear recursos (genera cargos)
+
+Desde PowerShell en la raíz del repositorio:
+
+```powershell
+# Solo imprime el plan; no crea recursos.
+.\deploy\provision.ps1
+# Ejecutar únicamente tras revisar el plan y el presupuesto.
+.\deploy\provision.ps1 -Apply
+```
+
+Requiere cuenta autorizada para Compute, IAM y habilitar APIs. Crea red/subred,
+reglas web, SSH por IAP, cuenta de servicio, IPv4 y VM. Si falla parcialmente,
+inspeccionar los recursos existentes antes de repetir; no borra ni reemplaza recursos.
+El usuario que se conecta necesita acceso IAP (roles/iap.tunnelResourceAccessor)
+y permisos de SSH/Compute apropiados; la cuenta propietaria puede concederlos.
+No se habilita SSH público. El firewall solo permite el rango oficial de IAP para SSH.
+
+La instalación inicial de Docker tarda unos minutos. Consultar su estado:
+
+```powershell
+gcloud compute ssh grafia-demo --project trabajoterminal-510019 --zone us-central1-a --tunnel-through-iap
+```
+
+En la VM: `sudo journalctl -u google-startup-scripts.service` y `sudo docker version`.
+
+## 2. Subir el código actual, sin archivos privados
+
+Desde PowerShell en la raíz del repositorio (incluye cambios aún sin commit):
+
+```powershell
+tar --exclude=.env --exclude='.env.*' --exclude=.venv --exclude=__pycache__ --exclude=node_modules --exclude=.next --exclude=credentials --exclude='*-credentials.json' -czf deploy/demo.tar.gz BackEnd FrontEnd deploy/Caddyfile deploy/configure.py deploy/backup.sh compose.demo.yml
+gcloud compute scp deploy/demo.tar.gz grafia-demo:demo.tar.gz --project trabajoterminal-510019 --zone us-central1-a --tunnel-through-iap
+```
+
+La lista de rutas es deliberada: no incluye `.git`, credenciales personales, backups
+ni reportes. Comprobar el contenido con `tar -tzf deploy/demo.tar.gz` antes de transferir.
+
+## 3. Configurar dominio y arrancar (en la VM)
+
+Usar la dirección fija que devuelve el script. Sin dominio propio se propone
+`IP_PUBLICA.sslip.io`, un DNS de terceros que resuelve esa IP; su disponibilidad y
+los límites de certificados no están bajo nuestro control. Confirmar resolución DNS.
+Caddy obtiene HTTPS cuando el nombre apunta al servidor y 80/443 están accesibles.
+
+```bash
+sudo tar -xzf "$HOME/demo.tar.gz" -C /opt/grafia
+cd /opt/grafia
+sudo python3 deploy/configure.py --domain IP_PUBLICA.sslip.io --project trabajoterminal-510019
+sudo docker compose --env-file .env.demo -f compose.demo.yml up -d --build
+sudo docker compose --env-file .env.demo -f compose.demo.yml ps -a
+sudo docker compose --env-file .env.demo -f compose.demo.yml logs --tail=50 db-init web
+```
+
+`configure.py` genera secretos aleatorios y NO sobreescribe una configuración existente.
+`.env.demo` solo es legible por el propietario (root si usaste sudo).
+No se imprimen secretos. Los contenedores reinician automáticamente con Docker.
+Para actualizar código, respaldar primero y repetir transferencia/extracción/`up`;
+no ejecutar nuevamente `configure.py` ni cambiar la contraseña de una base existente.
+
+La inicialización crea TT si no existe, carga diez ejercicios solo si el catálogo
+está vacío y registra las migraciones aplicadas. Un fallo detiene db-init y evita
+arrancar el backend. No elimina tablas ni crea usuarios o entregas ficticias.
+Si falta memoria al compilar, construir los servicios secuencialmente antes del `up`.
+Con e2-medium (4 GB) conviene crear antes un swap de 2 GB:
+`sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab`.
+
+## 4. Prueba de aceptación
+
+1. Abrir `https://IP_PUBLICA.sslip.io`; verificar certificado válido y permiso de cámara.
+2. Registrar un tutor desde la interfaz, crear alumno y activar un ejercicio.
+3. Entrar como alumno y entregar una fotografía/dibujo de una oración.
+4. Revisar texto y evaluación preliminar en el panel del tutor.
+5. Reiniciar contenedores y comprobar que usuarios/entregas persisten.
+
+SQL y las credenciales se quedan en el servidor. La solicitud OCR envía la imagen
+a Google Vision y consume cuota. Esta configuración es una demo de una sola VM;
+no ofrece alta disponibilidad y no reemplaza una revisión de seguridad para uso escolar real.
+
+## 5. Respaldos y gasto
+
+```bash
+cd /opt/grafia
+sudo bash deploy/backup.sh
+```
+
+En una instalación nueva, antes del primer respaldo, dar el volumen al usuario de SQL Server
+(si no, falla con "Operating system error 5"):
+`sudo docker compose --env-file .env.demo -f compose.demo.yml exec -u 0 database chown mssql /var/opt/mssql/backup`.
+
+El script hace BACKUP con checksum y RESTORE VERIFYONLY; guarda una copia `.bak`
+en `backups/`. Eso comprueba el archivo, no sustituye un ensayo de restauración.
+Descargarlo a una ubicación privada fuera de la VM. No se ha programado un respaldo
+automático; hacerlo antes de actualizaciones y después de las sesiones de prueba.
+La creación de la VM preserva el disco al eliminarla para evitar perder datos;
+ese disco continúa facturándose hasta retirarlo expresamente.
+
+Configurar presupuesto con alertas al 50/80/100% y revisar costos diarios al inicio.
+Una alerta no es un corte de consumo. Revisar también el saldo y la fecha de los créditos.
+No usar `down -v` sobre la demo: eliminaría los volúmenes de datos y certificados.
+
+## 6. Recrear desde la plantilla
+
+`deploy/template.ps1` (sin `-Apply` solo imprime el plan) crea:
+- el bucket `gs://trabajoterminal-510019-grafia-respaldos`, que borra respaldos de más de 30 días;
+- permiso de la cuenta de servicio de la VM solo sobre ese bucket;
+- la plantilla `grafia-demo-plantilla`.
+
+También agrega a la VM actual el respaldo al apagar. Crea recursos y cambia permisos:
+lo ejecuta una cuenta con rol de propietario.
+
+```powershell
+.\deploy\template.ps1 -Apply
+```
+
+Respaldos a Cloud Storage: `deploy/respaldo-nube.sh` ejecuta `backup.sh` y sube el `.bak` al bucket.
+Corre al apagar la VM (shutdown-script; Google no garantiza que termine) y, en VMs creadas
+desde la plantilla, cada día a las 08:00 UTC. Para forzarlo: `sudo bash deploy/respaldo-nube.sh`.
+
+Si la VM se borró, crear otra con la misma IP fija:
+
+```powershell
+gcloud compute instances create grafia-demo --source-instance-template=grafia-demo-plantilla --zone us-central1-a --subnet=grafia-demo --address=34.121.15.214 --project trabajoterminal-510019
+```
+
+`--subnet` es obligatorio junto con `--address`: sin él, gcloud reemplaza la red de la plantilla
+por la red `default`, donde 80/443 están cerrados. Antes, borrar la VM anterior con
+`--delete-disks=all`: su disco no se borra solo y tiene el mismo nombre.
+
+`deploy/startup.sh` hace la instalación sola en unos 15 minutos:
+1. Docker, swap y clon de la rama del metadato `grafia-branch`.
+2. `.env.demo` con secretos nuevos.
+3. Restaura el `.bak` más reciente del bucket.
+4. Construye y arranca.
+
+Seguimiento: `sudo journalctl -u google-startup-scripts.service -f`.
+
+En arranques posteriores solo comprueba que los contenedores estén arriba. No modifica una
+`/opt/grafia` instalada a mano (sin `.git`).
+
+Se pierde lo ocurrido después del último respaldo. Los secretos son nuevos, así que las
+sesiones abiertas se cierran. El disco de una VM borrada se conserva y se sigue cobrando
+hasta eliminarlo (`gcloud compute disks list`).
+
+Actualizar una VM creada desde la plantilla (respaldar antes):
+
+```bash
+cd /opt/grafia && sudo git pull && sudo docker compose --env-file .env.demo -f compose.demo.yml up -d --build
+```
+
+Referencias:
+- https://cloud.google.com/products/compute/pricing/general-purpose
+- https://docs.cloud.google.com/free/docs/free-cloud-features
+- https://docs.cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
+- https://docs.docker.com/engine/install/ubuntu/
+- https://caddyserver.com/docs/automatic-https

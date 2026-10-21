@@ -5,6 +5,7 @@ import AlumnosCategoria from "./AlumnosCategoria";
 import ProgresoAlumnos from "./ProgresoAlumnos";
 import TabEjercicios from "./TabEjercicios";
 import PerfilTutor from "./PerfilTutor";
+import EvaluacionPreliminar from "./EvaluacionPreliminar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -46,7 +47,23 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
   const [intentoActivo, setIntentoActivo] = useState(null);
   const [calificacion, setCalificacion] = useState("");
   const [retroalimentacion, setRetroalimentacion] = useState("");
+  const [clsCorrectas, setClsCorrectas] = useState("");
   const [guardando, setGuardando] = useState(false);
+
+  // Las secuencias posibles son fijas (dependen de la respuesta esperada); el tutor solo corrige las correctas.
+  // El CLS confirmado tiene prioridad; si no hay, se propone el sugerido por el OCR.
+  const clsBase = intentoActivo?.cls_confirmado || intentoActivo?.cls_sugerido;
+  const clsPosibles = clsBase?.posibles > 0 ? Number(clsBase.posibles) : null;
+  const seleccionarIntento = (intento) => {
+    const cls = intento.cls_confirmado || intento.cls_sugerido;
+    setIntentoActivo(intento);
+    setCalificacion(intento.puntuacion ?? "");
+    setRetroalimentacion(intento.retroalimentacion || "");
+    setClsCorrectas(cls?.posibles > 0 ? String(cls.correctas) : "");
+  };
+  const clsValido = clsPosibles !== null && clsCorrectas !== "" && Number.isInteger(Number(clsCorrectas))
+    && Number(clsCorrectas) >= 0 && Number(clsCorrectas) <= clsPosibles;
+  const calificacionSugerida = clsValido ? Math.round(Number(clsCorrectas) / clsPosibles * 100) : null;
 
   useEffect(() => {
     const fetchIntentos = async () => {
@@ -87,6 +104,13 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
 
   const handleGuardarCalificacion = async (e) => {
     e.preventDefault();
+    if (clsCorrectas !== "" && !clsValido) {
+      alert(`Revisa el CLS: las secuencias correctas deben ser un número entero entre 0 y ${clsPosibles}, o deja el campo vacío.`);
+      return;
+    }
+    const clsConfirmado = clsValido
+      ? { metrica: "CLS", correctas: Number(clsCorrectas), posibles: clsPosibles, confirmado_por_tutor: true }
+      : intentoActivo.cls_confirmado;
     setGuardando(true);
     try {
       const res = await fetch(`${API_URL}/api/tutor/calificar/${intentoActivo.id_intento}`, {
@@ -97,17 +121,21 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
         },
         body: JSON.stringify({
           calificacion: Number(calificacion),
-          retroalimentacion: retroalimentacion
+          retroalimentacion: retroalimentacion,
+          ...(clsValido ? { cls_correctas: Number(clsCorrectas) } : {})
         })
       });
-      
-      if (!res.ok) throw new Error("Error al guardar la calificación.");
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data.detail === "string" ? data.detail : "Error al guardar la calificación.");
+      }
       
       alert("Calificación guardada correctamente.");
       
       setIntentos(prev => prev.map(i => 
         i.id_intento === intentoActivo.id_intento 
-          ? { ...i, puntuacion: calificacion, retroalimentacion } 
+          ? { ...i, puntuacion: calificacion, retroalimentacion, cls_confirmado: clsConfirmado }
           : i
       ));
       setIntentoActivo(null);
@@ -148,11 +176,7 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                 intentos.map(intento => (
                   <div 
                     key={intento.id_intento} 
-                    onClick={() => {
-                      setIntentoActivo(intento);
-                      setCalificacion(intento.puntuacion || "");
-                      setRetroalimentacion(intento.retroalimentacion || "");
-                    }}
+                    onClick={() => seleccionarIntento(intento)}
                     className={`p-3 border rounded-xl cursor-pointer transition-colors ${intentoActivo?.id_intento === intento.id_intento ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
                   >
                     <p className="font-semibold text-sm text-gray-800 mb-1">{intento.titulo_ejercicio}</p>
@@ -161,6 +185,11 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                       <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${intento.puntuacion !== undefined && intento.puntuacion !== null ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                         {intento.puntuacion !== undefined && intento.puntuacion !== null ? `${intento.puntuacion} pts` : 'Sin calificar'}
                       </span>
+                      {intento.cls_confirmado && (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                          CLS confirmado
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))
@@ -189,6 +218,11 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                     )}
                   </div>
 
+                  <EvaluacionPreliminar evaluacion={intentoActivo.evaluacion_preliminar}
+                    cls={intentoActivo.cls_sugerido}
+                    calificacionSugerida={calificacionSugerida}
+                    onUsarCalificacion={() => setCalificacion(String(calificacionSugerida))}
+                    onUsarSugerencia={(texto) => setRetroalimentacion(actual => actual ? `${actual}\n\n${texto}` : texto)} />
                   {intentoActivo.texto_detectado_ocr && (
                     <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
                       <p className="text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Texto Detectado (OCR)</p>
@@ -227,9 +261,33 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                         ></textarea>
                       </div>
                     </div>
+                    <div className="mb-4 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">
+                        Ortografía · CLS (secuencias de letras correctas). Revisa la propuesta del OCR con la imagen; solo cuenta para el progreso al guardar.
+                      </p>
+                      {clsPosibles === null ? (
+                        <p className="text-sm text-gray-500">Este ejercicio no tiene respuesta configurada; no se puede calcular el CLS.</p>
+                      ) : (
+                        <div className="flex flex-wrap items-end gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-600 mb-1">Secuencias correctas</label>
+                            <input type="number" min="0" max={clsPosibles} step="1" value={clsCorrectas}
+                              onChange={(e) => setClsCorrectas(e.target.value)}
+                              className="w-28 p-2 border border-gray-300 rounded outline-none focus:border-blue-500 bg-white text-gray-900" />
+                          </div>
+                          <p className="text-sm text-gray-700 pb-2">
+                            de <strong>{clsPosibles}</strong> posibles
+                          </p>
+                          <p className="text-sm text-gray-700 pb-2">
+                            {clsValido ? `→ Ortografía: ${(Number(clsCorrectas) / clsPosibles * 10).toFixed(1)} / 10`
+                              : clsCorrectas === "" ? "Sin CLS (no cambia el progreso)" : `Debe ser un entero entre 0 y ${clsPosibles}`}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                     <div className="flex justify-end">
-                      <button 
-                        type="submit" 
+                      <button
+                        type="submit"
                         disabled={guardando}
                         className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 disabled:opacity-60"
                       >

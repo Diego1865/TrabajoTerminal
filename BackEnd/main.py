@@ -4,12 +4,13 @@ from Control.auth import router as auth_router
 from Control.alumno import router as alumno_router
 from Control.tareas.cerrar_ejercicio import iniciar_scheduler
 from Control.tutor import router as tutor_router
+import os
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permitir solo el origen de frontend
+    allow_origins=[v.strip() for v in os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",") if v.strip()],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

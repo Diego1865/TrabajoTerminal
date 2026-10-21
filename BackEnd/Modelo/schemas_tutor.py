@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 
@@ -12,6 +12,9 @@ class EmailUpdate(BaseModel):
 class CalificarIntentoRequest(BaseModel):
     calificacion: int
     retroalimentacion: Optional[str] = None
+    # CLS confirmado por el tutor; solo así cuenta para el promedio de ortografía.
+    # Las secuencias posibles las calcula el servidor a partir de la respuesta esperada.
+    cls_correctas: Optional[int] = Field(default=None, ge=0)
 
 class IntentoTutorResponse(BaseModel):
     id_intento: int
@@ -22,8 +25,11 @@ class IntentoTutorResponse(BaseModel):
     fecha_envio: datetime
     imagen_codificada: str
     texto_detectado_ocr: Optional[str] = None
+    evaluacion_preliminar: Optional[dict] = None
     puntuacion: Optional[int] = None
     retroalimentacion: Optional[str] = None
+    cls_confirmado: Optional[dict] = None
+    cls_sugerido: Optional[dict] = None
 
 class EjercicioTutorResponse(BaseModel):
     id_ejercicio_tutor: int

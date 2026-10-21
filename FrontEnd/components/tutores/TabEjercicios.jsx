@@ -24,7 +24,7 @@ const TabEjercicios = ({ idTutor }) => {
       try {
         const headers = { 'Authorization': `Bearer ${token}` };
         const [resEjercicios, resActivados] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicios/`, { headers }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicios`, { headers }),
           fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicios/${idTutor}`, { headers }),
         ]);
         if (!resEjercicios.ok || !resActivados.ok) throw new Error('Error al cargar los ejercicios');
@@ -60,7 +60,7 @@ const TabEjercicios = ({ idTutor }) => {
         setActivados((prev) => { const next = new Set(prev); next.delete(id_ejercicio); return next; });
       } else {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicio/activar/`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicio/activar`,
           {
             method: 'POST', headers,
             body: JSON.stringify({ id_ejercicio, id_usuario: idTutor, fecha_fin: formatearFechaParaSQL(fechaFin) }),

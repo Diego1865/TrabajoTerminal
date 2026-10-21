@@ -15,7 +15,7 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     'Trazos básicos: Vocales minúsculas',
     'Practica la escritura de las vocales minúsculas. El objetivo es mantener las letras dentro del renglón central para mejorar la puntuación de alineación y tamaño.',
     'Legibilidad',
-    '{"texto_guia": "a e i o u", "imagen_guia": null, "imagen_en_lienzo": false}',
+    '{"texto_guia": "a e i o u", "imagen_guia": null, "imagen_en_lienzo": false, "evaluacion":{"modo":"copia","respuestas_aceptadas":["a e i o u"]}}',
     1
 ),
 
@@ -24,7 +24,7 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     'Ortografía: Uso de la B y la V',
     'Transcribe la oración prestando especial atención a las palabras con B y V para reforzar la memoria ortográfica.',
     'Ortografía',
-    '{"texto_guia": "El burro valiente busca un barco viejo.", "imagen_guia": null, "imagen_en_lienzo": false}',
+    '{"texto_guia": "El burro valiente busca un barco viejo.", "imagen_guia": null, "imagen_en_lienzo": false, "evaluacion":{"modo":"copia","respuestas_aceptadas":["El burro valiente busca un barco viejo."]}}',
     1
 ),
 
@@ -33,7 +33,7 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     'Práctica de espaciado e inclinación',
     'Escribe la oración completa. Concéntrate en dejar una separación uniforme entre cada palabra y mantener la misma inclinación en todas las letras verticales.',
     'Legibilidad',
-    '{"texto_guia": "La rápida zorra marrón salta sobre el perro perezoso.", "imagen_guia": null, "imagen_en_lienzo": false}',
+    '{"texto_guia": "La rápida zorra marrón salta sobre el perro perezoso.", "imagen_guia": null, "imagen_en_lienzo": false, "evaluacion":{"modo":"copia","respuestas_aceptadas":["La rápida zorra marrón salta sobre el perro perezoso."]}}',
     1
 ),
 
@@ -42,7 +42,7 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     'Ortografía: Palabras con C, S y Z',
     'Completa el texto cuidadosamente para practicar la correcta escritura de palabras que suenan similar pero se escriben con C, S o Z.',
     'Ortografía',
-    '{"texto_guia": "El _apatero hace _apato_ con _inta_ de _eda.", "imagen_guia": null, "imagen_en_lienzo": false}',
+    '{"texto_guia": "El _apatero hace _apato_ con _inta_ de _eda.", "imagen_guia": null, "imagen_en_lienzo": false, "evaluacion":{"modo":"completar","respuestas_aceptadas":["El zapatero hace zapatos con cintas de seda."]}}',
     1
 ),
 
@@ -51,7 +51,7 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     'Ortografía: Uso correcto de las tildes',
     'Transcribe la oración marcando claramente la tilde en las palabras agudas, graves y esdrújulas.',
     'Ortografía',
-    '{"texto_guia": "El pajaro canto en el arbol.", "imagen_guia": null, "imagen_en_lienzo": false}',
+    '{"texto_guia": "El pajaro canto en el arbol.", "imagen_guia": null, "imagen_en_lienzo": false, "evaluacion":{"modo":"completar","respuestas_aceptadas":["El pájaro cantó en el árbol."]}}',
     1
 ),
 
@@ -69,7 +69,7 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     'Ortografía: Uso de G y J',
     'Practica la escritura de estas palabras confusas. Asegúrate de trazar correctamente el descenso de las letras g y j por debajo del renglón.',
     'Ortografía',
-    '{"texto_guia": "El gigante juega con un girasol en el jardín.", "imagen_guia": null, "imagen_en_lienzo": false}',
+    '{"texto_guia": "El gigante juega con un girasol en el jardín.", "imagen_guia": null, "imagen_en_lienzo": false, "evaluacion":{"modo":"copia","respuestas_aceptadas":["El gigante juega con un girasol en el jardín."]}}',
     1
 ),
 
@@ -78,7 +78,7 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     'Prueba de caligrafía mixta',
     'Transcribe el párrafo completo. Se evaluará tu ortografía general, el tamaño de tu letra, la alineación en el renglón y el espaciado entre palabras.',
     'Mixto',
-    '{"texto_guia": "Aquel zorro pequeño corría feliz por el bosque verde.", "imagen_guia": null, "imagen_en_lienzo": false}',
+    '{"texto_guia": "Aquel zorro pequeño corría feliz por el bosque verde.", "imagen_guia": null, "imagen_en_lienzo": false, "evaluacion":{"modo":"copia","respuestas_aceptadas":["Aquel zorro pequeño corría feliz por el bosque verde."]}}',
     1
 ),
 
@@ -113,61 +113,3 @@ INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) V
     }',
     1
 );
-
-
--- ============================================================
--- CÓMO GENERAR EL BASE64 DE UNA IMAGEN
--- ============================================================
---
--- Opción A — Python (recomendado para scripts de carga masiva):
---
---   import base64, json
---   with open("ola_de_mar.png", "rb") as f:
---       b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode()
---   contenido = json.dumps({"texto_guia": None, "imagen_guia": b64, "imagen_en_lienzo": False})
---   # Inserta `contenido` en la columna contenido_base
---
--- Opción B — Node.js:
---
---   const fs = require('fs');
---   const b64 = "data:image/png;base64," + fs.readFileSync("ola.png").toString("base64");
---
--- Opción C — Navegador (para pruebas rápidas en el admin):
---
---   const toBase64 = file => new Promise(res => {
---     const r = new FileReader();
---     r.onload = () => res(r.result);
---     r.readAsDataURL(file);
---   });
---
--- ============================================================
--- DONDE ARMAR EL CORPUS DE EJERCICIOS
--- ============================================================
---
--- RECOMENDACIÓN 1 — Panel de administración propio (ideal a largo plazo)
---   Construye una ruta /admin/ejercicios en tu Next.js con:
---   - Formulario con campos: titulo, descripcion, tipo, texto_guia
---   - Upload de imagen → convierte a base64 → guarda en contenido_base
---   - Vista previa del ejercicio antes de publicar
---   - CRUD completo contra tu API
---
--- RECOMENDACIÓN 2 — Supabase Table Editor (la más rápida si ya usas Supabase)
---   - Abre la tabla Ejercicios en el Dashboard de Supabase
---   - Edita contenido_base directamente en el editor JSON integrado
---   - Para imágenes: sube a Supabase Storage y guarda la URL pública
---     (evitas el problema del tamaño de base64 en la BD)
---
--- RECOMENDACIÓN 3 — Archivos JSON versionados en Git
---   corpus/
---     ejercicios.json        ← array de objetos con todos los campos
---     imagenes/
---       ola_de_mar.png
---       letra_cursiva.png
---   Un script seed.py lee el JSON, convierte imágenes a base64 e inserta.
---   Ventaja: el corpus viaja con el código, tiene historial y se revisa en PR.
---
--- RECOMENDACIÓN 4 — Notion Database + exportación
---   Crea una base de datos en Notion con columnas: titulo, tipo, texto_guia, etc.
---   Usa la API de Notion para exportar y poblar la BD automáticamente.
---   Útil si el equipo pedagógico no es técnico.
--- ============================================================

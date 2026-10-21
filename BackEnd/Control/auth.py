@@ -53,6 +53,8 @@ def login(credentials: LoginRequest):
 
         token = create_access_token(token_payload)
         return {"message": "Inicio de sesión exitoso", "token": token}
+    except HTTPException:
+        raise
     except ConnectionError as ce:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(ce))
     except ValueError as ve:

@@ -1,4 +1,8 @@
 from Modelo.database import connect_to_database
+import json
+from Servicios.ocr import reconocer_escritura
+from Servicios.evaluacion import evaluar
+from Servicios.progreso import resumir_progreso
 
 #perfil del alumno
 def actualizar_info_alumno_dao(nombre, apellido_paterno, apellido_materno, grupo, id_usuario):
@@ -78,18 +82,35 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
             
         id_alumno = alumno_row[0]
 
-        cursor.execute("SELECT id_estatus FROM Ejercicios_Tutor WHERE id_ejercicio_tutor = ?", (ejercicio_tutor_id,))
+        cursor.execute("""
+            SELECT et.id_estatus, e.contenido_base FROM Ejercicios_Tutor et
+            JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
+            JOIN Alumno a ON a.id_tutor = et.id_tutor
+            WHERE et.id_ejercicio_tutor = ? AND a.id_alumno = ?
+        """, (ejercicio_tutor_id, id_alumno))
         ejercicio = cursor.fetchone()
         
         if not ejercicio:
-            raise ValueError("Ejercicio no encontrado.")
+            raise ValueError("El ejercicio no está asignado a tu tutor.")
+        if ejercicio[0] != 1:
+            raise ValueError("El ejercicio ya no está activo.")
+
+        ocr = reconocer_escritura(imagen_codificada)
+        try:
+            contenido = json.loads(ejercicio[1])
+        except (TypeError, ValueError):
+            contenido = {}
+        ocr["evaluacion_preliminar"] = evaluar(contenido if isinstance(contenido, dict) else {}, ocr)
         
         cursor.execute("""
-            INSERT INTO Intentos (id_alumno, id_ejercicio_tutor, imagen_codificada)
-            VALUES (?, ?, ?)
-        """, (id_alumno, ejercicio_tutor_id, imagen_codificada))
+            INSERT INTO Intentos (id_alumno, id_ejercicio_tutor, imagen_codificada,
+                                  texto_detectado_ocr, resultado_ocr_json)
+            VALUES (?, ?, ?, ?, ?)
+        """, (id_alumno, ejercicio_tutor_id, imagen_codificada,
+              ocr["texto"], json.dumps(ocr, ensure_ascii=False)))
         
         conn.commit()
+        return ocr
         
     except Exception as e:
         conn.rollback()
@@ -241,6 +262,29 @@ def obtener_ejercicios_vencidos_dao(id_usuario):
             }
             for r in rows
         ]
+    finally:
+        cursor.close()
+        conn.close()
+
+#progreso del alumno
+def obtener_progreso_alumno_dao(id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        # Sin imagen_codificada: solo hace falta fecha, ejercicio y el CLS confirmado (0-10).
+        cursor.execute("""
+            SELECT i.fecha_envio, e.titulo, e.tipo, ao.ortografia_score
+            FROM Intentos i
+            JOIN Alumno a ON a.id_alumno = i.id_alumno
+            JOIN Ejercicios_Tutor et ON et.id_ejercicio_tutor = i.id_ejercicio_tutor
+            JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
+            LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
+            WHERE a.id_usuario = ?
+        """, (id_usuario,))
+        filas = [{"fecha": r[0], "titulo": r[1], "tipo": r[2], "puntaje": r[3]} for r in cursor.fetchall()]
+        return resumir_progreso(filas)
     finally:
         cursor.close()
         conn.close()
