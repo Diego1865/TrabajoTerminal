@@ -101,7 +101,8 @@ export default function App() {
       return (
         <Login 
           onLogin={handleLogin} 
-          onNavigateRegister={() => setVistaActual('registro')} 
+          onNavigateRegister={() => setVistaActual('registro')}
+          onNavigateRecuperar={() => setVistaActual('recuperar')}
         />
       );
     }
