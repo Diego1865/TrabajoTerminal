@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 
-const Login = ({ onLogin, onNavigateRegister }) => {
+const Login = ({ onLogin, onNavigateRegister, onNavigateRecuperar }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -137,6 +137,14 @@ const Login = ({ onLogin, onNavigateRegister }) => {
                 )}
               </button>
             </form>
+
+            {onNavigateRecuperar && (
+              <div className="mt-4 text-center">
+                <button onClick={onNavigateRecuperar} className="font-bold text-sm hover:underline" style={{ color: '#7C3AED' }}>
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            )}
 
             <div className="mt-6 text-center">
               <p className="font-semibold text-gray-600">

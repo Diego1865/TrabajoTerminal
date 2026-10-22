@@ -6,6 +6,8 @@ export default function PerfilTutor({ onLogout }) {
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [passwordActualCorreo, setPasswordActualCorreo] = useState('');
+  const [codigoCorreo, setCodigoCorreo] = useState('');
+  const [tokenCorreo, setTokenCorreo] = useState('');
   const [passwordActualClave, setPasswordActualClave] = useState('');
   const [passwordNueva, setPasswordNueva] = useState('');
   const [mensaje, setMensaje] = useState({ tipo: '', texto: '' });
@@ -43,6 +45,26 @@ export default function PerfilTutor({ onLogout }) {
     }
   };
 
+  // Paso 1: mandar un código al correo nuevo para confirmar que existe
+  const handleEnviarCodigoCorreo = async (e) => {
+    e.preventDefault();
+    if (!correo) return mostrarMensaje('error', 'Escribe el nuevo correo.');
+    try {
+      const res = await fetch(`${API_URL}/api/tutor/act/correo/codigo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ correo })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Revisa el correo electrónico.');
+      setTokenCorreo(data.token_verificacion);
+      mostrarMensaje('exito', `📧 Te enviamos un código a ${correo}. Revisa también la carpeta de spam.`);
+    } catch (err) {
+      mostrarMensaje('error', err.message);
+    }
+  };
+
+  // Paso 2: confirmar con el código y la contraseña actual
   const handleActualizarCorreo = async (e) => {
     e.preventDefault();
     if (!passwordActualCorreo) return mostrarMensaje('error', 'Se requiere contraseña actual para cambiar el correo.');
@@ -50,12 +72,12 @@ export default function PerfilTutor({ onLogout }) {
       const res = await fetch(`${API_URL}/api/tutor/act/correo`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ correo, contrasena_actual: passwordActualCorreo })
+        body: JSON.stringify({ correo, contrasena_actual: passwordActualCorreo, codigo: codigoCorreo, token_verificacion: tokenCorreo })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Error al actualizar correo');
+      if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Error al actualizar correo');
       mostrarMensaje('exito', '📧 Correo actualizado correctamente.');
-      setCorreo(''); setPasswordActualCorreo('');
+      setCorreo(''); setPasswordActualCorreo(''); setCodigoCorreo(''); setTokenCorreo('');
     } catch (err) {
       mostrarMensaje('error', err.message);
     }
@@ -179,21 +201,36 @@ export default function PerfilTutor({ onLogout }) {
           {/* Cambiar correo */}
           <div className="mb-6 pb-6" style={{ borderBottom: '2px dashed #EDE9FE' }}>
             <p className="font-semibold text-gray-400 text-sm mb-3">
-              📧 Para cambiar tu correo electrónico, confirma tu contraseña actual.
+              📧 Para cambiar tu correo te enviaremos un código al correo nuevo; después confirma con tu contraseña actual.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
               <input type="email" placeholder="Nuevo correo" value={correo}
-                onChange={e => setCorreo(e.target.value)}
+                onChange={e => setCorreo(e.target.value)} disabled={!!tokenCorreo}
                 className="tutor-input" style={inputStyle()} />
-              <input type="password" placeholder="Contraseña actual" value={passwordActualCorreo}
-                onChange={e => setPasswordActualCorreo(e.target.value)}
-                className="tutor-input" style={inputStyle()} />
+              {tokenCorreo && (
+                <input type="text" inputMode="numeric" maxLength={6} placeholder="Código de 6 dígitos" value={codigoCorreo}
+                  onChange={e => setCodigoCorreo(e.target.value.replace(/\D/g, ''))}
+                  className="tutor-input" style={inputStyle()} />
+              )}
+              {tokenCorreo && (
+                <input type="password" placeholder="Contraseña actual" value={passwordActualCorreo}
+                  onChange={e => setPasswordActualCorreo(e.target.value)}
+                  className="tutor-input" style={inputStyle()} />
+              )}
             </div>
-            <button onClick={handleActualizarCorreo}
-              className="btn-kids-t font-black text-white px-5 py-3"
-              style={{ borderRadius: '14px', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', boxShadow: '0 4px 0 #4C1D95' }}>
-              📧 Actualizar Correo
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button onClick={tokenCorreo ? handleActualizarCorreo : handleEnviarCodigoCorreo}
+                className="btn-kids-t font-black text-white px-5 py-3"
+                style={{ borderRadius: '14px', background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)', boxShadow: '0 4px 0 #4C1D95' }}>
+                {tokenCorreo ? '📧 Actualizar Correo' : '📨 Enviar código'}
+              </button>
+              {tokenCorreo && (
+                <button type="button" onClick={() => { setTokenCorreo(''); setCodigoCorreo(''); }}
+                  className="font-black text-sm hover:underline" style={{ color: '#6B7280' }}>
+                  Usar otro correo
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Cambiar contraseña */}

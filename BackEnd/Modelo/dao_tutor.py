@@ -359,6 +359,41 @@ def actualizar_correo_tutor_dao(id_usuario, nuevo_correo):
         cursor.close()
         conn.close()
 
+def correo_en_uso_dao(correo, id_usuario):
+    """True si otro tutor ya usa ese correo."""
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT 1 FROM Tutor WHERE LOWER(correo) = ? AND id_usuario <> ?", (correo, id_usuario))
+        return cursor.fetchone() is not None
+    finally:
+        cursor.close()
+        conn.close()
+
+def restablecer_password_alumno_dao(id_alumno, id_usuario_tutor, hashed_password):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        # Solo el tutor a cargo puede cambiar la contraseña del alumno
+        cursor.execute("""
+            SELECT a.id_usuario
+            FROM Alumno a
+            JOIN Tutor t ON a.id_tutor = t.id_tutor
+            WHERE a.id_alumno = ? AND t.id_usuario = ?
+        """, (id_alumno, id_usuario_tutor))
+        row = cursor.fetchone()
+        if not row:
+            raise PermissionError("Alumno no encontrado o no pertenece a este tutor.")
+        cursor.execute("UPDATE Usuario SET contrasena_cifrada = ? WHERE id_usuario = ?", (hashed_password, row[0]))
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
 def actualizar_password_tutor_dao(nueva_contrasena, id_usuario):
     conn = connect_to_database()
     if not conn:

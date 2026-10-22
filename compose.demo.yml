@@ -18,6 +18,10 @@ x-backend: &backend
     GOOGLE_VISION_ENABLED: ${GOOGLE_VISION_ENABLED:-true}
     GOOGLE_CLOUD_QUOTA_PROJECT: ${GOOGLE_CLOUD_PROJECT:?Define GOOGLE_CLOUD_PROJECT}
     GOOGLE_VISION_LANGUAGE_HINTS: ${GOOGLE_VISION_LANGUAGE_HINTS:-}
+    # Cuenta de Gmail que manda los códigos (deploy/cargar-correo.sh la copia de Secret Manager).
+    CORREO_MODO: smtp
+    SMTP_USER: ${SMTP_USER:-}
+    SMTP_PASSWORD: ${SMTP_PASSWORD:-}
   logging: *logs
 
 services:

@@ -13,3 +13,6 @@ deploy/*.tar.gz
 deploy/*.bak
 !deploy/README.md
 backups/
+
+# Archivo temporal con la cuenta de correo (deploy/README.md, sección 7)
+smtp.txt

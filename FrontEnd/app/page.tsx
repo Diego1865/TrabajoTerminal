@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import Login from "@/components/Login";
 import Registro from "@/components/Registro";
+import RecuperarPassword from "@/components/RecuperarPassword";
 import MainTutor from "@/components/tutores/MainTutor";
 import MainAlumno from "@/components/alumnos/MainAlumno";
 import AvisoDePrivacida from "@/components/Aviso";
@@ -21,7 +22,7 @@ const decodificarJwt = (token: string) => {
 
 // --- Enrutador Principal ---
 export default function App() {
-  const [vistaActual, setVistaActual] = useState('login'); // 'login', 'registro', 'dashboard'
+  const [vistaActual, setVistaActual] = useState('login'); // 'login', 'registro', 'recuperar', 'aviso', 'dashboard'
   const [tipoUsuario, setTipoUsuario] = useState<string | null>(null); // 'tutor' o 'alumno'
 
   const handleLogout = () => {
@@ -60,8 +61,13 @@ export default function App() {
       <Login 
         onLogin={handleLogin} 
         onNavigateRegister={() => setVistaActual('registro')} 
+        onNavigateRecuperar={() => setVistaActual('recuperar')} 
       />
     );
+  }
+
+  if (vistaActual === 'recuperar') {
+    return <RecuperarPassword onNavigateLogin={() => setVistaActual('login')} />;
   }
 
   if (vistaActual === 'aviso') {

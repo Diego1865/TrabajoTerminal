@@ -69,6 +69,7 @@ fi
 cd "$app"
 if [ ! -f .env.demo ]; then
     python3 deploy/configure.py --domain "$ip.sslip.io" --project "$project"
+    bash deploy/cargar-correo.sh || true
 fi
 
 echo '== Arrancando SQL Server'

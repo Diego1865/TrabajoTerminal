@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from "react";
-import { LogOut, UserPlus, Trash2, Loader2, Eye, X, Image as ImageIcon, CheckCircle, Award } from "lucide-react";
+import { LogOut, UserPlus, Trash2, Loader2, Eye, X, Image as ImageIcon, CheckCircle, Award, KeyRound } from "lucide-react";
 import AlumnosCategoria from "./AlumnosCategoria";
 import ProgresoAlumnos from "./ProgresoAlumnos";
 import TabEjercicios from "./TabEjercicios";
@@ -523,6 +523,26 @@ export default function MainTutor({ onLogout }) {
     }
   };
 
+  // Los alumnos no tienen correo: su tutor les asigna una contraseña nueva.
+  const handleRestablecerPassword = async (alumno) => {
+    const nueva = prompt(`Nueva contraseña para ${alumno.nombre} (mínimo 6 caracteres):`);
+    if (nueva === null) return;
+    if (nueva.length < 6) { alert("La contraseña debe tener al menos 6 caracteres."); return; }
+
+    try {
+      const response = await fetch(`${API_URL}/api/tutor/alumno/${alumno.id_alumno}/password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${getToken()}` },
+        body: JSON.stringify({ nueva_contrasena: nueva })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Error al restablecer la contraseña");
+      alert(`Listo. Comparte la nueva contraseña con ${alumno.nombre}.`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const tabs = [
     { key: "inicio", label: "Inicio" },
     { key: "ejercicios", label: "Ejercicios" },
@@ -737,6 +757,14 @@ export default function MainTutor({ onLogout }) {
                           type="button"
                         >
                           <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleRestablecerPassword(alumno)}
+                          className="text-amber-600 hover:bg-amber-50 p-2 rounded transition-colors"
+                          title="Restablecer contraseña"
+                          type="button"
+                        >
+                          <KeyRound size={18} />
                         </button>
                         <button
                           onClick={() => handleDarDeBaja(alumno.id_alumno)}

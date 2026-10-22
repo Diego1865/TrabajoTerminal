@@ -1,13 +1,33 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+from Modelo.schemas_auth import validar_correo
 from typing import Optional
 from datetime import datetime
 
 class TutorUpdate(BaseModel):
     nombre: str
 
+class CorreoCodigoRequest(BaseModel):
+    correo: str
+
+    @field_validator('correo')
+    @classmethod
+    def revisar_correo(cls, v: str) -> str:
+        return validar_correo(v)
+
 class EmailUpdate(BaseModel):
     correo: str
     contrasena_actual: str
+    # Código enviado al correo nuevo, para confirmar que existe y es del tutor.
+    codigo: str
+    token_verificacion: str
+
+    @field_validator('correo')
+    @classmethod
+    def revisar_correo(cls, v: str) -> str:
+        return validar_correo(v)
+
+class PasswordAlumnoUpdate(BaseModel):
+    nueva_contrasena: str = Field(..., min_length=6, max_length=72)
 
 class CalificarIntentoRequest(BaseModel):
     calificacion: int

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from Control.auth import get_password_hash, verify_password
+from Control.auth import get_password_hash, verify_password, enviar_codigo
 from Control.dependencies import require_tutor
 from typing import List
 from Modelo.schemas_alumno import AlumnoCreate, AlumnoResponse, AlumnoProgresoResponse
@@ -7,6 +7,8 @@ from Modelo.dao_tutor import *
 from Modelo.schemas_tutor import *
 from Modelo.schemas_auth import PasswordUpdate, DeleteAccount
 from Modelo.dao_auth import obtener_hash_contrasena_dao
+from Servicios.codigos import verificar_codigo
+from Servicios.correo import CorreoError
 
 router = APIRouter()
 
@@ -117,6 +119,21 @@ def actualizar_nombre_tutor(data: TutorUpdate, current_user: dict = Depends(requ
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al actualizar nombre: {str(e)}")
 
+@router.post("/act/correo/codigo")
+def solicitar_codigo_correo(data: CorreoCodigoRequest, current_user: dict = Depends(require_tutor)):
+    try:
+        if correo_en_uso_dao(data.correo, current_user["id_usuario"]):
+            raise ValueError("Ese correo ya está registrado en otra cuenta.")
+        token = enviar_codigo(data.correo, "cambio_correo", "Código para cambiar tu correo",
+                              "confirmar tu nuevo correo", extra=str(current_user["id_usuario"]))
+        return {"message": "Te enviamos un código al nuevo correo.", "token_verificacion": token}
+    except CorreoError as ce:
+        raise HTTPException(status_code=503, detail=str(ce))
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+
 @router.put("/act/correo")
 def actualizar_correo_tutor(data: EmailUpdate, current_user: dict = Depends(require_tutor)):
     
@@ -124,10 +141,13 @@ def actualizar_correo_tutor(data: EmailUpdate, current_user: dict = Depends(requ
         hash_db = obtener_hash_contrasena_dao(current_user["id_usuario"])
         if not verify_password(data.contrasena_actual, hash_db):
             raise HTTPException(status_code=400, detail="La contraseña actual es incorrecta")
+        verificar_codigo(data.token_verificacion, "cambio_correo", data.correo, data.codigo, str(current_user["id_usuario"]))
         actualizar_correo_tutor_dao(current_user["id_usuario"], data.correo)
         return {"message": "Correo actualizado correctamente"}
     except HTTPException:
         raise
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
@@ -166,6 +186,18 @@ def eliminar_cuenta_tutor(data: DeleteAccount, current_user: dict = Depends(requ
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al eliminar cuenta: {str(e)}")
+
+@router.put("/alumno/{id_alumno}/password")
+def restablecer_password_alumno(id_alumno: int, data: PasswordAlumnoUpdate, current_user: dict = Depends(require_tutor)):
+    try:
+        restablecer_password_alumno_dao(id_alumno, current_user["id_usuario"], get_password_hash(data.nueva_contrasena))
+        return {"message": "Contraseña del alumno actualizada"}
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al restablecer contraseña: {str(e)}")
 
 #intentos relacionados al tutor
 @router.put("/calificar/{id_intento}")

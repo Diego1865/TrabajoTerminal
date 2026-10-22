@@ -48,6 +48,10 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - GOOGLE_VISION_ENABLED=${GOOGLE_VISION_ENABLED:-false}
       - GOOGLE_VISION_LANGUAGE_HINTS=${GOOGLE_VISION_LANGUAGE_HINTS:-}
+      # En local los códigos se imprimen en el log (docker logs BackEnd); con SMTP_USER y SMTP_PASSWORD se envían.
+      - CORREO_MODO=${CORREO_MODO:-consola}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
 
   frontend:
     build:

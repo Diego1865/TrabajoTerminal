@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { CheckCircle, Mail, Lock, User, UserCheck } from 'lucide-react';
+import { CheckCircle, Mail, Lock, User, UserCheck, KeyRound } from 'lucide-react';
 
 const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
   const [nombre, setNombre] = useState('');
@@ -10,6 +10,10 @@ const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  // Paso 2: código enviado al correo para confirmar que existe
+  const [tokenVerificacion, setTokenVerificacion] = useState('');
+  const [codigo, setCodigo] = useState('');
+  const [aviso, setAviso] = useState('');
 
   const validateUsername = (username) => {
     if (username.length < 6) return "El nombre de usuario debe tener al menos 6 caracteres.";
@@ -40,22 +44,48 @@ const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
 
     setLoading(true);
     try {
+      if (!tokenVerificacion) {
+        await solicitarCodigo();
+        return;
+      }
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Se envía el apellido en el body
-        body: JSON.stringify({ nombre, apellido, username, email, password }),
+        body: JSON.stringify({ nombre, apellido, username, email, password, codigo, token_verificacion: tokenVerificacion }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || 'Error al registrar usuario');
+      alert('¡Cuenta creada! Ya puedes iniciar sesión.');
       if (typeof onNavigateLogin === 'function') onNavigateLogin();
-      else if (typeof onNavigateAviso === 'function') onNavigateAviso();
       else if (typeof onRegister === 'function') onRegister();
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const solicitarCodigo = async () => {
+    setError(''); setAviso('');
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/registro/codigo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Revisa el correo electrónico.');
+    setTokenVerificacion(data.token_verificacion);
+    setCodigo('');
+    setAviso(`Te enviamos un código de 6 dígitos a ${email}. Revisa también la carpeta de spam.`);
+  };
+
+  const reenviarCodigo = async () => {
+    setLoading(true);
+    try { await solicitarCodigo(); } catch (err) { setError(err.message); } finally { setLoading(false); }
+  };
+
+  const cambiarDatos = () => {
+    setTokenVerificacion(''); setCodigo(''); setAviso(''); setError('');
   };
 
   // Se agrega el campo Apellido al arreglo
@@ -136,11 +166,38 @@ const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
                       placeholder={f.placeholder}
                       value={f.value}
                       onChange={(e) => f.onChange(e.target.value)}
-                      disabled={loading}
+                      disabled={loading || !!tokenVerificacion}
                     />
                   </div>
                 </div>
               ))}
+
+              {tokenVerificacion && (
+                <div className="p-4" style={{ background: '#ECFDF5', border: '2.5px solid #A7F3D0', borderRadius: '16px' }}>
+                  <p className="text-sm font-bold mb-3" style={{ color: '#065F46' }}>📧 {aviso}</p>
+                  <label className="block text-sm font-black mb-1.5" style={{ color: '#065F46' }}>Código de verificación</label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5" style={{ color: '#059669' }} />
+                    <input
+                      type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} required
+                      className="kids-input-g w-full py-3.5 pl-12 pr-4 font-black text-gray-800 placeholder-gray-400 tracking-widest"
+                      style={{ border: '2.5px solid #A7F3D0', borderRadius: '14px', background: 'white', fontSize: '1.1rem' }}
+                      placeholder="123456"
+                      value={codigo}
+                      onChange={(e) => setCodigo(e.target.value.replace(/\D/g, ''))}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-2 text-sm font-black">
+                    <button type="button" onClick={reenviarCodigo} disabled={loading} className="hover:underline" style={{ color: '#059669' }}>
+                      Reenviar código
+                    </button>
+                    <button type="button" onClick={cambiarDatos} disabled={loading} className="hover:underline" style={{ color: '#6B7280' }}>
+                      Cambiar datos
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -152,8 +209,10 @@ const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
                   boxShadow: loading ? 'none' : '0 5px 0 #065F46',
                   cursor: loading ? 'not-allowed' : 'pointer'
                 }}>
-                {loading ? '⏳ Registrando...' : (
+                {loading ? '⏳ Un momento...' : tokenVerificacion ? (
                   <><span>¡Crear Cuenta!</span> <CheckCircle size={22} /></>
+                ) : (
+                  <><span>Verificar correo</span> <Mail size={22} /></>
                 )}
               </button>
             </form>

@@ -170,6 +170,33 @@ Actualizar una VM creada desde la plantilla (respaldar antes):
 cd /opt/grafia && sudo git pull && sudo docker compose --env-file .env.demo -f compose.demo.yml up -d --build
 ```
 
+## 7. Correo: verificación y recuperación de contraseña
+
+El registro de tutores, el cambio de correo y "¿Olvidaste tu contraseña?" mandan un código
+de 6 dígitos desde una cuenta de Gmail del proyecto. El código vence en 10 minutos, sirve
+una vez y admite 5 intentos; no se guarda en la base de datos. A los alumnos (sin correo)
+les restablece la contraseña su tutor desde la lista de alumnos.
+
+1. Cuenta de Gmail del proyecto con verificación en 2 pasos y una
+   [contraseña de aplicación](https://myaccount.google.com/apppasswords).
+2. Guardarla en Secret Manager (una sola vez, desde la PC). El archivo temporal `smtp.txt`
+   tiene dos líneas, `SMTP_USER=cuenta@gmail.com` y `SMTP_PASSWORD=contraseña de aplicación`;
+   borrarlo después:
+
+   ```bash
+   gcloud services enable secretmanager.googleapis.com --project trabajoterminal-510019
+   gcloud secrets create grafia-smtp --data-file=smtp.txt --project trabajoterminal-510019
+   gcloud secrets add-iam-policy-binding grafia-smtp --member=serviceAccount:grafia-demo@trabajoterminal-510019.iam.gserviceaccount.com --role=roles/secretmanager.secretAccessor --project trabajoterminal-510019
+   ```
+
+3. En la VM: `sudo bash deploy/cargar-correo.sh` y volver a levantar el backend. Una VM
+   nueva creada desde la plantilla lo hace sola al instalarse.
+
+Para cambiar la cuenta: `gcloud secrets versions add grafia-smtp --data-file=smtp.txt` y
+repetir el paso 3. Sin el secreto, la demo funciona pero esas pantallas responden
+"El envío de correos no está configurado". En local, `docker compose` imprime los códigos
+en `docker logs BackEnd` en lugar de enviarlos.
+
 Referencias:
 - https://cloud.google.com/products/compute/pricing/general-purpose
 - https://docs.cloud.google.com/free/docs/free-cloud-features

@@ -42,7 +42,7 @@ def register_dao(username, email, hashed_password, nombre, apellido):
         if cursor.fetchone(): 
             raise ValueError("El nombre de usuario ya está registrado")
 
-        cursor.execute("SELECT id_tutor FROM Tutor WHERE correo = ?", (email,))
+        cursor.execute("SELECT id_tutor FROM Tutor WHERE LOWER(correo) = ?", (email,))
         if cursor.fetchone(): 
             raise ValueError("El correo electrónico ya está registrado")
         
@@ -83,6 +83,42 @@ def obtener_hash_contrasena_dao(id_usuario):
         if not row:
             raise ValueError("Usuario no encontrado")
         return row[0]
+    finally:
+        cursor.close()
+        conn.close()
+
+def verificar_disponibles_dao(username, email):
+    """Antes de mandar el código de registro: el usuario y el correo no deben existir."""
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT 1 FROM Usuario WHERE username = ?", (username,))
+        if cursor.fetchone():
+            raise ValueError("El nombre de usuario ya está registrado")
+        cursor.execute("SELECT 1 FROM Tutor WHERE LOWER(correo) = ?", (email,))
+        if cursor.fetchone():
+            raise ValueError("El correo electrónico ya está registrado")
+    finally:
+        cursor.close()
+        conn.close()
+
+def obtener_tutor_por_correo_dao(correo):
+    """Tutor activo con ese correo: (id_usuario, contrasena_cifrada, nombre) o None."""
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT TOP 1 u.id_usuario, u.contrasena_cifrada, u.nombre
+            FROM Tutor t
+            JOIN Usuario u ON u.id_usuario = t.id_usuario
+            WHERE LOWER(t.correo) = ? AND u.id_estatus = 1
+            ORDER BY u.id_usuario
+        """, (correo,))
+        return cursor.fetchone()
     finally:
         cursor.close()
         conn.close()
