@@ -1,8 +1,9 @@
 from Modelo.database import connect_to_database
 import json
-from Servicios.ocr import reconocer_escritura
+from Servicios.ocr import reconocer_escritura, preparar_imagen
 from Servicios.evaluacion import evaluar
 from Servicios.progreso import resumir_progreso
+from Servicios.legibilidad import medir_legibilidad
 
 #perfil del alumno
 def actualizar_info_alumno_dao(nombre, apellido_paterno, apellido_materno, grupo, id_usuario):
@@ -68,6 +69,16 @@ def verificar_estado_tutor_dao(id_usuario):
         conn.close()
 
 #intentos relacionados al alumno
+def _legibilidad(ocr, imagen_codificada):
+    """Sugerencia de legibilidad; si falla, la entrega sigue sin ella."""
+    if ocr.get("estado") != "procesado":
+        return None
+    try:
+        return medir_legibilidad(ocr.get("full_text_annotation"), preparar_imagen(imagen_codificada))
+    except Exception as error:
+        print("No se pudo medir la legibilidad:", type(error).__name__)
+        return None
+
 def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
     conn = connect_to_database()
     if not conn:
@@ -101,6 +112,7 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
         except (TypeError, ValueError):
             contenido = {}
         ocr["evaluacion_preliminar"] = evaluar(contenido if isinstance(contenido, dict) else {}, ocr)
+        ocr["legibilidad"] = _legibilidad(ocr, imagen_codificada)
         
         cursor.execute("""
             INSERT INTO Intentos (id_alumno, id_ejercicio_tutor, imagen_codificada,

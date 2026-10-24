@@ -29,12 +29,21 @@ class EmailUpdate(BaseModel):
 class PasswordAlumnoUpdate(BaseModel):
     nueva_contrasena: str = Field(..., min_length=6, max_length=72)
 
+class LegibilidadConfirmada(BaseModel):
+    # Las 4 son obligatorias: el promedio de legibilidad suma las 4 y un NULL lo anularía.
+    alineacion: float = Field(..., ge=0, le=10)
+    tamano: float = Field(..., ge=0, le=10)
+    espaciado: float = Field(..., ge=0, le=10)
+    inclinacion: float = Field(..., ge=0, le=10)
+
 class CalificarIntentoRequest(BaseModel):
     calificacion: int
     retroalimentacion: Optional[str] = None
     # CLS confirmado por el tutor; solo así cuenta para el promedio de ortografía.
     # Las secuencias posibles las calcula el servidor a partir de la respuesta esperada.
     cls_correctas: Optional[int] = Field(default=None, ge=0)
+    # Legibilidad confirmada o corregida por el tutor (sugerida por el sistema).
+    legibilidad: Optional[LegibilidadConfirmada] = None
 
 class IntentoTutorResponse(BaseModel):
     id_intento: int
@@ -50,6 +59,8 @@ class IntentoTutorResponse(BaseModel):
     retroalimentacion: Optional[str] = None
     cls_confirmado: Optional[dict] = None
     cls_sugerido: Optional[dict] = None
+    legibilidad_confirmada: Optional[dict] = None
+    legibilidad_sugerida: Optional[dict] = None
 
 class EjercicioTutorResponse(BaseModel):
     id_ejercicio_tutor: int

@@ -39,6 +39,15 @@ const getToken = () => localStorage.getItem("token");
 const getTutorId = () => getTutorFromStorage()?.id_usuario;
 const getNombreTutor = () => getTutorFromStorage()?.nombre || "Tutor";
 
+// Medidas de legibilidad (0-10) sugeridas por el sistema y confirmadas por el tutor.
+const MEDIDAS_LEGIBILIDAD = [
+  { clave: "alineacion", etiqueta: "Alineación", ayuda: "¿Las letras siguen una línea recta?" },
+  { clave: "tamano", etiqueta: "Tamaño", ayuda: "¿Las letras chicas tienen la misma altura?" },
+  { clave: "espaciado", etiqueta: "Espaciado", ayuda: "¿La separación entre palabras es pareja?" },
+  { clave: "inclinacion", etiqueta: "Inclinación", ayuda: "¿Las letras están derechas?" },
+];
+const LEGIBILIDAD_VACIA = { alineacion: "", tamano: "", espaciado: "", inclinacion: "" };
+
 // --- Componente Modal para Detalle y Calificación ---
 const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
   const [intentos, setIntentos] = useState([]);
@@ -49,6 +58,7 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
   const [calificacion, setCalificacion] = useState("");
   const [retroalimentacion, setRetroalimentacion] = useState("");
   const [clsCorrectas, setClsCorrectas] = useState("");
+  const [legibilidad, setLegibilidad] = useState(LEGIBILIDAD_VACIA);
   const [guardando, setGuardando] = useState(false);
 
   // Las secuencias posibles son fijas (dependen de la respuesta esperada); el tutor solo corrige las correctas.
@@ -61,10 +71,19 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
     setCalificacion(intento.puntuacion ?? "");
     setRetroalimentacion(intento.retroalimentacion || "");
     setClsCorrectas(cls?.posibles > 0 ? String(cls.correctas) : "");
+    // Lo confirmado tiene prioridad; si no, se propone lo sugerido. Lo que no se pudo medir queda vacío.
+    const legi = intento.legibilidad_confirmada || intento.legibilidad_sugerida || {};
+    setLegibilidad(Object.fromEntries(MEDIDAS_LEGIBILIDAD.map(({ clave }) =>
+      [clave, legi[clave] === null || legi[clave] === undefined ? "" : String(legi[clave])])));
   };
   const clsValido = clsPosibles !== null && clsCorrectas !== "" && Number.isInteger(Number(clsCorrectas))
     && Number(clsCorrectas) >= 0 && Number(clsCorrectas) <= clsPosibles;
   const calificacionSugerida = clsValido ? Math.round(Number(clsCorrectas) / clsPosibles * 100) : null;
+  const valoresLegibilidad = MEDIDAS_LEGIBILIDAD.map(({ clave }) => legibilidad[clave]);
+  const legibilidadVacia = valoresLegibilidad.every(v => v === "");
+  const legibilidadValida = valoresLegibilidad.every(v => v !== "" && Number(v) >= 0 && Number(v) <= 10);
+  const promedioLegibilidad = legibilidadValida
+    ? valoresLegibilidad.reduce((suma, v) => suma + Number(v), 0) / valoresLegibilidad.length : null;
 
   useEffect(() => {
     const fetchIntentos = async () => {
@@ -109,6 +128,13 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
       alert(`Revisa el CLS: las secuencias correctas deben ser un número entero entre 0 y ${clsPosibles}, o deja el campo vacío.`);
       return;
     }
+    if (!legibilidadVacia && !legibilidadValida) {
+      alert("Revisa la legibilidad: llena las 4 medidas con números entre 0 y 10, o deja las 4 vacías.");
+      return;
+    }
+    const legibilidadConfirmada = legibilidadValida
+      ? Object.fromEntries(MEDIDAS_LEGIBILIDAD.map(({ clave }) => [clave, Number(legibilidad[clave])]))
+      : null;
     const clsConfirmado = clsValido
       ? { metrica: "CLS", correctas: Number(clsCorrectas), posibles: clsPosibles, confirmado_por_tutor: true }
       : intentoActivo.cls_confirmado;
@@ -123,7 +149,8 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
         body: JSON.stringify({
           calificacion: Number(calificacion),
           retroalimentacion: retroalimentacion,
-          ...(clsValido ? { cls_correctas: Number(clsCorrectas) } : {})
+          ...(clsValido ? { cls_correctas: Number(clsCorrectas) } : {}),
+          ...(legibilidadConfirmada ? { legibilidad: legibilidadConfirmada } : {})
         })
       });
 
@@ -136,7 +163,8 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
       
       setIntentos(prev => prev.map(i => 
         i.id_intento === intentoActivo.id_intento 
-          ? { ...i, puntuacion: calificacion, retroalimentacion, cls_confirmado: clsConfirmado }
+          ? { ...i, puntuacion: calificacion, retroalimentacion, cls_confirmado: clsConfirmado,
+              legibilidad_confirmada: legibilidadConfirmada || i.legibilidad_confirmada }
           : i
       ));
       setIntentoActivo(null);
@@ -189,6 +217,11 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                       {intento.cls_confirmado && (
                         <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
                           CLS confirmado
+                        </span>
+                      )}
+                      {intento.legibilidad_confirmada && (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                          Legibilidad confirmada
                         </span>
                       )}
                     </div>
@@ -285,6 +318,29 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                           </p>
                         </div>
                       )}
+                    </div>
+                    <div className="mb-4 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                      <p className="text-xs font-semibold text-gray-600 mb-2">
+                        Legibilidad (0 a 10). {intentoActivo.legibilidad_confirmada ? "Valores confirmados; puedes corregirlos."
+                          : intentoActivo.legibilidad_sugerida ? "Propuesta calculada con los recuadros del OCR; compárala con la imagen."
+                          : "El sistema no pudo medirla en este intento; puedes capturarla a mano."} Solo cuenta para el progreso al guardar.
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {MEDIDAS_LEGIBILIDAD.map(({ clave, etiqueta, ayuda }) => (
+                          <div key={clave}>
+                            <label className="block text-xs text-gray-600 mb-1" title={ayuda}>{etiqueta}</label>
+                            <input type="number" min="0" max="10" step="0.5" value={legibilidad[clave]} title={ayuda}
+                              onChange={(e) => setLegibilidad(prev => ({ ...prev, [clave]: e.target.value }))}
+                              placeholder="—"
+                              className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 bg-white text-gray-900" />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-sm text-gray-700 mt-2">
+                        {legibilidadValida ? `→ Legibilidad: ${promedioLegibilidad.toFixed(1)} / 10`
+                          : legibilidadVacia ? "Sin legibilidad (no cambia el progreso)"
+                          : "Llena las 4 medidas (0 a 10) para que cuente."}
+                      </p>
                     </div>
                     <div className="flex justify-end">
                       <button

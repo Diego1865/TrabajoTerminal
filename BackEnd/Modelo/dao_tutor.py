@@ -1,5 +1,6 @@
 from Modelo.database import connect_to_database
 from Servicios.evaluacion import cls_de_intento
+from Servicios.legibilidad import medir_legibilidad
 import json
 
 
@@ -9,6 +10,51 @@ def _json(texto):
     except (TypeError, ValueError):
         return None
     return valor if isinstance(valor, dict) else None
+
+MEDIDAS_LEGIBILIDAD = ("alineacion", "tamano", "espaciado", "inclinacion")
+
+def _legibilidad_sugerida(resultado):
+    """La guardada al entregar; en intentos anteriores se calcula con los recuadros (sin inclinación)."""
+    if not resultado:
+        return None
+    if "legibilidad" in resultado:
+        return resultado["legibilidad"]
+    if resultado.get("estado") != "procesado":
+        return None
+    return medir_legibilidad(resultado.get("full_text_annotation"))
+
+def _actualizar_progreso(cursor, id_alumno):
+    """Recalcula los promedios del alumno con lo confirmado por el tutor y deja una fila de historial."""
+    cursor.execute("""
+        SELECT
+            (SELECT CAST(AVG(ao.ortografia_score) AS DECIMAL(5,2))
+             FROM Analisis_Ortografico ao JOIN Intentos i ON i.id_intento = ao.id_intento
+             WHERE i.id_alumno = ? AND ao.ortografia_score IS NOT NULL),
+            CAST(AVG(ac.alineacion_score) AS DECIMAL(5,2)),
+            CAST(AVG(ac.tamano_letra_score) AS DECIMAL(5,2)),
+            CAST(AVG(ac.espaciado_score) AS DECIMAL(5,2)),
+            CAST(AVG(ac.inclinacion_score) AS DECIMAL(5,2))
+        FROM Analisis_Caligrafico ac JOIN Intentos i ON i.id_intento = ac.id_intento
+        WHERE i.id_alumno = ?
+    """, (id_alumno, id_alumno))
+    promedios = tuple(cursor.fetchone())
+    cursor.execute("""
+        UPDATE Progreso_Alumno SET promedio_ortografia = ?, alineacion_score = ?, tamano_letra_score = ?,
+            espaciado_score = ?, inclinacion_score = ?, fecha_modificacion = GETDATE()
+        WHERE id_alumno = ?
+    """, (*promedios, id_alumno))
+    if cursor.rowcount == 0:
+        cursor.execute("""
+            INSERT INTO Progreso_Alumno (promedio_ortografia, alineacion_score, tamano_letra_score,
+                espaciado_score, inclinacion_score, id_alumno) VALUES (?, ?, ?, ?, ?, ?)
+        """, (*promedios, id_alumno))
+    cursor.execute("""
+        INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, alineacion_score,
+            tamano_letra_score, espaciado_score, inclinacion_score)
+        SELECT id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score,
+            espaciado_score, inclinacion_score
+        FROM Progreso_Alumno WHERE id_alumno = ?
+    """, (id_alumno,))
 
 #Funciones relacionadas con el tutor y sus alumnos
 def registrar_alumno_dao(alumno_data, hashed_password):
@@ -444,7 +490,7 @@ def obtener_intento_tutor_dao(id_intento, id_usuario_tutor):
         cursor.close()
         conn.close()
 
-def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_correctas=None):
+def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_correctas=None, legibilidad=None):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -456,17 +502,18 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
             WHERE id_intento = ?
         """, (calificacion, retroalimentacion, id_intento))
 
+        cursor.execute("""
+            SELECT i.id_alumno, i.resultado_ocr_json, i.texto_detectado_ocr, e.contenido_base
+            FROM Intentos i
+            JOIN Ejercicios_Tutor et ON et.id_ejercicio_tutor = i.id_ejercicio_tutor
+            JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
+            WHERE i.id_intento = ?
+        """, (id_intento,))
+        id_alumno, resultado, texto, contenido = cursor.fetchone()
+
         if cls_correctas is not None:
             # CLS confirmado por el tutor: las posibles las fija la respuesta esperada (no el cliente).
             # Se guarda en columnas existentes de Analisis_Ortografico y actualiza el promedio del alumno.
-            cursor.execute("""
-                SELECT i.id_alumno, i.resultado_ocr_json, i.texto_detectado_ocr, e.contenido_base
-                FROM Intentos i
-                JOIN Ejercicios_Tutor et ON et.id_ejercicio_tutor = i.id_ejercicio_tutor
-                JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
-                WHERE i.id_intento = ?
-            """, (id_intento,))
-            id_alumno, resultado, texto, contenido = cursor.fetchone()
             sugerido = cls_de_intento(_json(contenido), texto, (_json(resultado) or {}).get("evaluacion_preliminar"))
             if not sugerido or not sugerido.get("posibles"):
                 raise ValueError("Este ejercicio no tiene respuesta configurada; no se puede registrar el CLS.")
@@ -486,27 +533,23 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
             """, (id_intento, puntaje, cls_posibles - cls_correctas, detalle,
                   puntaje, cls_posibles - cls_correctas, detalle))
 
+        if legibilidad is not None:
+            # Legibilidad confirmada (o corregida) por el tutor; las 4 medidas van de 0 a 10.
+            detalle = json.dumps({"metrica": "legibilidad", "confirmado_por_tutor": True,
+                                  "sugerido": _legibilidad_sugerida(_json(resultado))}, ensure_ascii=False)
+            valores = [legibilidad[m] for m in MEDIDAS_LEGIBILIDAD]
             cursor.execute("""
-                SELECT CAST(AVG(ao.ortografia_score) AS DECIMAL(5,2))
-                FROM Analisis_Ortografico ao
-                JOIN Intentos i ON i.id_intento = ao.id_intento
-                WHERE i.id_alumno = ? AND ao.ortografia_score IS NOT NULL
-            """, (id_alumno,))
-            promedio = cursor.fetchone()[0]
-            cursor.execute("""
-                UPDATE Progreso_Alumno SET promedio_ortografia = ?, fecha_modificacion = GETDATE()
-                WHERE id_alumno = ?
-            """, (promedio, id_alumno))
-            if cursor.rowcount == 0:
-                cursor.execute("INSERT INTO Progreso_Alumno (id_alumno, promedio_ortografia) VALUES (?, ?)",
-                               (id_alumno, promedio))
-            cursor.execute("""
-                INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, alineacion_score,
-                    tamano_letra_score, espaciado_score, inclinacion_score)
-                SELECT id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score,
-                    espaciado_score, inclinacion_score
-                FROM Progreso_Alumno WHERE id_alumno = ?
-            """, (id_alumno,))
+                MERGE Analisis_Caligrafico AS destino
+                USING (SELECT ? AS id_intento) AS origen ON destino.id_intento = origen.id_intento
+                WHEN MATCHED THEN UPDATE SET alineacion_score = ?, tamano_letra_score = ?,
+                    espaciado_score = ?, inclinacion_score = ?, observaciones = ?
+                WHEN NOT MATCHED THEN INSERT (id_intento, alineacion_score, tamano_letra_score,
+                    espaciado_score, inclinacion_score, observaciones)
+                    VALUES (origen.id_intento, ?, ?, ?, ?, ?);
+            """, (id_intento, *valores, detalle, *valores, detalle))
+
+        if cls_correctas is not None or legibilidad is not None:
+            _actualizar_progreso(cursor, id_alumno)
 
         conn.commit()
     except Exception:
@@ -536,9 +579,14 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 i.retroalimentacion,
                 i.resultado_ocr_json,
                 ao.sugerencias_json,
-                e.contenido_base
+                e.contenido_base,
+                ac.alineacion_score,
+                ac.tamano_letra_score,
+                ac.espaciado_score,
+                ac.inclinacion_score
             FROM Intentos i
             LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
+            LEFT JOIN Analisis_Caligrafico ac ON ac.id_intento = i.id_intento
             JOIN Alumno a ON i.id_alumno = a.id_alumno
             JOIN Usuario u ON a.id_usuario = u.id_usuario
             JOIN Tutor t ON a.id_tutor = t.id_tutor
@@ -552,7 +600,9 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
 
         intentos = []
         for row in rows:
-            evaluacion = (_json(row[10]) or {}).get("evaluacion_preliminar")
+            resultado = _json(row[10]) or {}
+            evaluacion = resultado.get("evaluacion_preliminar")
+            confirmada = None if row[13] is None else {m: float(v) for m, v in zip(MEDIDAS_LEGIBILIDAD, row[13:17])}
             intentos.append({
                 "id_intento": row[0],
                 "id_alumno": row[1],
@@ -566,7 +616,9 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
                 "retroalimentacion": row[9],
                 "evaluacion_preliminar": evaluacion,
                 "cls_confirmado": _json(row[11]),
-                "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion)
+                "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion),
+                "legibilidad_confirmada": confirmada,
+                "legibilidad_sugerida": _legibilidad_sugerida(resultado)
             })
 
         return intentos
