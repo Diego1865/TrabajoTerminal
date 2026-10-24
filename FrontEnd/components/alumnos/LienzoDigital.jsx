@@ -443,7 +443,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
           {/* Lápiz */}
           <div className="relative">
-            <ToolBtn onClick={manejarClickLapiz} active={!esBorrador} activeColor="#7C3AED" activeShadow="#4C1D95" label="✏️ Lápiz">
+            <ToolBtn onClick={manejarClickLapiz} active={!esBorrador} activeColor="#7C3AED" activeShadow="#4C1D95" label="Lápiz">
               <Pen size={esFullscreen ? 22 : 18} />
             </ToolBtn>
             {mostrarMenuLapiz && (
@@ -464,7 +464,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
           {/* Goma */}
           <div className="relative">
-            <ToolBtn onClick={manejarClickGoma} active={esBorrador} activeColor="#EC4899" activeShadow="#9D174D" label="🩹 Goma">
+            <ToolBtn onClick={manejarClickGoma} active={esBorrador} activeColor="#EC4899" activeShadow="#9D174D" label="Goma">
               <Eraser size={esFullscreen ? 22 : 18} />
             </ToolBtn>
             {mostrarMenuGoma && (
@@ -485,7 +485,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
           <div style={{ width: '2px', background: '#E5E7EB', margin: '4px 4px' }} />
 
-          <ToolBtn onClick={deshacer} active={false} label="↩️ Deshacer">
+          <ToolBtn onClick={deshacer} active={false} label="Deshacer">
             <RotateCcw size={esFullscreen ? 22 : 18} />
           </ToolBtn>
 
@@ -498,7 +498,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
               fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer',
             }}>
             <Trash2 size={esFullscreen ? 22 : 18} />
-            <span>🗑️ Limpiar</span>
+            <span>Limpiar</span>
           </button>
         </div>
 
