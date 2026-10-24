@@ -95,7 +95,6 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const canvasRef    = useRef(null);
   const contextRef   = useRef(null);
   const [esBorrador,        setEsBorrador]        = useState(false);
-  const [isDrawing,         setIsDrawing]          = useState(false);
   const [historial,         setHistorial]          = useState([]);
   const [esFullscreen,      setEsFullscreen]       = useState(false);
   const [enviando,          setEnviando]           = useState(false);
@@ -107,13 +106,45 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const [mostrarAviso,      setMostrarAviso]       = useState(false);
   const [notificacion,      setNotificacion]       = useState(null);
 
+  /* ── Trazo en curso: refs para no esperar a React entre eventos del lápiz ── */
+  const dibujandoRef      = useRef(false);
+  const punteroRef        = useRef(null);   // pointerId del trazo actual
+  const ultimoPuntoRef    = useRef(null);
+  const lapizDetectadoRef = useRef(false);  // con lápiz, se ignoran palma y dedos
+
+  const MAX_HISTORIAL = 30;
+
   const opcionesLapiz = [2, 4, 6, 10];
   const opcionesGoma  = [5, 10, 15, 20, 30];
 
   /* ── Canvas helpers ── */
-  const guardarEstado = () => {
+  // Copia rápida del lienzo para deshacer. toDataURL (PNG) congelaba la tableta al
+  // terminar cada trazo y se perdía el inicio del siguiente.
+  const agregarAlHistorial = (copia, reiniciar = false) => setHistorial(prev => {
+    const nuevo = reiniciar ? [copia] : [...prev, copia];
+    nuevo.slice(0, Math.max(0, nuevo.length - MAX_HISTORIAL)).forEach(c => c.close?.());
+    return nuevo.slice(-MAX_HISTORIAL);
+  });
+
+  const guardarEstado = (reiniciar = false) => {
     const canvas = canvasRef.current;
-    if (canvas) setHistorial(prev => [...prev, canvas.toDataURL()]);
+    if (!canvas) return;
+    if (typeof createImageBitmap === 'function') {
+      createImageBitmap(canvas).then(copia => agregarAlHistorial(copia, reiniciar));
+    } else {
+      agregarAlHistorial(canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height), reiniciar);
+    }
+  };
+
+  const restaurarCopia = (copia) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (copia instanceof ImageData) ctx.putImageData(copia, 0, 0);
+    else ctx.drawImage(copia, 0, 0);
+    ctx.restore();
   };
 
   const inicializarCanvas = () => {
@@ -126,7 +157,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
     ctx.lineCap  = 'round';
     ctx.lineJoin = 'round';
     contextRef.current = ctx;
-    setHistorial([canvas.toDataURL()]);
+    guardarEstado(true);
   };
 
   useEffect(() => {
@@ -159,20 +190,9 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const deshacer = () => {
     if (historial.length <= 1) return;
     const nuevo = [...historial];
-    nuevo.pop();
-    const anterior = nuevo[nuevo.length - 1];
+    nuevo.pop()?.close?.();
     setHistorial(nuevo);
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
-    img.src = anterior;
-    img.onload = () => {
-      ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0);
-      ctx.restore();
-    };
+    restaurarCopia(nuevo[nuevo.length - 1]);
   };
 
   const limpiarCanvas = () => {
@@ -188,49 +208,68 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const obtenerCoordenadas = (e) => {
     const canvas = canvasRef.current;
     const rect   = canvas.getBoundingClientRect();
-    let clientX, clientY;
-    if (e.touches?.length > 0) { clientX = e.touches[0].clientX; clientY = e.touches[0].clientY; }
-    else { clientX = e.clientX; clientY = e.clientY; }
     return {
-      x: (clientX - rect.left) * (canvas.width  / rect.width),
-      y: (clientY - rect.top)  * (canvas.height / rect.height),
+      x: (e.clientX - rect.left) * (canvas.width  / rect.width),
+      y: (e.clientY - rect.top)  * (canvas.height / rect.height),
     };
   };
 
   const mostrarBorrador = (e) => {
-    if (!esBorrador) { setCursorPos(null); return; }
+    if (!esBorrador || e.pointerType === 'touch' && lapizDetectadoRef.current) { setCursorPos(null); return; }
     setCursorPos(obtenerCoordenadas(e));
   };
 
+  // Con lápiz detectado, el toque (palma o dedos) no dibuja; sin lápiz, el dedo sí.
+  const punteroPermitido = (e) => {
+    if (e.pointerType === 'pen') lapizDetectadoRef.current = true;
+    return !(e.pointerType === 'touch' && lapizDetectadoRef.current);
+  };
+
+  const trazarHasta = ({ x, y }) => {
+    const ctx = contextRef.current;
+    const desde = ultimoPuntoRef.current;
+    ctx.beginPath();
+    ctx.moveTo(desde.x, desde.y);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ultimoPuntoRef.current = { x, y };
+  };
+
   const iniciarDibujo = (e) => {
-    if (e.cancelable) e.preventDefault();
-    const { x, y } = obtenerCoordenadas(e);
+    if (!punteroPermitido(e) || dibujandoRef.current) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    const ctx = contextRef.current;
     if (esBorrador) {
-      contextRef.current.globalCompositeOperation = 'destination-out';
-      contextRef.current.lineWidth = grosurGoma;
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.lineWidth = grosurGoma;
     } else {
-      contextRef.current.globalCompositeOperation = 'source-over';
-      contextRef.current.strokeStyle = 'black';
-      contextRef.current.lineWidth   = grosurLapiz;
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = 'black';
+      ctx.lineWidth   = grosurLapiz;
     }
-    contextRef.current.beginPath();
-    contextRef.current.moveTo(x, y);
-    setIsDrawing(true);
+    dibujandoRef.current = true;
+    punteroRef.current = e.pointerId;
+    const punto = obtenerCoordenadas(e);
+    ultimoPuntoRef.current = punto;
+    trazarHasta(punto);  // un toque sin movimiento deja un punto
   };
 
   const dibujar = (e) => {
-    if (e.cancelable) e.preventDefault();
-    if (!isDrawing) return;
-    const { x, y } = obtenerCoordenadas(e);
-    contextRef.current.lineTo(x, y);
-    contextRef.current.stroke();
+    mostrarBorrador(e);
+    if (!dibujandoRef.current || e.pointerId !== punteroRef.current) return;
+    e.preventDefault();
+    // El lápiz reporta más puntos que cuadros por segundo; se usan todos para un trazo continuo.
+    const eventos = e.nativeEvent.getCoalescedEvents?.() || [];
+    (eventos.length ? eventos : [e]).forEach(ev => trazarHasta(obtenerCoordenadas(ev)));
   };
 
-  const terminarDibujo = () => {
-    if (!isDrawing) return;
-    contextRef.current.closePath();
+  const terminarDibujo = (e) => {
+    if (!dibujandoRef.current || (e && e.pointerId !== punteroRef.current)) return;
+    dibujandoRef.current = false;
+    punteroRef.current = null;
     contextRef.current.globalCompositeOperation = 'source-over';
-    setIsDrawing(false);
     guardarEstado();
   };
 
@@ -486,15 +525,14 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
           <canvas
             ref={canvasRef}
-            onMouseDown={iniciarDibujo}
-            onMouseMove={(e) => { dibujar(e); mostrarBorrador(e); }}
-            onMouseUp={terminarDibujo}
-            onMouseLeave={() => { terminarDibujo(); setCursorPos(null); }}
-            onTouchStart={iniciarDibujo}
-            onTouchMove={dibujar}
-            onTouchEnd={terminarDibujo}
+            onPointerDown={iniciarDibujo}
+            onPointerMove={dibujar}
+            onPointerUp={terminarDibujo}
+            onPointerCancel={terminarDibujo}
+            onPointerLeave={() => setCursorPos(null)}
+            onContextMenu={(e) => e.preventDefault()}
             className="absolute top-0 left-0 w-full h-full cursor-crosshair"
-            style={{ zIndex: 2 }}
+            style={{ zIndex: 2, touchAction: 'none' }}
           />
 
           {/* Cursor goma visual */}
