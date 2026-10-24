@@ -47,11 +47,12 @@ export default function ModalPasswordAlumno({ alumno, onClose }) {
     }
   };
 
-  const campo = "w-full p-3 pr-11 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none";
+  // Colores fijos: con el modo oscuro del sistema, el texto heredado sale casi blanco.
+  const campo = "w-full p-3 pr-11 border border-gray-300 rounded-lg bg-white text-gray-800 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 outline-none";
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white text-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
 
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
           <div className="flex items-center gap-3">
@@ -82,7 +83,7 @@ export default function ModalPasswordAlumno({ alumno, onClose }) {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-3 justify-end">
               <button onClick={copiar} type="button"
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50">
+                className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg font-medium bg-white text-gray-700 hover:bg-gray-50">
                 <Copy size={16} /> {copiado ? "¡Copiado!" : "Copiar datos"}
               </button>
               <button onClick={onClose} type="button"
@@ -111,7 +112,7 @@ export default function ModalPasswordAlumno({ alumno, onClose }) {
             {error && <p className="text-sm text-red-600">{error}</p>}
             <div className="flex gap-3 justify-end">
               <button onClick={onClose} type="button" disabled={guardando}
-                className="px-4 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50">
+                className="px-4 py-2 border border-gray-300 rounded-lg font-medium bg-white text-gray-700 hover:bg-gray-50">
                 Cancelar
               </button>
               <button type="submit" disabled={guardando}
