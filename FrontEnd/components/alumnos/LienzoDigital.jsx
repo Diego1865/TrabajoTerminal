@@ -167,6 +167,19 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
     return () => { clearTimeout(timer); document.body.style.overflow = 'auto'; };
   }, [esFullscreen]);
 
+  // Safari en iPad: el Apple Pencil también genera eventos touch, y tras cada trazo
+  // Safari espera un instante para reconocer sus gestos (doble toque, lupa, Scribble);
+  // un trazo que empieza en ese instante se pierde. Bloquearlos aquí (React registra
+  // los touch como pasivos y no permite preventDefault) deja todo a los Pointer Events.
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const bloquear = (e) => { if (e.cancelable) e.preventDefault(); };
+    const eventos = ['touchstart', 'touchmove', 'touchend', 'touchcancel'];
+    eventos.forEach(tipo => canvas.addEventListener(tipo, bloquear, { passive: false }));
+    return () => eventos.forEach(tipo => canvas.removeEventListener(tipo, bloquear));
+  }, [esFullscreen]);
+
   useEffect(() => {
     const handler = (e) => {
       if ((mostrarMenuLapiz || mostrarMenuGoma) && !e.target.closest('[data-menu-area]')) {
@@ -532,7 +545,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             onPointerLeave={() => setCursorPos(null)}
             onContextMenu={(e) => e.preventDefault()}
             className="absolute top-0 left-0 w-full h-full cursor-crosshair"
-            style={{ zIndex: 2, touchAction: 'none' }}
+            style={{ zIndex: 2, touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
           />
 
           {/* Cursor goma visual */}
