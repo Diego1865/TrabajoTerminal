@@ -78,12 +78,18 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
   };
   const clsValido = clsPosibles !== null && clsCorrectas !== "" && Number.isInteger(Number(clsCorrectas))
     && Number(clsCorrectas) >= 0 && Number(clsCorrectas) <= clsPosibles;
-  const calificacionSugerida = clsValido ? Math.round(Number(clsCorrectas) / clsPosibles * 100) : null;
   const valoresLegibilidad = MEDIDAS_LEGIBILIDAD.map(({ clave }) => legibilidad[clave]);
   const legibilidadVacia = valoresLegibilidad.every(v => v === "");
   const legibilidadValida = valoresLegibilidad.every(v => v !== "" && Number(v) >= 0 && Number(v) <= 10);
   const promedioLegibilidad = legibilidadValida
     ? valoresLegibilidad.reduce((suma, v) => suma + Number(v), 0) / valoresLegibilidad.length : null;
+  // Puntuación sugerida (0-100) = promedio de las notas (0-10) de ortografía y legibilidad que haya.
+  const notaOrtografia = clsValido ? Number(clsCorrectas) / clsPosibles * 10 : null;
+  const notaLegibilidad = promedioLegibilidad;
+  const notasDisponibles = [notaOrtografia, notaLegibilidad].filter(n => n !== null);
+  const calificacionSugerida = notasDisponibles.length
+    ? Math.round(notasDisponibles.reduce((suma, n) => suma + n, 0) / notasDisponibles.length * 10) : null;
+  const resumenNotas = `Ortografía ${notaOrtografia !== null ? notaOrtografia.toFixed(1) : "—"} · Legibilidad ${notaLegibilidad !== null ? notaLegibilidad.toFixed(1) : "—"}`;
 
   useEffect(() => {
     const fetchIntentos = async () => {
@@ -255,6 +261,8 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                   <EvaluacionPreliminar evaluacion={intentoActivo.evaluacion_preliminar}
                     cls={intentoActivo.cls_sugerido}
                     calificacionSugerida={calificacionSugerida}
+                    notaOrtografia={notaOrtografia}
+                    notaLegibilidad={notaLegibilidad}
                     onUsarCalificacion={() => setCalificacion(String(calificacionSugerida))}
                     onUsarSugerencia={(texto) => setRetroalimentacion(actual => actual ? `${actual}\n\n${texto}` : texto)} />
                   {intentoActivo.texto_detectado_ocr && (
@@ -283,6 +291,9 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                           onChange={(e) => setCalificacion(e.target.value)}
                           className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 bg-gray-50 text-gray-900 font-medium"
                         />
+                        <p className="text-[11px] text-gray-500 mt-1">
+                          {resumenNotas}{calificacionSugerida !== null ? ` → sugerida ${calificacionSugerida}` : ""}
+                        </p>
                       </div>
                       <div className="md:col-span-3">
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Retroalimentación (Opcional)</label>
