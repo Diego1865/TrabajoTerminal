@@ -175,4 +175,43 @@ Referencias:
 - https://docs.cloud.google.com/free/docs/free-cloud-features
 - https://docs.cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
 - https://docs.docker.com/engine/install/ubuntu/
+
+## Módulo de dictado
+
+En **Profesor → Ejercicios → Nuevo dictado**, selecciona palabras de los seis
+bancos iniciales, agrega un pool completo o combina palabras propias. Se permiten
+de 1 a 50 palabras de hasta 40 letras; se eliminan duplicados sin distinguir
+mayúsculas y se conserva el orden de selección. El dictado se crea y activa en
+una sola transacción para todos los alumnos del profesor autenticado. El catálogo
+compartido se conserva; cada dictado personalizado solo aparece para su creador.
+Se puede desactivar o volver a activar como los demás ejercicios. Las referencias
+de un dictado creado son inmutables para conservar la evaluación de las entregas.
+
+El alumno escucha una palabra por vez, puede repetirla y avanzar a su ritmo, y
+entrega mediante lienzo o fotografía. Las palabras no se muestran en la interfaz
+del alumno. La reproducción usa la voz española del navegador; si falla, se indica
+que el profesor puede leerlas. Las palabras se envían al navegador para sintetizar
+la voz: este flujo no pretende ocultarlas de las herramientas de desarrollo.
+El OCR y CLS usan la secuencia seleccionada como referencia y requieren revisión
+del profesor, igual que los ejercicios existentes.
+
+Antes de arrancar el backend actualizado sobre una base existente, aplica
+`BackEnd/BD/migraciones/003_dictados.sql` a SQL Server. Añade la columna nullable
+`Ejercicios.id_tutor_creador` y su clave foránea sin modificar las entregas.
+`compose.demo.yml` la aplica con el inicializador de migraciones al arrancar;
+el entorno local antiguo requiere ejecutar el archivo manualmente. Los dictados
+guardan fechas límite en UTC y las muestran en la hora local del navegador.
+La entrega de un dictado vencido se rechaza aunque el cierre periódico no haya corrido.
+
+Pruebas (desde `BackEnd`, con un entorno virtual activo):
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m unittest discover -s tests -v
+```
+
+Desde `FrontEnd`: `npm run build`. Las pruebas de API y persistencia usan una
+conexión simulada; para la verificación con SQL Server, aplicar la migración dos
+veces (debe ser idempotente), crear un dictado, comprobar su aislamiento entre
+profesores, entregar como alumno y revisar OCR/CLS en el panel del profesor.
 - https://caddyserver.com/docs/automatic-https

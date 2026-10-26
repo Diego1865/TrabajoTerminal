@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { BookOpen, CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
+import CrearDictado from './CrearDictado';
 
 const TabEjercicios = ({ idTutor }) => {
   const [ejercicios, setEjercicios] = useState([]);
@@ -11,6 +12,8 @@ const TabEjercicios = ({ idTutor }) => {
   const [ejercicioSeleccionado, setEjercicioSeleccionado] = useState(null);
   const [fechaFin, setFechaFin] = useState('');
   const [token, setToken] = useState('');
+  const [crearDictado, setCrearDictado] = useState(false);
+  const [aviso, setAviso] = useState('');
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -30,7 +33,7 @@ const TabEjercicios = ({ idTutor }) => {
         if (!resEjercicios.ok || !resActivados.ok) throw new Error('Error al cargar los ejercicios');
         const dataEjercicios = await resEjercicios.json();
         const dataActivados = await resActivados.json();
-        setEjercicios(dataEjercicios);
+        setEjercicios(dataEjercicios.map(e => ({ ...e, fecha_fin: dataActivados.find(a => a.id_ejercicio === e.id_ejercicio)?.fecha_fin })));
         setActivados(new Set(dataActivados.map((e) => e.id_ejercicio)));
       } catch (err) {
         setError(err.message);
@@ -63,11 +66,15 @@ const TabEjercicios = ({ idTutor }) => {
           `${process.env.NEXT_PUBLIC_API_URL}/api/tutor/ejercicio/activar`,
           {
             method: 'POST', headers,
-            body: JSON.stringify({ id_ejercicio, id_usuario: idTutor, fecha_fin: formatearFechaParaSQL(fechaFin) }),
+            body: JSON.stringify({ id_ejercicio, id_usuario: idTutor,
+              fecha_fin: ejercicioSeleccionado?.tipo === 'dictado' && fechaFin ? new Date(fechaFin).toISOString() : formatearFechaParaSQL(fechaFin) }),
           }
         );
         if (!res.ok) throw new Error('No se pudo activar el ejercicio');
         setActivados((prev) => new Set(prev).add(id_ejercicio));
+        const fechaGuardada = fechaFin ? new Date(fechaFin).toISOString() : null;
+        setEjercicios(prev => prev.map(e => e.id_ejercicio === id_ejercicio ? { ...e, fecha_fin: fechaGuardada } : e));
+        setEjercicioSeleccionado(prev => prev ? { ...prev, fecha_fin: fechaGuardada } : prev);
       }
     } catch (err) {
       setError(err.message);
@@ -102,11 +109,22 @@ const TabEjercicios = ({ idTutor }) => {
             <p className="font-semibold text-gray-400 text-sm">Activa ejercicios para tus alumnos</p>
           </div>
         </div>
+        <button onClick={() => setCrearDictado(true)} className="rounded-xl bg-violet-700 px-4 py-3 font-black text-white">
+          + Nuevo dictado
+        </button>
         <span className="font-black text-sm px-4 py-2"
           style={{ background: '#EDE9FE', color: '#6D28D9', borderRadius: '20px', border: '2px solid #DDD6FE' }}>
           ✅ {activados.size} / {ejercicios.length} activados
         </span>
       </div>
+
+      {aviso && <p role="status" className="mb-4 rounded-xl bg-green-50 p-3 font-bold text-green-800">{aviso}</p>}
+      {crearDictado && <CrearDictado token={token} onCerrar={() => setCrearDictado(false)} onCreado={ejercicio => {
+        setEjercicios(prev => [ejercicio, ...prev]);
+        setActivados(prev => new Set(prev).add(ejercicio.id_ejercicio));
+        setCrearDictado(false);
+        setAviso('Dictado creado y activado para tus alumnos.');
+      }} />}
 
       {error && (
         <div className="mb-4 p-4 font-bold text-sm"
@@ -122,7 +140,7 @@ const TabEjercicios = ({ idTutor }) => {
           return (
             <div
               key={ejercicio.id_ejercicio}
-              onClick={() => setEjercicioSeleccionado(ejercicio)}
+              onClick={() => { setFechaFin(''); setEjercicioSeleccionado(ejercicio); }}
               className="exercise-card relative cursor-pointer select-none"
               style={{
                 padding: '20px',
@@ -196,7 +214,7 @@ const TabEjercicios = ({ idTutor }) => {
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
           style={{ background: 'rgba(0,0,0,0.45)' }}
           onClick={() => setEjercicioSeleccionado(null)}>
-          <div className="bg-white w-full max-w-lg p-7 relative"
+          <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto p-7 relative"
             style={{ borderRadius: '28px', border: '3px solid #DDD6FE', boxShadow: '0 10px 0 #C4B5FD' }}
             onClick={(e) => e.stopPropagation()}>
 
@@ -223,6 +241,13 @@ const TabEjercicios = ({ idTutor }) => {
               {ejercicioSeleccionado.descripcion}
             </p>
 
+            {ejercicioSeleccionado.tipo === 'dictado' && <div className="mb-5 rounded-xl bg-violet-50 p-3">
+              <h4 className="font-bold text-violet-900">Palabras del dictado (en orden)</h4>
+              <ol className="mt-2 list-inside list-decimal text-sm text-gray-700">
+                {JSON.parse(ejercicioSeleccionado.contenido_base).dictado.palabras.map((palabra, i) => <li key={i}>{palabra}</li>)}
+              </ol>
+            </div>}
+
             {/* Fecha límite */}
             <div className="mb-6">
               <label className="block text-sm font-black mb-2" style={{ color: '#6D28D9' }}>
@@ -240,7 +265,6 @@ const TabEjercicios = ({ idTutor }) => {
                   type="datetime-local"
                   value={fechaFin}
                   onChange={(e) => setFechaFin(e.target.value)}
-                  min={new Date().toISOString().slice(0, 16)}
                   className="w-full p-3 font-bold text-sm"
                   style={{
                     border: '2.5px solid #DDD6FE', borderRadius: '14px',

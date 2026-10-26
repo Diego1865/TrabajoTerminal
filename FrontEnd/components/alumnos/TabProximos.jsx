@@ -85,7 +85,7 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {ejercicios.map((ejercicio) => {
-          const dias = diasRestantes(ejercicio.fecha_desactivacion);
+          const dias = diasRestantes(ejercicio.fecha_fin);
           const badge = getBadgeStyle(dias);
 
           return (
@@ -135,7 +135,7 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
               {/* Footer */}
               <div className="mt-4 pt-3 flex items-center gap-1.5" style={{ borderTop: '2px dashed #DBEAFE' }}>
                 <Clock size={12} style={{ color: '#93C5FD' }} />
-                <span className="text-xs font-bold text-gray-400">{formatearFecha(ejercicio.fecha_desactivacion)}</span>
+                <span className="text-xs font-bold text-gray-400">{formatearFecha(ejercicio.fecha_fin)}</span>
               </div>
             </div>
           );
@@ -185,7 +185,7 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
               <span style={{ fontSize: '1.4rem' }}>⏰</span>
               <div>
                 <p className="text-xs font-black" style={{ color: '#93C5FD' }}>FECHA LÍMITE</p>
-                <p className="font-bold text-gray-700 text-sm">{formatearFecha(ejercicioSeleccionado.fecha_desactivacion)}</p>
+                <p className="font-bold text-gray-700 text-sm">{formatearFecha(ejercicioSeleccionado.fecha_fin)}</p>
               </div>
             </div>
 

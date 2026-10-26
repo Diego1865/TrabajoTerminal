@@ -1,6 +1,7 @@
 from Modelo.database import connect_to_database
 from Servicios.evaluacion import cls_de_intento
 import json
+from datetime import timezone
 
 
 def _json(texto):
@@ -540,7 +541,48 @@ def obtener_intentos_por_tutor_dao(id_usuario_tutor):
         conn.close()
 
 #ejercicios relacionados al tutor
-def get_ejercicios_dao():
+def crear_dictado_dao(data, id_usuario):
+    from Servicios.dictado import contenido_dictado, fecha_limite_utc
+
+    contenido = contenido_dictado(data.palabras)
+    fecha_fin = fecha_limite_utc(data.fecha_fin)
+    descripcion = (f"Escucha y escribe las {len(contenido['dictado']['palabras'])} palabras "
+                   "en el orden del dictado, sin numerarlas. Puedes repetir cada palabra.")
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT id_tutor FROM Tutor WHERE id_usuario = ?", (id_usuario,))
+        tutor = cursor.fetchone()
+        if not tutor:
+            raise ValueError("El perfil de tutor no existe para este usuario.")
+        cursor.execute("""
+            INSERT INTO Ejercicios (titulo, descripcion, tipo, contenido_base, id_tutor_creador)
+            OUTPUT INSERTED.id_ejercicio
+            VALUES (?, ?, 'dictado', ?, ?)
+        """, (data.titulo, descripcion, json.dumps(contenido, ensure_ascii=True), tutor[0]))
+        id_ejercicio = cursor.fetchone()[0]
+        cursor.execute("""
+            INSERT INTO Ejercicios_Tutor (id_ejercicio, id_tutor, fecha_desactivacion)
+            OUTPUT INSERTED.id_ejercicio_tutor
+            VALUES (?, ?, ?)
+        """, (id_ejercicio, tutor[0], fecha_fin))
+        id_asignacion = cursor.fetchone()[0]
+        conn.commit()
+        return {"id_ejercicio": id_ejercicio, "id_ejercicio_tutor": id_asignacion,
+                "titulo": data.titulo, "descripcion": descripcion, "tipo": "dictado",
+                "contenido_base": json.dumps(contenido, ensure_ascii=False),
+                "fecha_fin": data.fecha_fin}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def get_ejercicios_dao(id_usuario):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
@@ -549,8 +591,9 @@ def get_ejercicios_dao():
         cursor.execute("""
             SELECT id_ejercicio, titulo, descripcion, tipo, contenido_base
             FROM Ejercicios
-            WHERE id_estatus = 1
-        """)
+            WHERE id_estatus = 1 AND (id_tutor_creador IS NULL OR
+                id_tutor_creador IN (SELECT id_tutor FROM Tutor WHERE id_usuario = ?))
+        """, (id_usuario,))
         rows = cursor.fetchall()
         return [
             {
@@ -574,11 +617,13 @@ def get_ejercicios_tutor_dao(id_usuario):
     try:
         # Se añade el JOIN con la tabla Tutor para validar el id_usuario
         cursor.execute("""
-            SELECT et.id_ejercicio_tutor, e.id_ejercicio, e.titulo, e.descripcion, e.tipo
+            SELECT et.id_ejercicio_tutor, e.id_ejercicio, e.titulo, e.descripcion, e.tipo, et.fecha_desactivacion
             FROM Ejercicios_Tutor et
             JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
             JOIN Tutor t ON et.id_tutor = t.id_tutor
             WHERE t.id_usuario = ? AND et.id_estatus = 1
+              AND (e.tipo <> 'dictado' OR et.fecha_desactivacion IS NULL
+                   OR et.fecha_desactivacion > SYSUTCDATETIME())
         """, (id_usuario,))
         
         rows = cursor.fetchall()
@@ -589,6 +634,7 @@ def get_ejercicios_tutor_dao(id_usuario):
                 "titulo": row[2],
                 "descripcion": row[3],
                 "tipo": row[4],
+                "fecha_fin": row[5].replace(tzinfo=timezone.utc) if row[4] == 'dictado' and row[5] else row[5],
             }
             for row in rows
         ]
@@ -611,9 +657,22 @@ def activar_ejercicio_tutor_dao(id_ejercicio, id_usuario, fecha_fin):
 
         # Verificar duplicados activos
         cursor.execute("""
+            SELECT tipo FROM Ejercicios
+            WHERE id_ejercicio = ? AND id_estatus = 1
+              AND (id_tutor_creador IS NULL OR id_tutor_creador = ?)
+        """, (id_ejercicio, id_tutor))
+        ejercicio = cursor.fetchone()
+        if not ejercicio:
+            raise ValueError("El ejercicio no existe o no pertenece a este tutor.")
+        if ejercicio[0] == 'dictado':
+            from Servicios.dictado import fecha_limite_utc
+            fecha_fin = fecha_limite_utc(fecha_fin)
+
+        cursor.execute("""
             SELECT id_ejercicio_tutor FROM Ejercicios_Tutor
             WHERE id_ejercicio = ? AND id_tutor = ? AND id_estatus = 1
-        """, (id_ejercicio, id_tutor))
+              AND (? <> 'dictado' OR fecha_desactivacion IS NULL OR fecha_desactivacion > SYSUTCDATETIME())
+        """, (id_ejercicio, id_tutor, ejercicio[0]))
         
         if cursor.fetchone():
             raise ValueError("El ejercicio ya se encuentra activado")

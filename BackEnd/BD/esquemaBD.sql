@@ -63,8 +63,10 @@ CREATE TABLE Ejercicios (
     tipo             VARCHAR(30)   NOT NULL,
     contenido_base   VARCHAR(MAX)  NOT NULL,
     imagen_guia_base64 VARCHAR(MAX) NULL,
+    id_tutor_creador INT NULL,
     id_estatus       INT           NOT NULL DEFAULT 1,
     CONSTRAINT PK_Ejercicios        PRIMARY KEY (id_ejercicio),
+    CONSTRAINT FK_Ejercicios_Creador FOREIGN KEY (id_tutor_creador) REFERENCES Tutor(id_tutor),
     CONSTRAINT FK_Ejercicios_Estatus FOREIGN KEY (id_estatus) REFERENCES Estatus(id_estatus)
 );
 

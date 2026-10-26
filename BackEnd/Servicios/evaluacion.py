@@ -28,7 +28,7 @@ def cls_de_intento(contenido, texto, evaluacion_guardada=None):
 def evaluar(contenido, ocr):
     config = contenido.get("evaluacion")
     base = {"version": 1, "requiere_revision": True, "observaciones": []}
-    if not isinstance(config, dict) or config.get("modo") not in ("copia", "completar"):
+    if not isinstance(config, dict) or config.get("modo") not in ("copia", "completar", "dictado"):
         return {**base, "estado": "no_configurada", "resumen": "Este ejercicio no tiene una respuesta de referencia configurada."}
     respuestas = config.get("respuestas_aceptadas", [])
     if not isinstance(respuestas, list) or not respuestas or any(not isinstance(r, str) or not r.strip() for r in respuestas):

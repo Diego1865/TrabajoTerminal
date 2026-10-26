@@ -11,11 +11,13 @@ def cerrar_ejercicios_vencidos():
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            UPDATE Ejercicios_Tutor
+            UPDATE et
             SET id_estatus = 2
-            WHERE id_estatus = 1
-              AND fecha_desactivacion IS NOT NULL
-              AND fecha_desactivacion < GETDATE()
+            FROM Ejercicios_Tutor et
+            JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
+            WHERE et.id_estatus = 1
+              AND et.fecha_desactivacion IS NOT NULL
+              AND et.fecha_desactivacion <= CASE WHEN e.tipo = 'dictado' THEN SYSUTCDATETIME() ELSE GETDATE() END
         """)
         conn.commit()
         print(f"Cron: {cursor.rowcount} ejercicios cerrados")

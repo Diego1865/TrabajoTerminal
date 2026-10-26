@@ -1,5 +1,6 @@
 from Modelo.database import connect_to_database
 import json
+from datetime import timezone
 from Servicios.ocr import reconocer_escritura
 from Servicios.evaluacion import evaluar
 from Servicios.progreso import resumir_progreso
@@ -83,7 +84,8 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
         id_alumno = alumno_row[0]
 
         cursor.execute("""
-            SELECT et.id_estatus, e.contenido_base FROM Ejercicios_Tutor et
+            SELECT CASE WHEN e.tipo = 'dictado' AND et.fecha_desactivacion <= SYSUTCDATETIME()
+                        THEN 2 ELSE et.id_estatus END, e.contenido_base FROM Ejercicios_Tutor et
             JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
             JOIN Alumno a ON a.id_tutor = et.id_tutor
             WHERE et.id_ejercicio_tutor = ? AND a.id_alumno = ?
@@ -140,6 +142,8 @@ def obtener_ejercicios_proximos_dao(id_usuario):
             JOIN Alumno a ON a.id_tutor = et.id_tutor
             WHERE a.id_usuario = ?
               AND et.id_estatus = 1
+              AND (e.tipo <> 'dictado' OR et.fecha_desactivacion IS NULL
+                   OR et.fecha_desactivacion > SYSUTCDATETIME())
               AND et.id_ejercicio_tutor NOT IN (
                   SELECT id_ejercicio_tutor FROM Intentos WHERE id_alumno = a.id_alumno
               )
@@ -155,7 +159,7 @@ def obtener_ejercicios_proximos_dao(id_usuario):
                 "descripcion":        r[3],
                 "tipo":               r[4],
                 "contenido_base":     r[5],
-                "fecha_fin":          r[6],
+                "fecha_fin":          r[6].replace(tzinfo=timezone.utc) if r[4] == 'dictado' and r[6] else r[6],
             }
             for r in rows
         ]
@@ -211,7 +215,7 @@ def obtener_ejercicios_completados_dao(id_usuario):
                 "titulo":              r[2],
                 "descripcion":         r[3],
                 "tipo":                r[4],
-                "fecha_desactivacion": r[5],
+                "fecha_desactivacion": r[5].replace(tzinfo=timezone.utc) if r[4] == 'dictado' and r[5] else r[5],
                 "fecha_envio":         r[6],
                 "imagen_codificada":   r[7],
                 "texto_detectado_ocr": r[8],
@@ -243,7 +247,8 @@ def obtener_ejercicios_vencidos_dao(id_usuario):
             JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
             JOIN Alumno a ON a.id_tutor = et.id_tutor
             WHERE a.id_usuario = ?
-              AND et.id_estatus = 2
+              AND (et.id_estatus = 2 OR (e.tipo = 'dictado'
+                   AND et.fecha_desactivacion <= SYSUTCDATETIME()))
               AND et.id_ejercicio_tutor NOT IN (
                   SELECT id_ejercicio_tutor FROM Intentos WHERE id_alumno = a.id_alumno
               )
@@ -258,7 +263,7 @@ def obtener_ejercicios_vencidos_dao(id_usuario):
                 "titulo":               r[2],
                 "descripcion":          r[3],
                 "tipo":                 r[4],
-                "fecha_desactivacion":  r[5],
+                "fecha_desactivacion":  r[5].replace(tzinfo=timezone.utc) if r[4] == 'dictado' and r[5] else r[5],
             }
             for r in rows
         ]

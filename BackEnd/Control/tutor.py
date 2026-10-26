@@ -200,12 +200,28 @@ def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends(requi
 @router.get("/ejercicios")
 def get_ejercicios(current_user: dict = Depends(require_tutor)):
     try:
-        return get_ejercicios_dao()
+        return get_ejercicios_dao(current_user["id_usuario"])
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))
     except Exception as e:
         print("Error al obtener los ejercicios:", e)
         raise HTTPException(status_code=500, detail="Error al obtener los ejercicios")
+
+@router.get("/dictados/pools")
+def get_pools_dictado(current_user: dict = Depends(require_tutor)):
+    from Servicios.dictado import POOLS
+    return POOLS
+
+
+@router.post("/dictados", status_code=201)
+def crear_dictado(data: DictadoCreate, current_user: dict = Depends(require_tutor)):
+    try:
+        return crear_dictado_dao(data, current_user["id_usuario"])
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception:
+        raise HTTPException(status_code=500, detail="No se pudo crear el dictado.")
+
 
 @router.get("/ejercicios/{id_usuario}", response_model=List[EjercicioTutorResponse])
 def get_ejercicios_tutor(id_usuario: int, current_user: dict = Depends(require_tutor)):

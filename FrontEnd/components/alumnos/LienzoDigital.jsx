@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CheckCircle, Eraser, Pen, RotateCcw, Trash2, Maximize2, Minimize2, BookOpen, Image as ImageIcon } from 'lucide-react';
 import LectorEjercicio from './lectorejercicio';
+import ReproductorDictado from './ReproductorDictado';
 
 /* ─── Colores por tipo de ejercicio ─── */
 const TIPO_CONFIG = {
@@ -365,7 +366,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             {textoGuia && <TextoGuia texto={textoGuia} />}
             
             {/* Botón de lectura en voz alta */}
-            {<LectorEjercicio
+            {ejercicio.tipo !== 'dictado' && <LectorEjercicio
               titulo={ejercicio.titulo}
               descripcion={ejercicio.descripcion}
               texto={contenido.texto_guia}
@@ -374,6 +375,10 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             />}
           </div>
         )}
+
+        {ejercicio?.tipo === 'dictado' && <div className="w-full mb-4">
+          <ReproductorDictado key={idEjercicioTutor} palabras={contenido.dictado?.palabras} />
+        </div>}
 
         {/* Texto guía compacto en fullscreen */}
         {esFullscreen && textoGuia && (
