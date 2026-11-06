@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 from Modelo.schemas_auth import validar_correo
+from Servicios.dictado import normalizar_palabras
 from typing import Optional
 from datetime import datetime
 
@@ -68,8 +69,28 @@ class EjercicioTutorResponse(BaseModel):
     titulo: str
     descripcion: Optional[str] = None
     tipo: str
+    fecha_fin: Optional[datetime] = None
 
 class EjercicioTutorCreate(BaseModel):
     id_ejercicio: int
     id_usuario: int
     fecha_fin: Optional[datetime] = None
+
+
+class DictadoCreate(BaseModel):
+    titulo: str = Field(min_length=1, max_length=150)
+    palabras: list[str] = Field(min_length=1, max_length=50)
+    fecha_fin: Optional[datetime] = None
+
+    @field_validator("titulo")
+    @classmethod
+    def validar_titulo(cls, valor):
+        valor = valor.strip()
+        if not valor:
+            raise ValueError("Escribe un título para el dictado.")
+        return valor
+
+    @field_validator("palabras")
+    @classmethod
+    def validar_palabras(cls, valor):
+        return normalizar_palabras(valor)

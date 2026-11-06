@@ -17,7 +17,7 @@ try {
     Invoke-Compose -Arguments @('up','-d','--wait','database')
     Invoke-Compose -Arguments @('run','--rm','--build','--no-deps','db-init')
     Invoke-Compose -Arguments @('run','--rm','--no-deps','db-init')
-    $check = "from Modelo.database import connect_to_database; c=connect_to_database(); q=c.cursor(); q.execute('SELECT COUNT(*) FROM Ejercicios'); assert q.fetchone()[0] == 10; q.execute('SELECT COUNT(*) FROM Usuario'); assert q.fetchone()[0] == 0; q.execute('SELECT COUNT(*) FROM SchemaMigrations'); assert q.fetchone()[0] == 2; print('OK: 10 ejercicios, 0 usuarios, 2 migraciones; reinicio sin duplicados'); c.close()"
+    $check = "from pathlib import Path; from Modelo.database import connect_to_database; c=connect_to_database(); q=c.cursor(); q.execute('SELECT COUNT(*) FROM Ejercicios'); assert q.fetchone()[0] == 10; q.execute('SELECT COUNT(*) FROM Usuario'); assert q.fetchone()[0] == 0; esperadas = {p.name for p in Path('BD/migraciones').glob('*.sql')}; q.execute('SELECT nombre FROM SchemaMigrations'); aplicadas = {r[0] for r in q.fetchall()}; assert aplicadas == esperadas, (aplicadas, esperadas); print(f'OK: 10 ejercicios, 0 usuarios, {len(aplicadas)} migraciones; reinicio sin duplicados'); c.close()"
     Invoke-Compose -Arguments @('run','--rm','--no-deps','backend','python','-c',$check)
     Invoke-Compose -Arguments @('run','--rm','--no-deps','web','caddy','validate','--config','/etc/caddy/Caddyfile')
     Invoke-Compose -Arguments @('build','frontend')

@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Camera, Upload, X, CheckCircle, Loader, Aperture, RotateCw, Crop, Image as ImageIcon } from 'lucide-react';
 import LectorEjercicio from './lectorejercicio';
+import ReproductorDictado from './ReproductorDictado';
 
 /* ─── Colores por tipo de ejercicio ─── */
 const TIPO_CONFIG = {
@@ -341,7 +342,9 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
             )}
 
             {/* Botón de lectura en voz alta */}
-            {<LectorEjercicio
+            {ejercicio.tipo === 'dictado'
+              ? <ReproductorDictado key={idEjercicioTutor} palabras={contenido.dictado?.palabras} />
+              : <LectorEjercicio
               titulo={ejercicio.titulo}
               descripcion={ejercicio.descripcion}
               texto={contenido.texto_guia}
