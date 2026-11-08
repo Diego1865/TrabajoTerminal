@@ -377,13 +377,41 @@ def obtener_progreso_grafico_dao(id_tutor):
         conn.close()
 
 #Perfil del tutor
-def actualizar_nombre_tutor_dao(nombre, id_usuario):
+def obtener_perfil_tutor_dao(id_usuario):
+    """Datos del tutor para mostrarlos en su perfil, o None si no existe."""
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
-        cursor.execute("UPDATE Usuario SET nombre = ? WHERE id_usuario = ?", (nombre, id_usuario))
+        cursor.execute("""
+            SELECT u.nombre, u.apellido_paterno, u.username, t.correo, u.fecha_registro
+            FROM Usuario u
+            JOIN Tutor t ON t.id_usuario = u.id_usuario
+            WHERE u.id_usuario = ?
+        """, (id_usuario,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {
+            "nombre": row[0],
+            "apellido_paterno": row[1],
+            "usuario": row[2],
+            "correo": row[3],
+            "fecha_registro": row[4],
+        }
+    finally:
+        cursor.close()
+        conn.close()
+
+def actualizar_nombre_tutor_dao(nombre, apellido_paterno, id_usuario):
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("UPDATE Usuario SET nombre = ?, apellido_paterno = ? WHERE id_usuario = ?",
+                       (nombre, apellido_paterno, id_usuario))
         conn.commit()
     finally:
         cursor.close()

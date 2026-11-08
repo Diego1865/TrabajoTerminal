@@ -5,7 +5,17 @@ from typing import Optional
 from datetime import datetime
 
 class TutorUpdate(BaseModel):
-    nombre: str
+    # Usuario.nombre y Usuario.apellido_paterno son VARCHAR(50).
+    nombre: str = Field(min_length=1, max_length=50)
+    apellido_paterno: Optional[str] = Field(default=None, max_length=50)
+
+    @field_validator("nombre", "apellido_paterno", mode="before")
+    @classmethod
+    def recortar(cls, valor):
+        if isinstance(valor, str):
+            valor = " ".join(valor.split())
+            return valor or None
+        return valor
 
 class CorreoCodigoRequest(BaseModel):
     correo: str

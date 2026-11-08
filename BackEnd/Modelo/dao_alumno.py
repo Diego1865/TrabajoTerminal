@@ -7,6 +7,40 @@ from Servicios.progreso import resumir_progreso
 from Servicios.legibilidad import medir_legibilidad
 
 #perfil del alumno
+def obtener_perfil_alumno_dao(id_usuario):
+    """Datos del alumno y de su tutor para mostrarlos en su perfil, o None si no existe."""
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("No se pudo conectar a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT u.nombre, u.apellido_paterno, a.apellido_materno, u.username,
+                   a.grado, a.grupo, u.fecha_registro, ut.nombre, ut.apellido_paterno
+            FROM Usuario u
+            JOIN Alumno a ON a.id_usuario = u.id_usuario
+            LEFT JOIN Tutor t ON t.id_tutor = a.id_tutor
+            LEFT JOIN Usuario ut ON ut.id_usuario = t.id_usuario
+            WHERE u.id_usuario = ?
+        """, (id_usuario,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        tutor = " ".join(parte for parte in (row[7], row[8]) if parte) or None
+        return {
+            "nombre": row[0],
+            "apellido_paterno": row[1],
+            "apellido_materno": row[2],
+            "usuario": row[3],
+            "grado": row[4],
+            "grupo": row[5],
+            "fecha_registro": row[6],
+            "tutor": tutor,
+        }
+    finally:
+        cursor.close()
+        conn.close()
+
 def actualizar_info_alumno_dao(nombre, apellido_paterno, apellido_materno, grupo, id_usuario):
     conn = connect_to_database()
     if not conn:
