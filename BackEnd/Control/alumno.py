@@ -9,7 +9,20 @@ from Servicios.ocr import OcrError
 
 router = APIRouter()
 
-#Perfil del alumno
+#Perfil del alumno (solo lectura en la app: sus datos y contraseña los cambia el tutor)
+@router.get("/perfil")
+def obtener_perfil_alumno(current_user: dict = Depends(require_alumno)):
+    try:
+        perfil = obtener_perfil_alumno_dao(current_user["id_usuario"])
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print("Error al obtener el perfil del alumno:", e)
+        raise HTTPException(status_code=500, detail="Error al obtener el perfil")
+    if perfil is None:
+        raise HTTPException(status_code=404, detail="No se encontró el perfil")
+    return perfil
+
 @router.put("/info")
 def actualizar_info_alumno(data: AlumnoUpdate, current_user: dict = Depends(require_alumno)):
     

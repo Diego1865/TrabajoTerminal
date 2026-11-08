@@ -108,11 +108,23 @@ def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(require
         raise HTTPException(status_code=500, detail=f"Error al obtener progreso gráfico: {str(e)}")
 
 #Perfil del tutor
+@router.get("/perfil")
+def obtener_perfil_tutor(current_user: dict = Depends(require_tutor)):
+    try:
+        perfil = obtener_perfil_tutor_dao(current_user["id_usuario"])
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener el perfil: {str(e)}")
+    if perfil is None:
+        raise HTTPException(status_code=404, detail="No se encontró el perfil")
+    return perfil
+
 @router.put("/act/nombre")
 def actualizar_nombre_tutor(data: TutorUpdate, current_user: dict = Depends(require_tutor)):
-   
+
     try:
-        actualizar_nombre_tutor_dao(data.nombre, current_user["id_usuario"])
+        actualizar_nombre_tutor_dao(data.nombre, data.apellido_paterno, current_user["id_usuario"])
         return {"message": "Nombre actualizado correctamente"}
     except ConnectionError as ce:
         raise HTTPException(status_code=500, detail=str(ce))

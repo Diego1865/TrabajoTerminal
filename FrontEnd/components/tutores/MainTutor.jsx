@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { LogOut, UserPlus, Trash2, Loader2, Eye, X, Image as ImageIcon, CheckCircle, Award, KeyRound } from "lucide-react";
 import AlumnosCategoria from "./AlumnosCategoria";
 import ProgresoAlumnos from "./ProgresoAlumnos";
@@ -411,9 +411,30 @@ export default function MainTutor({ onLogout }) {
   const [usuarioManual, setUsuarioManual] = useState(false);
   const sufijoAleatorio = useRef(Math.floor(Math.random() * 90) + 10);
 
+  // Perfil desde la API: el nombre del token no cambia hasta el próximo inicio de sesión.
+  const [perfil, setPerfil] = useState(null);
+  const [errorPerfil, setErrorPerfil] = useState("");
+
   const idTutor = getTutorId();
-  const nombreTutor = getNombreTutor();
+  const nombreTutor = perfil?.nombre || getNombreTutor();
   const tipoUsuario = getTipoUsuario();
+
+  const cargarPerfil = useCallback(async () => {
+    setErrorPerfil("");
+    try {
+      const res = await fetch(`${API_URL}/api/tutor/perfil`, {
+        headers: { "Authorization": `Bearer ${getToken()}` }
+      });
+      if (!res.ok) throw new Error("No se pudo cargar tu perfil.");
+      setPerfil(await res.json());
+    } catch (err) {
+      setErrorPerfil(err.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (tipoUsuario === "tutor") cargarPerfil();
+  }, [tipoUsuario, cargarPerfil]);
 
   const fecha = new Date().toLocaleDateString("es-MX", {
     day: "numeric",
@@ -836,7 +857,7 @@ export default function MainTutor({ onLogout }) {
         )}
 
         {tab === "perfil" && (
-          <PerfilTutor onLogout={onLogout} />
+          <PerfilTutor perfil={perfil} errorPerfil={errorPerfil} onRecargarPerfil={cargarPerfil} onLogout={onLogout} />
         )}
       </main>
     </div>
