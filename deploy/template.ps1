@@ -2,21 +2,22 @@
     [string]$Project = 'trabajoterminal-510019',
     [string]$Region = 'us-central1',
     [string]$Zone = 'us-central1-a',
-    [string]$Branch = 'David-deploy-gcp',
+    [string]$Branch = 'main',
+    [string]$SqlInstance = 'grafia-sql',
     [switch]$Apply
 )
 $ErrorActionPreference = 'Stop'
-if ($Project -notmatch '^[a-z][a-z0-9-]+$' -or $Region -notmatch '^[a-z]+-[a-z]+[0-9]+$' -or $Zone -ne "$Region-a" -or $Branch -notmatch '^[A-Za-z0-9._/-]+$') {
+if ($Project -notmatch '^[a-z][a-z0-9-]+$' -or $Region -notmatch '^[a-z]+-[a-z]+[0-9]+$' -or $Zone -ne "$Region-a" -or $Branch -notmatch '^[A-Za-z0-9._/-]+$' -or $SqlInstance -notmatch '^[a-z][a-z0-9-]+$') {
     throw 'Revisa proyecto, región, zona y rama.'
 }
 $bucket = "$Project-grafia-respaldos"
 $template = 'grafia-demo-plantilla'
 $serviceAccount = "grafia-demo@$Project.iam.gserviceaccount.com"
-Write-Output "Proyecto: $Project; zona: $Zone; rama del código: $Branch"
+Write-Output "Proyecto: $Project; zona: $Zone; rama del código: $Branch; Cloud SQL: $SqlInstance"
 Write-Output "1. Bucket gs://$bucket ($Region, acceso uniforme, sin acceso público, borra respaldos de más de 30 días)."
 Write-Output "2. Rol storage.objectAdmin para $serviceAccount solo sobre ese bucket."
 Write-Output "3. Plantilla $template igual a la VM actual (e2-medium, Ubuntu 24.04, 40 GB) con startup.sh y respaldo-nube.sh."
-Write-Output '4. VM actual grafia-demo: se le agrega solo el respaldo al apagar y el nombre del bucket.'
+Write-Output '4. VM actual grafia-demo: se le agrega solo el respaldo al apagar, el nombre del bucket y el de la instancia de Cloud SQL.'
 Write-Output 'Costo: plantilla gratis; bucket de centavos al mes con pocos respaldos.'
 if (-not $Apply) {
     Write-Output 'Solo plan. Para crear los recursos, volver a ejecutar con -Apply.'
@@ -43,9 +44,9 @@ Invoke-Gcloud -Arguments @('compute','instance-templates','create',$template,'--
     '--boot-disk-type=pd-balanced','--no-boot-disk-auto-delete','--network=grafia-demo','--subnet=grafia-demo',
     "--region=$Region",'--tags=grafia-demo',"--service-account=$serviceAccount",'--scopes=cloud-platform',
     "--metadata-from-file=startup-script=$startup,shutdown-script=$shutdown",
-    "--metadata=grafia-branch=$Branch,grafia-bucket=$bucket",'--labels=app=grafia,environment=demo')
+    "--metadata=grafia-branch=$Branch,grafia-bucket=$bucket,grafia-sql=$SqlInstance",'--labels=app=grafia,environment=demo')
 Invoke-Gcloud -Arguments @('compute','instances','add-metadata','grafia-demo',"--zone=$Zone",
-    "--metadata-from-file=shutdown-script=$shutdown","--metadata=grafia-bucket=$bucket")
+    "--metadata-from-file=shutdown-script=$shutdown","--metadata=grafia-bucket=$bucket,grafia-sql=$SqlInstance")
 Remove-Item -LiteralPath $lifecycle -ErrorAction SilentlyContinue
 Write-Output "Listo. Plantilla: $template; respaldos: gs://$bucket"
 Write-Output 'Para recrear la VM, consulta "Recrear desde la plantilla" en deploy/README.md.'

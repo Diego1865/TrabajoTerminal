@@ -9,11 +9,13 @@ cómputo, pero discos y direcciones IP pueden seguir generando cargos.
 
 ## Arquitectura
 
-Internet → Caddy (80/443, HTTPS) → frontend Next.js y `/api/*` → FastAPI → SQL Server.
-Solo Caddy publica puertos. SQL Server Express y FastAPI no son accesibles desde
-Internet. Express permite esta demo sin licencia comercial de SQL Server; tiene
-límites de memoria y de tamaño de base (SQL Server 2022: 10 GB por base).
-Los archivos e imágenes base64 guardados en la base consumen ese espacio.
+Internet → Caddy (80/443, HTTPS) → frontend Next.js y `/api/*` → FastAPI → Cloud SQL.
+Solo Caddy publica puertos. La base es Cloud SQL para SQL Server 2022 Express
+(instancia `grafia-sql`) con IP privada en la red `grafia-demo`: no es accesible
+desde Internet y los datos no dependen del disco de la VM (sección 8). Express no
+cobra licencia de SQL Server; tiene límites de memoria y de tamaño de base
+(10 GB por base). Los archivos e imágenes base64 guardados en la base consumen ese espacio.
+Cloud SQL se cobra aparte de la VM.
 
 Compose `compose.demo.yml` es INDEPENDIENTE de los archivos locales. No combinarlo
 con `docker-compose.yml` ni `docker-compose.ocr.yml`. No reutiliza tus volúmenes locales.
@@ -51,7 +53,7 @@ En la VM: `sudo journalctl -u google-startup-scripts.service` y `sudo docker ver
 Desde PowerShell en la raíz del repositorio (incluye cambios aún sin commit):
 
 ```powershell
-tar --exclude=.env --exclude='.env.*' --exclude=.venv --exclude=__pycache__ --exclude=node_modules --exclude=.next --exclude=credentials --exclude='*-credentials.json' -czf deploy/demo.tar.gz BackEnd FrontEnd deploy/Caddyfile deploy/configure.py deploy/backup.sh compose.demo.yml
+tar --exclude=.env --exclude='.env.*' --exclude=.venv --exclude=__pycache__ --exclude=node_modules --exclude=.next --exclude=credentials --exclude='*-credentials.json' -czf deploy/demo.tar.gz BackEnd FrontEnd deploy/Caddyfile deploy/configure.py deploy/cargar-sql.sh deploy/cargar-correo.sh deploy/backup.sh deploy/respaldo-nube.sh compose.demo.yml
 gcloud compute scp deploy/demo.tar.gz grafia-demo:demo.tar.gz --project trabajoterminal-510019 --zone us-central1-a --tunnel-through-iap
 ```
 
@@ -69,6 +71,7 @@ Caddy obtiene HTTPS cuando el nombre apunta al servidor y 80/443 están accesibl
 sudo tar -xzf "$HOME/demo.tar.gz" -C /opt/grafia
 cd /opt/grafia
 sudo python3 deploy/configure.py --domain IP_PUBLICA.sslip.io --project trabajoterminal-510019
+sudo bash deploy/cargar-sql.sh      # requiere la instancia y el secreto grafia-sql (sección 8)
 sudo docker compose --env-file .env.demo -f compose.demo.yml up -d --build
 sudo docker compose --env-file .env.demo -f compose.demo.yml ps -a
 sudo docker compose --env-file .env.demo -f compose.demo.yml logs --tail=50 db-init web
@@ -78,7 +81,8 @@ sudo docker compose --env-file .env.demo -f compose.demo.yml logs --tail=50 db-i
 `.env.demo` solo es legible por el propietario (root si usaste sudo).
 No se imprimen secretos. Los contenedores reinician automáticamente con Docker.
 Para actualizar código, respaldar primero y repetir transferencia/extracción/`up`;
-no ejecutar nuevamente `configure.py` ni cambiar la contraseña de una base existente.
+no ejecutar nuevamente `configure.py`. Para cambiar la contraseña de Cloud SQL, cambiarla
+en la instancia y en el secreto `grafia-sql`, y repetir `cargar-sql.sh` y el `up`.
 
 La inicialización crea TT si no existe, carga diez ejercicios solo si el catálogo
 está vacío y registra las migraciones aplicadas. Un fallo detiene db-init y evita
@@ -101,25 +105,29 @@ no ofrece alta disponibilidad y no reemplaza una revisión de seguridad para uso
 
 ## 5. Respaldos y gasto
 
+Hay dos respaldos independientes:
+
+1. **Respaldos automáticos de Cloud SQL**: diarios, se conservan 7 y se restauran con
+   `gcloud sql backups list/restore`. Se borran si se borra la instancia.
+2. **Exportación `.bak` al bucket** `gs://trabajoterminal-510019-grafia-respaldos`: la hace
+   `deploy/respaldo-nube.sh` cada día a las 08:00 UTC (cron) y al apagar la VM. Es portable:
+   sobrevive al borrado de la instancia y se importa con `gcloud sql import bak`.
+   El bucket borra los de más de 30 días.
+
+Respaldo bajo demanda, antes de actualizar (espera a que termine):
+
 ```bash
 cd /opt/grafia
 sudo bash deploy/backup.sh
 ```
 
-En una instalación nueva, antes del primer respaldo, dar el volumen al usuario de SQL Server
-(si no, falla con "Operating system error 5"):
-`sudo docker compose --env-file .env.demo -f compose.demo.yml exec -u 0 database chown mssql /var/opt/mssql/backup`.
-
-El script hace BACKUP con checksum y RESTORE VERIFYONLY; guarda una copia `.bak`
-en `backups/`. Eso comprueba el archivo, no sustituye un ensayo de restauración.
-Descargarlo a una ubicación privada fuera de la VM. No se ha programado un respaldo
-automático; hacerlo antes de actualizaciones y después de las sesiones de prueba.
-La creación de la VM preserva el disco al eliminarla para evitar perder datos;
+Ninguno sustituye un ensayo de restauración (sección 8, paso 7, en una base de prueba).
+La creación de la VM preserva el disco al eliminarla;
 ese disco continúa facturándose hasta retirarlo expresamente.
 
 Configurar presupuesto con alertas al 50/80/100% y revisar costos diarios al inicio.
 Una alerta no es un corte de consumo. Revisar también el saldo y la fecha de los créditos.
-No usar `down -v` sobre la demo: eliminaría los volúmenes de datos y certificados.
+No usar `down -v` sobre la demo: eliminaría el volumen de certificados HTTPS.
 
 ## 6. Recrear desde la plantilla
 
@@ -135,9 +143,16 @@ lo ejecuta una cuenta con rol de propietario.
 .\deploy\template.ps1 -Apply
 ```
 
-Respaldos a Cloud Storage: `deploy/respaldo-nube.sh` ejecuta `backup.sh` y sube el `.bak` al bucket.
-Corre al apagar la VM (shutdown-script; Google no garantiza que termine) y, en VMs creadas
-desde la plantilla, cada día a las 08:00 UTC. Para forzarlo: `sudo bash deploy/respaldo-nube.sh`.
+Respaldos a Cloud Storage: `deploy/respaldo-nube.sh` pide a Cloud SQL exportar TT como `.bak`
+al bucket. Corre al apagar la VM (shutdown-script; la exportación sigue en Cloud SQL aunque la
+VM se apague) y, en VMs creadas desde la plantilla, cada día a las 08:00 UTC.
+Para forzarlo: `sudo bash deploy/respaldo-nube.sh`.
+
+La plantilla y la VM guardan una COPIA de `startup.sh` y `respaldo-nube.sh` en sus metadatos.
+Al cambiar esos scripts hay que actualizar la VM (sección 8, paso 6) y recrear la plantilla:
+una plantilla no se puede modificar; borrarla con
+`gcloud compute instance-templates delete grafia-demo-plantilla` y volver a crearla con el
+comando `instance-templates create` de `template.ps1` (el bucket y los permisos ya existen).
 
 Si la VM se borró, crear otra con la misma IP fija:
 
@@ -150,19 +165,19 @@ por la red `default`, donde 80/443 están cerrados. Antes, borrar la VM anterior
 `--delete-disks=all`: su disco no se borra solo y tiene el mismo nombre.
 
 `deploy/startup.sh` hace la instalación sola en unos 15 minutos:
-1. Docker, swap y clon de la rama del metadato `grafia-branch`.
-2. `.env.demo` con secretos nuevos.
-3. Restaura el `.bak` más reciente del bucket.
-4. Construye y arranca.
+1. Docker, swap y clon de la rama del metadato `grafia-branch` (por defecto `main`).
+2. `.env.demo` con un `SECRET_KEY` nuevo, la cuenta de correo (`grafia-smtp`) y la conexión
+   a Cloud SQL (`grafia-sql`), ambas desde Secret Manager.
+3. Construye y arranca. `db-init` aplica las migraciones pendientes en Cloud SQL.
 
 Seguimiento: `sudo journalctl -u google-startup-scripts.service -f`.
 
 En arranques posteriores solo comprueba que los contenedores estén arriba. No modifica una
 `/opt/grafia` instalada a mano (sin `.git`).
 
-Se pierde lo ocurrido después del último respaldo. Los secretos son nuevos, así que las
-sesiones abiertas se cierran. El disco de una VM borrada se conserva y se sigue cobrando
-hasta eliminarlo (`gcloud compute disks list`).
+Los datos están en Cloud SQL, así que recrear la VM no pierde nada ni restaura respaldos.
+El `SECRET_KEY` es nuevo, así que las sesiones abiertas se cierran. El disco de una VM
+borrada se conserva y se sigue cobrando hasta eliminarlo (`gcloud compute disks list`).
 
 Actualizar una VM creada desde la plantilla (respaldar antes):
 
@@ -202,6 +217,151 @@ Referencias:
 - https://docs.cloud.google.com/free/docs/free-cloud-features
 - https://docs.cloud.google.com/compute/docs/access/create-enable-service-accounts-for-instances
 - https://docs.docker.com/engine/install/ubuntu/
+
+## 8. Base de datos en Cloud SQL
+
+Instancia `grafia-sql`: SQL Server 2022 Express, 2 vCPU y 3.75 GB, SSD de 20 GB que crece
+sola, una zona (sin alta disponibilidad), IP privada en la red `grafia-demo`, respaldos
+automáticos diarios (06:00 UTC, se conservan 7) y protección contra borrado.
+El usuario es `sqlserver` (Cloud SQL no ofrece `sa` ni `sysadmin`; `sqlserver` puede crear
+bases). Genera cargos: revisar la calculadora antes del paso 3.
+
+Desde la Mac o Linux (bash), con una cuenta propietaria del proyecto:
+
+```bash
+PROYECTO=trabajoterminal-510019
+BUCKET=$PROYECTO-grafia-respaldos
+VM_SA=grafia-demo@$PROYECTO.iam.gserviceaccount.com
+```
+
+**1. Red privada** (una sola vez). Reserva un rango para los servicios de Google y lo conecta
+a `grafia-demo`:
+
+```bash
+gcloud services enable sqladmin.googleapis.com servicenetworking.googleapis.com secretmanager.googleapis.com --project $PROYECTO
+gcloud compute addresses create google-managed-services-grafia-demo --global --purpose=VPC_PEERING \
+  --prefix-length=20 --network=grafia-demo --project $PROYECTO
+gcloud services vpc-peerings connect --service=servicenetworking.googleapis.com \
+  --ranges=google-managed-services-grafia-demo --network=grafia-demo --project $PROYECTO
+```
+
+**2. Collation.** Se fija al crear la instancia y no se puede cambiar. Usar la de la base actual
+(en la VM, antes de migrar):
+
+```bash
+cd /opt/grafia && sudo docker compose --env-file .env.demo -f compose.demo.yml exec database bash -c \
+  '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -h -1 -W -Q "SELECT SERVERPROPERTY('"'"'Collation'"'"')"'
+```
+
+**3. Crear la instancia** (genera cargos; tarda unos 15 minutos). La contraseña se genera aquí y
+no se imprime; el paso 4 la guarda en Secret Manager. Hacer los pasos 3 y 4 en la misma terminal:
+
+```bash
+DB_PASSWORD="Aa1$(openssl rand -hex 24)"
+gcloud sql instances create grafia-sql --project $PROYECTO \
+  --database-version=SQLSERVER_2022_EXPRESS --edition=ENTERPRISE \
+  --cpu=2 --memory=3840MiB --zone=us-central1-a --availability-type=zonal \
+  --storage-type=SSD --storage-size=20GB --storage-auto-increase \
+  --collation=SQL_Latin1_General_CP1_CI_AS \
+  --network=projects/$PROYECTO/global/networks/grafia-demo --no-assign-ip \
+  --backup-start-time=06:00 --retained-backups-count=7 \
+  --deletion-protection --root-password="$DB_PASSWORD"
+```
+
+Cambiar `--collation` si el paso 2 devolvió otra.
+
+**4. Secreto y permisos**:
+
+```bash
+IP=$(gcloud sql instances describe grafia-sql --project $PROYECTO --format='value(ipAddresses[0].ipAddress)')
+SQL_SA=$(gcloud sql instances describe grafia-sql --project $PROYECTO --format='value(serviceAccountEmailAddress)')
+# Conexión para la VM (deploy/cargar-sql.sh la copia a .env.demo)
+printf 'DB_SERVER=%s\nDB_PASSWORD=%s\n' "$IP" "$DB_PASSWORD" | gcloud secrets create grafia-sql --data-file=- --project $PROYECTO
+unset DB_PASSWORD
+gcloud secrets add-iam-policy-binding grafia-sql --member=serviceAccount:$VM_SA \
+  --role=roles/secretmanager.secretAccessor --project $PROYECTO
+# Cloud SQL lee y escribe los .bak del bucket (importar y exportar)
+gcloud storage buckets add-iam-policy-binding gs://$BUCKET --member=serviceAccount:$SQL_SA --role=roles/storage.objectAdmin
+# La VM solo puede ver la instancia y pedir exportaciones (respaldo-nube.sh)
+gcloud iam roles create grafiaExportarSql --project $PROYECTO --title='Grafia: exportar Cloud SQL' \
+  --permissions=cloudsql.instances.get,cloudsql.instances.export
+gcloud projects add-iam-policy-binding $PROYECTO --member=serviceAccount:$VM_SA \
+  --role=projects/$PROYECTO/roles/grafiaExportarSql --condition=None
+```
+
+**5. Migrar los datos de la VM actual.** Cortar el acceso para que nadie escriba durante la
+migración, respaldar con los scripts que la VM tiene ahora (todavía con SQL Server en contenedor)
+y anotar el nombre del `.bak` que imprime:
+
+```bash
+# En la VM, ANTES de actualizar el código
+sudo -i
+cd /opt/grafia
+dc() { docker compose --env-file .env.demo -f compose.demo.yml "$@"; }
+dc stop web
+bash deploy/respaldo-nube.sh
+```
+
+Importarlo en Cloud SQL (desde la Mac). No crear TT antes: la importación la crea.
+
+```bash
+gcloud sql import bak grafia-sql gs://$BUCKET/TT-AAAAMMDDTHHMMSSZ.bak --database=TT --project $PROYECTO
+```
+
+Actualizar el código y apuntar a Cloud SQL (en la VM). `.env.demo.contenedor` es la
+configuración anterior, para volver atrás:
+
+```bash
+cp .env.demo .env.demo.contenedor
+git pull
+bash deploy/cargar-sql.sh
+dc up -d --remove-orphans
+dc ps -a
+dc logs --tail=30 db-init backend
+```
+
+`db-init` debe terminar en `Exited (0)` sin aplicar migraciones (ya vienen en el `.bak`) y el
+backend en `healthy`. `--remove-orphans` retira el contenedor de SQL Server, pero NO su volumen:
+los datos anteriores siguen en el disco (paso 9). Probar la aplicación (sección 4).
+
+**6. Metadatos de la VM** (desde la Mac), para que el respaldo diario y el del apagado exporten
+desde Cloud SQL. Después probarlo en la VM con `sudo bash deploy/respaldo-nube.sh`:
+
+```bash
+gcloud compute instances add-metadata grafia-demo --zone us-central1-a --project $PROYECTO \
+  --metadata=grafia-sql=grafia-sql --metadata-from-file=shutdown-script=deploy/respaldo-nube.sh
+```
+
+**7. Ensayo de restauración**, en una base aparte para no tocar TT:
+
+```bash
+gcloud sql import bak grafia-sql gs://$BUCKET/TT-AAAAMMDDTHHMMSSZ.bak --database=TT_prueba --project $PROYECTO
+gcloud sql databases delete TT_prueba --instance=grafia-sql --project $PROYECTO
+```
+
+**8. Volver atrás** si el paso 5 falla (en la VM). Recupera la base del contenedor tal como estaba
+al cortar el acceso; lo escrito después en Cloud SQL no se copia de vuelta:
+
+```bash
+cd /opt/grafia
+cp .env.demo.contenedor .env.demo
+git switch --detach HEAD@{1}      # el commit anterior al git pull
+dc up -d
+```
+
+**9. Retirar el contenedor anterior**, solo cuando Cloud SQL lleve unos días funcionando y haya
+exportaciones en el bucket (borra los datos del contenedor de forma permanente):
+
+```bash
+docker volume rm grafia-demo_database grafia-demo_backups
+rm -rf /opt/grafia/backups /opt/grafia/.env.demo.contenedor
+```
+
+Referencias:
+- https://docs.cloud.google.com/sql/docs/sqlserver/create-instance
+- https://docs.cloud.google.com/sql/docs/sqlserver/configure-private-services-access
+- https://docs.cloud.google.com/sql/docs/sqlserver/import-export/import-export-bak
+- https://docs.cloud.google.com/sql/docs/sqlserver/users
 
 ## Módulo de dictado
 

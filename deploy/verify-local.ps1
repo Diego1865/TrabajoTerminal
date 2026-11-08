@@ -6,7 +6,10 @@ $env:GOOGLE_CLOUD_PROJECT = 'test-project'
 $env:GOOGLE_VISION_ENABLED = 'false'
 $env:DB_PASSWORD = 'Aa1' + [Guid]::NewGuid().ToString('N')
 $env:SECRET_KEY = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
-$composeArgs = @('compose','--env-file','deploy/.env.demo.example','-p','grafia-deploy-check','-f','compose.demo.yml')
+# En la VM la base es Cloud SQL; aquí se sustituye por SQL Server en un contenedor.
+$env:DB_SERVER = 'database'
+$env:DB_USER = 'sa'
+$composeArgs = @('compose','--env-file','deploy/.env.demo.example','-p','grafia-deploy-check','-f','compose.demo.yml','-f','deploy/compose.sqlserver-local.yml')
 function Invoke-Compose {
     param([string[]]$Arguments)
     & docker @composeArgs @Arguments
