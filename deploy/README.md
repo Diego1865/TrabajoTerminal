@@ -220,9 +220,12 @@ Referencias:
 
 ## 8. Base de datos en Cloud SQL
 
-Instancia `grafia-sql`: SQL Server 2022 Express, 2 vCPU y 3.75 GB, SSD de 20 GB que crece
-sola, una zona (sin alta disponibilidad), IP privada en la red `grafia-demo`, respaldos
-automáticos diarios (06:00 UTC, se conservan 7) y protección contra borrado.
+Instancia `grafia-sql`, la configuración más barata posible para pruebas: SQL Server 2022
+Express (sin costo de licencia), 1 vCPU y 3.75 GB (el mínimo de Cloud SQL para Express),
+SSD de 10 GB que crece sola, una zona (sin alta disponibilidad), IP privada en la red
+`grafia-demo`, respaldos automáticos diarios (06:00 UTC, se conservan 7) y protección
+contra borrado. Para más carga, subir con `gcloud sql instances patch grafia-sql --cpu=2 --memory=7680MiB`
+(reinicia la instancia unos minutos).
 El usuario es `sqlserver` (Cloud SQL no ofrece `sa` ni `sysadmin`; `sqlserver` puede crear
 bases). Genera cargos: revisar la calculadora antes del paso 3.
 
@@ -260,8 +263,8 @@ no se imprime; el paso 4 la guarda en Secret Manager. Hacer los pasos 3 y 4 en l
 DB_PASSWORD="Aa1$(openssl rand -hex 24)"
 gcloud sql instances create grafia-sql --project $PROYECTO \
   --database-version=SQLSERVER_2022_EXPRESS --edition=ENTERPRISE \
-  --cpu=2 --memory=3840MiB --zone=us-central1-a --availability-type=zonal \
-  --storage-type=SSD --storage-size=20GB --storage-auto-increase \
+  --cpu=1 --memory=3840MiB --zone=us-central1-a --availability-type=zonal \
+  --storage-type=SSD --storage-size=10GB --storage-auto-increase \
   --collation=SQL_Latin1_General_CP1_CI_AS \
   --network=projects/$PROYECTO/global/networks/grafia-demo --no-assign-ip \
   --backup-start-time=06:00 --retained-backups-count=7 \
@@ -356,6 +359,26 @@ exportaciones en el bucket (borra los datos del contenedor de forma permanente):
 docker volume rm grafia-demo_database grafia-demo_backups
 rm -rf /opt/grafia/backups /opt/grafia/.env.demo.contenedor
 ```
+
+**10. Pausar o eliminar la instancia.** Detenida no cobra CPU ni memoria, pero sí el disco
+y los respaldos; la demo no funciona mientras está detenida:
+
+```bash
+gcloud sql instances patch grafia-sql --activation-policy=NEVER --project $PROYECTO    # detener
+gcloud sql instances patch grafia-sql --activation-policy=ALWAYS --project $PROYECTO   # volver a encender
+```
+
+Al terminar las pruebas, exportar un último respaldo (`sudo bash deploy/backup.sh` en la VM)
+y eliminarla. Borrarla elimina también sus respaldos automáticos; el `.bak` del bucket queda
+(el bucket lo borra a los 30 días):
+
+```bash
+gcloud sql instances patch grafia-sql --no-deletion-protection --project $PROYECTO
+gcloud sql instances delete grafia-sql --project $PROYECTO
+```
+
+Sin la instancia, el backend no arranca hasta volver a la base en contenedor (paso 8) o
+crear otra instancia e importar el `.bak` (pasos 3 a 5).
 
 Referencias:
 - https://docs.cloud.google.com/sql/docs/sqlserver/create-instance
