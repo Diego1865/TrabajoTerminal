@@ -8,10 +8,12 @@ x-logs: &logs
 x-backend: &backend
   build: ./BackEnd
   environment: &backend-env
+    # Base de datos en Cloud SQL para SQL Server (IP privada). deploy/cargar-sql.sh
+    # copia DB_SERVER y DB_PASSWORD del secreto grafia-sql de Secret Manager.
     DB_DRIVER: "{ODBC Driver 18 for SQL Server}"
-    DB_SERVER: database
+    DB_SERVER: ${DB_SERVER:?Define DB_SERVER (IP privada de Cloud SQL)}
     DB_NAME: TT
-    DB_USER: sa
+    DB_USER: ${DB_USER:-sqlserver}
     DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
     SECRET_KEY: ${SECRET_KEY:?Define SECRET_KEY}
     CORS_ORIGINS: https://${APP_DOMAIN:?Define APP_DOMAIN}
@@ -25,34 +27,13 @@ x-backend: &backend
   logging: *logs
 
 services:
-  database:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    restart: unless-stopped
-    environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: Express
-      MSSQL_SA_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
-      MSSQL_MEMORY_LIMIT_MB: "2048"
-    volumes:
-      - database:/var/opt/mssql
-      - backups:/var/opt/mssql/backup
-    healthcheck:
-      test: [CMD-SHELL, '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" -b -o /dev/null']
-      interval: 10s
-      timeout: 5s
-      retries: 30
-      start_period: 30s
-    logging: *logs
-
+  # Crea TT si no existe y aplica las migraciones pendientes antes de arrancar el backend.
   db-init:
     <<: *backend
     command: [python, BD/inicializar_demo.py]
     environment:
       <<: *backend-env
       SEED_DEMO: "true"
-    depends_on:
-      database:
-        condition: service_healthy
 
   backend:
     <<: *backend
@@ -94,7 +75,5 @@ services:
     logging: *logs
 
 volumes:
-  database:
-  backups:
   caddy_data:
   caddy_config:

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Script de inicio de la plantilla grafia-demo-plantilla. Corre como root en cada arranque.
-# Primera vez: instala Docker, clona el repositorio, genera .env.demo, restaura el último
-# respaldo del bucket y arranca la demo. Arranques siguientes: solo verifica que esté arriba.
+# Primera vez: instala Docker, clona el repositorio, genera .env.demo, carga la conexión a
+# Cloud SQL y el correo desde Secret Manager y arranca la demo. Los datos viven en Cloud SQL,
+# así que una VM nueva no restaura nada. Arranques siguientes: solo verifica que esté arriba.
 # Salida: sudo journalctl -u google-startup-scripts.service
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 md='http://metadata.google.internal/computeMetadata/v1'
 meta() { curl -sf -H 'Metadata-Flavor: Google' "$md/$1" || true; }
 repo='https://github.com/Diego1865/TrabajoTerminal.git'
-branch=$(meta instance/attributes/grafia-branch); branch=${branch:-David-deploy-gcp}
-bucket=$(meta instance/attributes/grafia-bucket)
+branch=$(meta instance/attributes/grafia-branch); branch=${branch:-main}
 project=$(meta project/project-id)
 ip=$(meta instance/network-interfaces/0/access-configs/0/external-ip)
 app=/opt/grafia
@@ -71,34 +71,9 @@ if [ ! -f .env.demo ]; then
     python3 deploy/configure.py --domain "$ip.sslip.io" --project "$project"
     bash deploy/cargar-correo.sh || true
 fi
-
-echo '== Arrancando SQL Server'
-dc up -d database
-for _ in $(seq 1 60); do
-    [ "$(docker inspect -f '{{.State.Health.Status}}' "$(dc ps -q database)")" = healthy ] && break
-    sleep 5
-done
-dc exec -T -u 0 database chown mssql /var/opt/mssql/backup
-sql() { dc exec -T database bash -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -h -1 -W -Q "$1"' _ "$1"; }
-
-existe=$(sql "SET NOCOUNT ON; SELECT COUNT(*) FROM sys.databases WHERE name = 'TT'" | tr -d '[:space:]')
-if [ "$existe" = 0 ] && [ -n "$bucket" ]; then
-    token=$(meta instance/service-accounts/default/token | python3 -c 'import json, sys; print(json.load(sys.stdin)["access_token"])')
-    ultimo=$(curl -sf -H "Authorization: Bearer $token" \
-        "https://storage.googleapis.com/storage/v1/b/$bucket/o?prefix=TT-" \
-        | python3 -c 'import json, sys; n = [o["name"] for o in json.load(sys.stdin).get("items", []) if o["name"].endswith(".bak")]; print(max(n) if n else "")')
-    if [ -n "$ultimo" ]; then
-        echo "== Restaurando gs://$bucket/$ultimo"
-        curl -sf -H "Authorization: Bearer $token" -o /tmp/restaurar.bak \
-            "https://storage.googleapis.com/storage/v1/b/$bucket/o/$ultimo?alt=media"
-        dc cp /tmp/restaurar.bak database:/var/opt/mssql/backup/restaurar.bak
-        rm -f /tmp/restaurar.bak
-        dc exec -T -u 0 database chown mssql /var/opt/mssql/backup/restaurar.bak
-        sql "RESTORE DATABASE TT FROM DISK = '/var/opt/mssql/backup/restaurar.bak' WITH CHECKSUM"
-        dc exec -T -u 0 database rm -f /var/opt/mssql/backup/restaurar.bak
-    else
-        echo "== gs://$bucket no tiene respaldos: se crea una base nueva"
-    fi
+if ! grep -q '^DB_SERVER=.' .env.demo; then
+    echo '== Cargando la conexión a Cloud SQL'
+    bash deploy/cargar-sql.sh
 fi
 
 echo '== Construyendo imágenes (una a la vez por memoria)'
