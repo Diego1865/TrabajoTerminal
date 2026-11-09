@@ -1,8 +1,9 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { LogOut, UserPlus, Trash2, Loader2, Eye, X, Image as ImageIcon, CheckCircle, Award, KeyRound } from "lucide-react";
 import AlumnosCategoria from "./AlumnosCategoria";
 import ProgresoAlumnos from "./ProgresoAlumnos";
+import { clasificar, categoriaInicial } from "./categoriasProgreso";
 import TabEjercicios from "./TabEjercicios";
 import PerfilTutor from "./PerfilTutor";
 import EvaluacionPreliminar from "./EvaluacionPreliminar";
@@ -409,14 +410,16 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
 // --- Componente Principal ---
 export default function MainTutor({ onLogout }) {
   const [tab, setTab] = useState("inicio");
-  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("riesgo"); 
-  const [alumnosCategoria, setAlumnosCategoria] = useState([]);
-  const [loadingCategoria, setLoadingCategoria] = useState(false);
-  const [errorCategoria, setErrorCategoria] = useState(null);
-
-  const [alumnosProgreso, setAlumnosProgreso] = useState([]);
-  const [loadingProgreso, setLoadingProgreso] = useState(true);
-  const [errorProgreso, setErrorProgreso] = useState(null);
+  // Inicio: promedios de todos los alumnos en una sola petición; contadores, barra y lista
+  // se calculan aquí con la misma clasificación (categoriasProgreso.js).
+  const [resumen, setResumen] = useState([]);
+  const [loadingResumen, setLoadingResumen] = useState(true);
+  const [errorResumen, setErrorResumen] = useState(null);
+  const [metrica, setMetrica] = useState("general");
+  const [categoriaElegida, setCategoriaElegida] = useState(null);
+  const grupos = useMemo(() => clasificar(resumen, metrica), [resumen, metrica]);
+  // Sin elección del tutor, se abre la primera categoría con alumnos (riesgo primero).
+  const categoriaActiva = categoriaElegida ?? categoriaInicial(grupos);
 
   const [alumnos, setAlumnos] = useState([]);
   const [loadingAlumnos, setLoadingAlumnos] = useState(false);
@@ -477,57 +480,26 @@ export default function MainTutor({ onLogout }) {
 
   useEffect(() => {
     if (!idTutor || tab !== "inicio") return;
-
-    const fetchAlumnosPorCategoria = async () => {
-      setLoadingCategoria(true);
-      setErrorCategoria(null);
+    // Se vuelve a pedir cada vez que se entra a Inicio, para ver las calificaciones recientes.
+    const fetchResumen = async () => {
+      setLoadingResumen(true);
+      setErrorResumen(null);
       try {
-        // Asegúrate de que la URL coincida con tu backend (agregué /alumno/ si ese es tu prefijo)
-        const res = await fetch(`${API_URL}/api/tutor/${categoriaSeleccionada}/${idTutor}`, {
+        const res = await fetch(`${API_URL}/api/tutor/resumen-progreso`, {
           headers: { "Authorization": `Bearer ${getToken()}` }
         });
-        
-        const data = await res.json();
-        
-        // 1. Validar si la respuesta del backend fue un error (400, 404, 500, etc.)
-        if (!res.ok) {
-          throw new Error(data.detail || "Error al obtener la categoría de alumnos");
-        }
-
-        console.log(`Alumnos categoría ${categoriaSeleccionada}:`, data);
-        
-        // 2. Seguridad extra: asegurarnos de que data sea un arreglo
-        setAlumnosCategoria(Array.isArray(data) ? data : []);
-        
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Error al obtener el progreso de los alumnos");
+        setResumen(Array.isArray(data.alumnos) ? data.alumnos : []);
       } catch (err) {
-        setErrorCategoria(err.message);
-        // Si hay error, vaciamos la lista para que no rompa el componente hijo
-        setAlumnosCategoria([]); 
+        setErrorResumen(err.message);
+        setResumen([]);
       } finally {
-        setLoadingCategoria(false);
+        setLoadingResumen(false);
       }
     };
-
-    const fetchProgreso = async () => {
-      setLoadingProgreso(true);
-      setErrorProgreso(null);
-      try {
-        const res = await fetch(`${API_URL}/api/tutor/progreso/${idTutor}`, {
-          headers: { "Authorization": `Bearer ${getToken()}`, "Content-Type": "application/json" }
-        });
-        if (!res.ok) throw new Error("Error al obtener progreso de alumnos");
-        const data = await res.json();
-        setAlumnosProgreso(data);
-      } catch (err) {
-        setErrorProgreso(err.message);
-      } finally {
-        setLoadingProgreso(false);
-      }
-    };
-
-    fetchAlumnosPorCategoria();
-    fetchProgreso();
-  }, [idTutor, tab, categoriaSeleccionada]);
+    fetchResumen();
+  }, [idTutor, tab]);
 
   useEffect(() => {
     if (tab !== "alumnos") return;
@@ -694,39 +666,27 @@ export default function MainTutor({ onLogout }) {
         </div>
 
         {tab === "inicio" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl shadow-sm">
-              {loadingCategoria ? (
-                <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
-                  Cargando alumnos en riesgo...
-                </div>
-              ) : errorCategoria ? (
-                <div className="flex items-center justify-center h-48 text-red-400 text-sm">
-                  {errorCategoria}
-                </div>
-              ) : (
-                <AlumnosCategoria alumnos={alumnosCategoria}
-                 categoria={categoriaSeleccionada}
-                 />
-              )}
+          loadingResumen ? (
+            <div className="bg-white rounded-2xl shadow-sm flex items-center justify-center h-48 text-gray-400 text-sm gap-2">
+              <Loader2 className="animate-spin" size={18} /> Cargando progreso de tus alumnos...
             </div>
-
-            <div className="bg-white rounded-2xl shadow-sm">
-              {loadingProgreso ? (
-                <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
-                  Cargando progreso...
-                </div>
-              ) : errorProgreso ? (
-                <div className="flex items-center justify-center h-48 text-red-400 text-sm">
-                  {errorProgreso}
-                </div>
-              ) : (
-                <ProgresoAlumnos progreso={alumnosProgreso}
-                 onCategoriaClick={(cat) => setCategoriaSeleccionada(cat)}
-                />
-              )}
+          ) : errorResumen ? (
+            <div className="bg-white rounded-2xl shadow-sm flex items-center justify-center h-48 text-red-400 text-sm">
+              {errorResumen}
             </div>
-          </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-sm">
+                <ProgresoAlumnos grupos={grupos} total={resumen.length}
+                  metrica={metrica} onMetrica={setMetrica}
+                  categoria={categoriaActiva} onCategoria={setCategoriaElegida} />
+              </div>
+              <div className="bg-white rounded-2xl shadow-sm">
+                <AlumnosCategoria key={`${categoriaActiva}-${metrica}`} alumnos={grupos[categoriaActiva]}
+                  categoria={categoriaActiva} metrica={metrica} />
+              </div>
+            </div>
+          )
         )}
 
         {tab === "ejercicios" && (

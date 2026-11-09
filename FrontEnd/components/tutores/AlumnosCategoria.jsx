@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertCircle, Star, TrendingUp, Tag, User } from "lucide-react";
+import { AlertCircle, Star, TrendingUp, Tag, User, Clock } from "lucide-react";
 
 const VISIBLE_INICIAL = 4;
 
@@ -52,7 +52,30 @@ const CONFIG = {
     mensajeVacio: "Sin alumnos de excelencia actualmente.",
     Icono: Star,
   },
+  sin_calificar: {
+    titulo: "Alumnos sin calificar",
+    descripcion: "sin calificaciones confirmadas",
+    emoji: "⏳",
+    border: "#E5E7EB",
+    shadow: "#E5E7EB",
+    bgCard: "#F9FAFB",
+    bgIcon: "#F3F4F6",
+    iconColor: "#6B7280",
+    tagColor: "#9CA3AF",
+    btnBg: "linear-gradient(135deg, #9CA3AF, #6B7280)",
+    btnShadow: "#4B5563",
+    verMenosColor: "#6B7280",
+    mensajeVacio: "Todos tus alumnos tienen calificaciones confirmadas.",
+    Icono: Clock,
+  },
 };
+
+// Etiqueta de cada promedio y la métrica (de categoriasProgreso) a la que corresponde.
+const PROMEDIOS = [
+  { label: "Ortografía", campo: "promedio_ortografia", metrica: "ortografia" },
+  { label: "Legibilidad", campo: "promedio_legibilidad", metrica: "legibilidad" },
+  { label: "Promedio", campo: "promedio_general", metrica: "general" },
+];
 
 function colorScore(valor) {
   if (valor >= 8) return "#059669";
@@ -60,7 +83,7 @@ function colorScore(valor) {
   return "#EF4444";
 }
 
-export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo" }) {
+export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo", metrica = "general" }) {
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const config = CONFIG[categoria] ?? CONFIG.riesgo;
   const { titulo, descripcion, emoji, border, shadow, bgCard, bgIcon, iconColor,
@@ -129,12 +152,9 @@ export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo" })
                   {alumno.nombre} {alumno.apellido_paterno} {alumno.apellido_materno}
                 </h4>
                 <div className="flex flex-col gap-0.5">
-                  {[
-                    { label: "Ortografía", val: alumno.promedio_ortografia },
-                    { label: "Legibilidad", val: alumno.promedio_legibilidad },
-                    { label: "Promedio", val: alumno.promedio_general },
-                  ].map(({ label, val }) => (
-                    <p key={label} className="text-xs font-semibold text-gray-500">
+                  {PROMEDIOS.map(({ label, campo, metrica: m }) => ({ label, val: alumno[campo], activa: m === metrica })).map(({ label, val, activa }) => (
+                    // La métrica con la que se clasificó va resaltada.
+                    <p key={label} className={`text-xs ${activa ? "font-black text-gray-800" : "font-semibold text-gray-500"}`}>
                       {label}:{" "}
                       {val === null || val === undefined ? (
                         <span className="font-black text-gray-400">Sin datos</span>
