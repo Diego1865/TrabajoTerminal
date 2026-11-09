@@ -94,6 +94,17 @@ def obtener_alumnos_excelencia(id_tutor: int, current_user: dict = Depends(requi
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener alumnos de excelencia: {str(e)}")
 
+@router.get("/resumen-progreso")
+def obtener_resumen_progreso(current_user: dict = Depends(require_tutor)):
+    """Promedios de cada alumno activo del tutor (una sola consulta para toda la pestaña Inicio)."""
+    try:
+        return {"alumnos": obtener_resumen_progreso_dao(current_user["id_usuario"])}
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print(f"Error al obtener el resumen de progreso: {e}")
+        raise HTTPException(status_code=500, detail="Error al obtener el resumen de progreso")
+
 @router.get("/progreso/{id_tutor}")
 def obtener_progreso_grafico(id_tutor: int, current_user: dict = Depends(require_tutor)):
     if current_user["id_usuario"] != id_tutor:

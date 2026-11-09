@@ -42,6 +42,15 @@ class ProgresoComoVistaTests(unittest.TestCase):
         self.assertIn("p.promedio_general > 8.0", sql)
         self.assertEqual(cursor.execute.call_args.args[1], (3,))
 
+    @patch("Modelo.dao_tutor.connect_to_database")
+    def test_resumen_sin_filtro_de_rango_solo_activos(self, conectar):
+        cursor = conectar.return_value.cursor.return_value
+        cursor.fetchall.return_value = []
+        self.assertEqual(dao_tutor.obtener_resumen_progreso_dao(3), [])
+        sql = sql_ejecutado(cursor)
+        self.assertIn("p.id_estatus = 1", sql)
+        self.assertIn("AND 1 = 1", sql)
+
     def test_migracion_crea_vista_e_indices_y_quita_tablas(self):
         sql = MIGRACION.read_text(encoding="utf-8")
         for fragmento in ("CREATE OR ALTER VIEW dbo.vw_Progreso_Alumno", "IX_Intentos_alumno",
@@ -103,7 +112,18 @@ class ApiRevisionTests(unittest.TestCase):
         obtener.side_effect = PermissionError("no")
         self.assertEqual(self.client.get("/api/tutor/intentos/10/imagen").status_code, 403)
 
+    @patch("Control.tutor.obtener_resumen_progreso_dao")
+    def test_resumen_progreso(self, obtener):
+        from decimal import Decimal
+        obtener.return_value = [{"id_alumno": 1, "nombre": "Ana", "promedio_general": Decimal("7.10")}]
+        respuesta = self.client.get("/api/tutor/resumen-progreso")
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.json()["alumnos"][0]["promedio_general"], 7.1)
+        obtener.assert_called_once_with(99)
+
     def test_requiere_rol_tutor(self):
+        self.app.dependency_overrides[get_current_user] = lambda: {"id_usuario": 99, "tipo_usuario": "alumno"}
+        self.assertEqual(self.client.get("/api/tutor/resumen-progreso").status_code, 403)
         self.app.dependency_overrides[get_current_user] = lambda: {"id_usuario": 99, "tipo_usuario": "alumno"}
         self.assertEqual(self.client.get("/api/tutor/alumnos/7/intentos").status_code, 403)
         self.assertEqual(self.client.get("/api/tutor/intentos/10/imagen").status_code, 403)

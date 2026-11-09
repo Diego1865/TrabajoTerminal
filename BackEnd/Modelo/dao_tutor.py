@@ -145,6 +145,10 @@ def _alumnos_por_rango(id_usuario_tutor, condicion):
         cursor.close()
         conn.close()
 
+def obtener_resumen_progreso_dao(id_usuario_tutor):
+    """Promedios de todos los alumnos activos del tutor; el frontend los clasifica por métrica."""
+    return _alumnos_por_rango(id_usuario_tutor, "1 = 1")
+
 # Las condiciones son fijas (no vienen del cliente).
 def obtener_alumnos_en_riesgo_dao(id_tutor):
     return _alumnos_por_rango(id_tutor, "p.promedio_general < 6.0")
