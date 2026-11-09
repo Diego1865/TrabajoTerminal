@@ -24,39 +24,6 @@ def _legibilidad_sugerida(resultado):
         return None
     return medir_legibilidad(resultado.get("full_text_annotation"))
 
-def _actualizar_progreso(cursor, id_alumno):
-    """Recalcula los promedios del alumno con lo confirmado por el tutor y deja una fila de historial."""
-    cursor.execute("""
-        SELECT
-            (SELECT CAST(AVG(ao.ortografia_score) AS DECIMAL(5,2))
-             FROM Analisis_Ortografico ao JOIN Intentos i ON i.id_intento = ao.id_intento
-             WHERE i.id_alumno = ? AND ao.ortografia_score IS NOT NULL),
-            CAST(AVG(ac.alineacion_score) AS DECIMAL(5,2)),
-            CAST(AVG(ac.tamano_letra_score) AS DECIMAL(5,2)),
-            CAST(AVG(ac.espaciado_score) AS DECIMAL(5,2)),
-            CAST(AVG(ac.inclinacion_score) AS DECIMAL(5,2))
-        FROM Analisis_Caligrafico ac JOIN Intentos i ON i.id_intento = ac.id_intento
-        WHERE i.id_alumno = ?
-    """, (id_alumno, id_alumno))
-    promedios = tuple(cursor.fetchone())
-    cursor.execute("""
-        UPDATE Progreso_Alumno SET promedio_ortografia = ?, alineacion_score = ?, tamano_letra_score = ?,
-            espaciado_score = ?, inclinacion_score = ?, fecha_modificacion = GETDATE()
-        WHERE id_alumno = ?
-    """, (*promedios, id_alumno))
-    if cursor.rowcount == 0:
-        cursor.execute("""
-            INSERT INTO Progreso_Alumno (promedio_ortografia, alineacion_score, tamano_letra_score,
-                espaciado_score, inclinacion_score, id_alumno) VALUES (?, ?, ?, ?, ?, ?)
-        """, (*promedios, id_alumno))
-    cursor.execute("""
-        INSERT INTO Historial_Alumno (id_alumno, promedio_ortografia, alineacion_score,
-            tamano_letra_score, espaciado_score, inclinacion_score)
-        SELECT id_alumno, promedio_ortografia, alineacion_score, tamano_letra_score,
-            espaciado_score, inclinacion_score
-        FROM Progreso_Alumno WHERE id_alumno = ?
-    """, (id_alumno,))
-
 #Funciones relacionadas con el tutor y sus alumnos
 def registrar_alumno_dao(alumno_data, hashed_password):
     conn = connect_to_database()
@@ -102,8 +69,6 @@ def registrar_alumno_dao(alumno_data, hashed_password):
             alumno_data.grupo
         ))
 
-        cursor.execute("INSERT INTO Progreso_Alumno (id_alumno) SELECT id_alumno FROM Alumno WHERE id_usuario = ?", (id_usuario,))
-        
         conn.commit()
     except Exception:
         conn.rollback()
@@ -159,139 +124,36 @@ def dar_de_baja_alumno_dao(id_alumno, id_tutor):
         cursor.close()
         conn.close()
 
-def obtener_alumnos_en_riesgo_dao(id_tutor):
+def _alumnos_por_rango(id_usuario_tutor, condicion):
+    """Alumnos activos del tutor cuyo promedio general cumple la condición (sobre la vista)."""
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
-        query = """
-            WITH PromedialidadAlumnos AS (
-                SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
-                    p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
-                    COALESCE((p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2,
-                             p.promedio_ortografia,
-                             (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) AS promedio_general
-                FROM Alumno a
-                JOIN Usuario u ON a.id_usuario = u.id_usuario
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                JOIN Tutor t ON a.id_tutor = t.id_tutor
-                WHERE t.id_usuario = ?
-            )
-            SELECT *
-            FROM PromedialidadAlumnos
-            WHERE promedio_general < 6.0;
-        """
-        # Corrección de la tupla aplicada aquí
-        cursor.execute(query, (id_tutor,))
-        rows = cursor.fetchall()
-
-        alumnos_en_riesgo = []
-        for row in rows:
-            alumnos_en_riesgo.append({
-                "id_alumno": row[0],
-                "nombre": row[1],
-                "apellido_paterno": row[2],
-                "apellido_materno": row[3],
-                "promedio_ortografia": row[4],
-                "promedio_legibilidad": row[5],
-                "promedio_general": row[6]
-            })
-
-        return alumnos_en_riesgo
+        cursor.execute(f"""
+            SELECT p.id_alumno, p.nombre, p.apellido_paterno, p.apellido_materno,
+                p.promedio_ortografia, p.promedio_legibilidad, p.promedio_general
+            FROM vw_Progreso_Alumno p
+            JOIN Tutor t ON t.id_tutor = p.id_tutor
+            WHERE t.id_usuario = ? AND p.id_estatus = 1 AND {condicion}
+        """, (id_usuario_tutor,))
+        campos = ("id_alumno", "nombre", "apellido_paterno", "apellido_materno",
+                  "promedio_ortografia", "promedio_legibilidad", "promedio_general")
+        return [dict(zip(campos, row)) for row in cursor.fetchall()]
     finally:
         cursor.close()
         conn.close()
+
+# Las condiciones son fijas (no vienen del cliente).
+def obtener_alumnos_en_riesgo_dao(id_tutor):
+    return _alumnos_por_rango(id_tutor, "p.promedio_general < 6.0")
 
 def obtener_alumnos_regular_dao(id_tutor):
-    conn = connect_to_database()
-    if not conn:
-        raise ConnectionError("Error de conexión a la base de datos")
-    cursor = conn.cursor()
-    try:
-        query = """
-            WITH PromedialidadAlumnos AS (
-                SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
-                    p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
-                    COALESCE((p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2,
-                             p.promedio_ortografia,
-                             (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) AS promedio_general
-                FROM Alumno a
-                JOIN Usuario u ON a.id_usuario = u.id_usuario
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                JOIN Tutor t ON a.id_tutor = t.id_tutor
-                WHERE t.id_usuario = ?
-            )
-            SELECT *
-            FROM PromedialidadAlumnos
-            where promedio_general >= 6.0
-            and promedio_general <= 8.0;
-        """
-        cursor.execute(query, (id_tutor,))
-        rows = cursor.fetchall()
-
-        alumnos_regulares = []
-        for row in rows:
-            alumnos_regulares.append({
-                "id_alumno": row[0],
-                "nombre": row[1],
-                "apellido_paterno": row[2],
-                "apellido_materno": row[3],
-                "promedio_ortografia": row[4],
-                "promedio_legibilidad": row[5],
-                "promedio_general": row[6]
-            })
-
-        return alumnos_regulares
-    finally:
-        cursor.close()
-        conn.close()
+    return _alumnos_por_rango(id_tutor, "p.promedio_general >= 6.0 AND p.promedio_general <= 8.0")
 
 def obtener_alumnos_excelencia_dao(id_tutor):
-    conn = connect_to_database()
-    if not conn:
-        raise ConnectionError("Error de conexión a la base de datos")
-    cursor = conn.cursor()
-    try:
-        query = """
-            WITH PromedialidadAlumnos AS (
-                SELECT a.id_alumno, u.nombre, u.apellido_paterno, a.apellido_materno, 
-                    p.promedio_ortografia,
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad,
-                    COALESCE((p.promedio_ortografia + (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) / 2,
-                             p.promedio_ortografia,
-                             (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4) AS promedio_general
-                FROM Alumno a
-                JOIN Usuario u ON a.id_usuario = u.id_usuario
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                JOIN Tutor t ON a.id_tutor = t.id_tutor
-                WHERE t.id_usuario = ?
-            )
-            SELECT *
-            FROM PromedialidadAlumnos
-            where promedio_general > 8.0;
-        """
-        cursor.execute(query, (id_tutor,))
-        rows = cursor.fetchall()
-
-        alumnos_excelencia = []
-        for row in rows:
-            alumnos_excelencia.append({
-                "id_alumno": row[0],
-                "nombre": row[1],
-                "apellido_paterno": row[2],
-                "apellido_materno": row[3],
-                "promedio_ortografia": row[4],
-                "promedio_legibilidad": row[5],
-                "promedio_general": row[6]
-            })
-
-        return alumnos_excelencia
-    finally:
-        cursor.close()
-        conn.close()
+    return _alumnos_por_rango(id_tutor, "p.promedio_general > 8.0")
 
 
 def obtener_progreso_grafico_dao(id_tutor):
@@ -300,7 +162,6 @@ def obtener_progreso_grafico_dao(id_tutor):
         raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
-        # Corrección: Uso de la tabla Alumno (a) y Progreso_Alumno (p) mediante id_alumno
         query1 = """
             SELECT 
                 CASE 
@@ -309,10 +170,9 @@ def obtener_progreso_grafico_dao(id_tutor):
                     ELSE 'Mal Promedio'
                 END AS categoria,
                 COUNT(DISTINCT p.id_alumno) AS cantidad_alumnos
-            FROM Alumno a
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                JOIN Tutor t ON a.id_tutor = t.id_tutor
-            WHERE t.id_usuario = ? AND p.promedio_ortografia IS NOT NULL
+            FROM vw_Progreso_Alumno p
+                JOIN Tutor t ON p.id_tutor = t.id_tutor
+            WHERE t.id_usuario = ? AND p.id_estatus = 1 AND p.promedio_ortografia IS NOT NULL
             GROUP BY
                 CASE 
                     WHEN p.promedio_ortografia > 8 THEN 'Buen Promedio'
@@ -331,15 +191,12 @@ def obtener_progreso_grafico_dao(id_tutor):
                 "cantidad_alumnos": row[1]
             })
 
-        # Corrección: Uso de la tabla Alumno y cálculo de promedios
         query2 = """
             WITH ProgresoLegibilidad AS (
-                SELECT
-                    (p.alineacion_score + p.tamano_letra_score + p.espaciado_score + p.inclinacion_score) / 4 AS promedio_legibilidad
-                FROM Alumno a
-                JOIN Progreso_Alumno p ON a.id_alumno = p.id_alumno
-                JOIN Tutor t ON a.id_tutor = t.id_tutor
-                WHERE t.id_usuario = ?
+                SELECT p.promedio_legibilidad
+                FROM vw_Progreso_Alumno p
+                JOIN Tutor t ON p.id_tutor = t.id_tutor
+                WHERE t.id_usuario = ? AND p.id_estatus = 1
             )
             SELECT
                 CASE
@@ -538,7 +395,7 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
             JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
             WHERE i.id_intento = ?
         """, (id_intento,))
-        id_alumno, resultado, texto, contenido = cursor.fetchone()
+        _, resultado, texto, contenido = cursor.fetchone()
 
         if cls_correctas is not None:
             # CLS confirmado por el tutor: las posibles las fija la respuesta esperada (no el cliente).
@@ -577,9 +434,6 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
                     VALUES (origen.id_intento, ?, ?, ?, ?, ?);
             """, (id_intento, *valores, detalle, *valores, detalle))
 
-        if cls_correctas is not None or legibilidad is not None:
-            _actualizar_progreso(cursor, id_alumno)
-
         conn.commit()
     except Exception:
         conn.rollback()
@@ -588,69 +442,117 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
         cursor.close()
         conn.close()
 
+def _consultar_intentos(cursor, id_usuario_tutor, id_alumno=None, con_imagen=True):
+    """Intentos de los alumnos del tutor, del más reciente al más antiguo.
+
+    Con id_alumno solo los de ese alumno. Sin imagen la respuesta pesa mucho menos:
+    la imagen se pide aparte, solo del intento que se revisa.
+    """
+    filtro_alumno = "AND a.id_alumno = ?" if id_alumno is not None else ""
+    imagen = "i.imagen_codificada" if con_imagen else "NULL"
+    cursor.execute(f"""
+        SELECT
+            i.id_intento,
+            a.id_alumno,
+            LTRIM(RTRIM(CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', ISNULL(a.apellido_materno, '')))) AS nombre_completo,
+            i.id_ejercicio_tutor,
+            e.titulo,
+            i.fecha_envio,
+            {imagen} AS imagen_codificada,
+            i.texto_detectado_ocr,
+            i.puntuacion,
+            i.retroalimentacion,
+            i.resultado_ocr_json,
+            ao.sugerencias_json,
+            e.contenido_base,
+            ac.alineacion_score,
+            ac.tamano_letra_score,
+            ac.espaciado_score,
+            ac.inclinacion_score
+        FROM Intentos i
+        LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
+        LEFT JOIN Analisis_Caligrafico ac ON ac.id_intento = i.id_intento
+        JOIN Alumno a ON i.id_alumno = a.id_alumno
+        JOIN Usuario u ON a.id_usuario = u.id_usuario
+        JOIN Tutor t ON a.id_tutor = t.id_tutor
+        JOIN Ejercicios_Tutor et ON i.id_ejercicio_tutor = et.id_ejercicio_tutor
+        JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
+        WHERE t.id_usuario = ? {filtro_alumno}
+        ORDER BY i.fecha_envio DESC
+    """, (id_usuario_tutor, id_alumno) if id_alumno is not None else (id_usuario_tutor,))
+
+    intentos = []
+    for row in cursor.fetchall():
+        resultado = _json(row[10]) or {}
+        evaluacion = resultado.get("evaluacion_preliminar")
+        confirmada = None if row[13] is None else {m: float(v) for m, v in zip(MEDIDAS_LEGIBILIDAD, row[13:17])}
+        intentos.append({
+            "id_intento": row[0],
+            "id_alumno": row[1],
+            "nombre_completo": row[2],
+            "id_ejercicio_tutor": row[3],
+            "titulo_ejercicio": row[4],
+            "fecha_envio": row[5],
+            "imagen_codificada": row[6],
+            "texto_detectado_ocr": row[7],
+            "puntuacion": row[8],
+            "retroalimentacion": row[9],
+            "evaluacion_preliminar": evaluacion,
+            "cls_confirmado": _json(row[11]),
+            "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion),
+            "legibilidad_confirmada": confirmada,
+            "legibilidad_sugerida": _legibilidad_sugerida(resultado)
+        })
+    return intentos
+
 def obtener_intentos_por_tutor_dao(id_usuario_tutor):
+    """Todos los intentos de todos sus alumnos, con imagen (ruta anterior, se conserva)."""
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")
     cursor = conn.cursor()
     try:
-        query = """
-            SELECT 
-                i.id_intento, 
-                a.id_alumno, -- ¡Cambiado! Ahora enviamos el id_alumno
-                LTRIM(RTRIM(CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', ISNULL(a.apellido_materno, '')))) AS nombre_completo,
-                i.id_ejercicio_tutor, 
-                e.titulo, 
-                i.fecha_envio, 
-                i.imagen_codificada,
-                i.texto_detectado_ocr,
-                i.puntuacion,        
-                i.retroalimentacion,
-                i.resultado_ocr_json,
-                ao.sugerencias_json,
-                e.contenido_base,
-                ac.alineacion_score,
-                ac.tamano_letra_score,
-                ac.espaciado_score,
-                ac.inclinacion_score
+        return _consultar_intentos(cursor, id_usuario_tutor)
+    finally:
+        cursor.close()
+        conn.close()
+
+def obtener_intentos_alumno_dao(id_alumno, id_usuario_tutor):
+    """Intentos de un alumno del tutor, sin imagen. PermissionError si el alumno no es suyo."""
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT 1 FROM Alumno a JOIN Tutor t ON t.id_tutor = a.id_tutor
+            WHERE a.id_alumno = ? AND t.id_usuario = ?
+        """, (id_alumno, id_usuario_tutor))
+        if not cursor.fetchone():
+            raise PermissionError("No tiene permiso para ver a este alumno o no existe.")
+        return _consultar_intentos(cursor, id_usuario_tutor, id_alumno=id_alumno, con_imagen=False)
+    finally:
+        cursor.close()
+        conn.close()
+
+def obtener_imagen_intento_dao(id_intento, id_usuario_tutor):
+    """Imagen de un intento de un alumno del tutor. PermissionError si no es suyo o no existe."""
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT i.imagen_codificada
             FROM Intentos i
-            LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
-            LEFT JOIN Analisis_Caligrafico ac ON ac.id_intento = i.id_intento
             JOIN Alumno a ON i.id_alumno = a.id_alumno
-            JOIN Usuario u ON a.id_usuario = u.id_usuario
             JOIN Tutor t ON a.id_tutor = t.id_tutor
-            JOIN Ejercicios_Tutor et ON i.id_ejercicio_tutor = et.id_ejercicio_tutor
-            JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
-            WHERE t.id_usuario = ?
-            ORDER BY i.fecha_envio DESC
-        """
-        cursor.execute(query, (id_usuario_tutor,))
-        rows = cursor.fetchall()
-
-        intentos = []
-        for row in rows:
-            resultado = _json(row[10]) or {}
-            evaluacion = resultado.get("evaluacion_preliminar")
-            confirmada = None if row[13] is None else {m: float(v) for m, v in zip(MEDIDAS_LEGIBILIDAD, row[13:17])}
-            intentos.append({
-                "id_intento": row[0],
-                "id_alumno": row[1],
-                "nombre_completo": row[2],
-                "id_ejercicio_tutor": row[3],
-                "titulo_ejercicio": row[4],
-                "fecha_envio": row[5],
-                "imagen_codificada": row[6],
-                "texto_detectado_ocr": row[7],
-                "puntuacion": row[8],
-                "retroalimentacion": row[9],
-                "evaluacion_preliminar": evaluacion,
-                "cls_confirmado": _json(row[11]),
-                "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion),
-                "legibilidad_confirmada": confirmada,
-                "legibilidad_sugerida": _legibilidad_sugerida(resultado)
-            })
-
-        return intentos
+            WHERE i.id_intento = ? AND t.id_usuario = ?
+        """, (id_intento, id_usuario_tutor))
+        row = cursor.fetchone()
+        if not row:
+            raise PermissionError("No tiene permiso para acceder a este intento o no existe.")
+        return row[0]
     finally:
         cursor.close()
         conn.close()

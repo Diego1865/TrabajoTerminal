@@ -49,8 +49,10 @@ const MEDIDAS_LEGIBILIDAD = [
 const LEGIBILIDAD_VACIA = { alineacion: "", tamano: "", espaciado: "", inclinacion: "" };
 
 // --- Componente Modal para Detalle y Calificación ---
-const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
+const ModalDetalleAlumno = ({ alumno, onClose }) => {
   const [intentos, setIntentos] = useState([]);
+  // La lista llega sin imágenes; cada una se pide al abrir su intento y se guarda aquí.
+  const [imagenes, setImagenes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -65,9 +67,25 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
   // El CLS confirmado tiene prioridad; si no hay, se propone el sugerido por el OCR.
   const clsBase = intentoActivo?.cls_confirmado || intentoActivo?.cls_sugerido;
   const clsPosibles = clsBase?.posibles > 0 ? Number(clsBase.posibles) : null;
+  const cargarImagen = async (idIntento, forzar = false) => {
+    if (!forzar && imagenes[idIntento] !== undefined) return;
+    setImagenes(prev => ({ ...prev, [idIntento]: "cargando" }));
+    try {
+      const res = await fetch(`${API_URL}/api/tutor/intentos/${idIntento}/imagen`, {
+        headers: { "Authorization": `Bearer ${getToken()}` }
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setImagenes(prev => ({ ...prev, [idIntento]: data.imagen_codificada || null }));
+    } catch {
+      setImagenes(prev => ({ ...prev, [idIntento]: "error" }));
+    }
+  };
+
   const seleccionarIntento = (intento) => {
     const cls = intento.cls_confirmado || intento.cls_sugerido;
     setIntentoActivo(intento);
+    cargarImagen(intento.id_intento);
     setCalificacion(intento.puntuacion ?? "");
     setRetroalimentacion(intento.retroalimentacion || "");
     setClsCorrectas(cls?.posibles > 0 ? String(cls.correctas) : "");
@@ -95,16 +113,12 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
     const fetchIntentos = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`${API_URL}/api/tutor/intentos/${idTutor}`, {
+        // Solo los intentos de este alumno y sin imágenes: la respuesta ya no crece con toda la clase.
+        const res = await fetch(`${API_URL}/api/tutor/alumnos/${alumno.id_alumno}/intentos`, {
           headers: { "Authorization": `Bearer ${getToken()}` }
         });
         if (!res.ok) throw new Error("Error al obtener intentos del alumno.");
-        const data = await res.json();
-        
-        // ¡CORRECCIÓN AQUÍ!
-        const intentosDelAlumno = data.filter(i => i.id_alumno === alumno.id_alumno);
-        
-        setIntentos(intentosDelAlumno);
+        setIntentos(await res.json());
       } catch (err) {
         setError(err.message);
       } finally {
@@ -112,7 +126,7 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
       }
     };
     fetchIntentos();
-  }, [idTutor, alumno.id_alumno]);
+  }, [alumno.id_alumno]);
 
   const formatearFecha = (fecha) => {
     if (!fecha) return '—';
@@ -248,8 +262,20 @@ const ModalDetalleAlumno = ({ alumno, idTutor, onClose }) => {
                   <p className="text-xs text-gray-500 mb-4 flex items-center gap-1"><CheckCircle size={14}/> Enviado el {formatearFecha(intentoActivo.fecha_envio)}</p>
                   
                   <div className="border-2 border-dashed border-gray-200 rounded-lg p-2 bg-gray-50 flex justify-center min-h-[250px] relative">
-                    {intentoActivo.imagen_codificada ? (
-                      <img src={obtenerSrcImagen(intentoActivo.imagen_codificada)} alt="Intento del alumno" className="max-w-full max-h-[300px] object-contain rounded" />
+                    {imagenes[intentoActivo.id_intento] === "cargando" ? (
+                      <div className="flex items-center justify-center text-gray-400">
+                        <Loader2 size={28} className="animate-spin" />
+                      </div>
+                    ) : imagenes[intentoActivo.id_intento] === "error" ? (
+                      <div className="flex flex-col items-center justify-center text-red-400 gap-2">
+                        <p className="text-sm">No se pudo cargar la imagen.</p>
+                        <button type="button" className="text-sm text-blue-600 hover:underline"
+                          onClick={() => cargarImagen(intentoActivo.id_intento, true)}>
+                          Reintentar
+                        </button>
+                      </div>
+                    ) : imagenes[intentoActivo.id_intento] ? (
+                      <img src={obtenerSrcImagen(imagenes[intentoActivo.id_intento])} alt="Intento del alumno" className="max-w-full max-h-[300px] object-contain rounded" />
                     ) : (
                       <div className="flex flex-col items-center justify-center text-gray-400">
                         <ImageIcon size={32} className="mb-2 opacity-50" />
@@ -625,7 +651,6 @@ export default function MainTutor({ onLogout }) {
       {alumnoSeleccionado && (
         <ModalDetalleAlumno 
           alumno={alumnoSeleccionado} 
-          idTutor={idTutor} 
           onClose={() => setAlumnoSeleccionado(null)} 
         />
       )}

@@ -103,36 +103,8 @@ CREATE TABLE Intentos (
     CONSTRAINT FK_Intentos_ET       FOREIGN KEY (id_ejercicio_tutor) REFERENCES Ejercicios_Tutor(id_ejercicio_tutor)
 );
 
--- ── Progreso del alumno ─────────────────────────────────────
-IF OBJECT_ID('Progreso_Alumno', 'U') IS NULL
-CREATE TABLE Progreso_Alumno (
-    id_progreso          INT            NOT NULL IDENTITY(1,1),
-    id_alumno            INT            NOT NULL,           
-    promedio_ortografia  DECIMAL(5,2)       NULL,
-    alineacion_score     DECIMAL(5,2)       NULL,
-    tamano_letra_score   DECIMAL(5,2)       NULL,
-    espaciado_score      DECIMAL(5,2)       NULL,
-    inclinacion_score    DECIMAL(5,2)       NULL,
-    fecha_modificacion   DATETIME2      NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT PK_Progreso_Alumno   PRIMARY KEY (id_progreso),
-    CONSTRAINT UQ_Progreso_alumno   UNIQUE      (id_alumno),   
-    CONSTRAINT FK_Progreso_alumno   FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno)
-);
-
--- ── Historial del alumno ────────────────────────────────────
-IF OBJECT_ID('Historial_Alumno', 'U') IS NULL
-CREATE TABLE Historial_Alumno (
-    id_historial         INT            NOT NULL IDENTITY(1,1),
-    id_alumno            INT            NOT NULL,           
-    promedio_ortografia  DECIMAL(5,2)       NULL,
-    alineacion_score     DECIMAL(5,2)       NULL,
-    tamano_letra_score   DECIMAL(5,2)       NULL,
-    espaciado_score      DECIMAL(5,2)       NULL,
-    inclinacion_score    DECIMAL(5,2)       NULL,
-    fecha                DATETIME2      NOT NULL DEFAULT GETDATE(),
-    CONSTRAINT PK_Historial_Alumno PRIMARY KEY (id_historial),
-    CONSTRAINT FK_Historial_alumno FOREIGN KEY (id_alumno) REFERENCES Alumno(id_alumno)
-);
+-- El progreso del alumno es la vista vw_Progreso_Alumno (migraciones/004_progreso_vista.sql),
+-- calculada con Analisis_Ortografico y Analisis_Caligrafico.
 
 -- ── Análisis caligráfico ────────────────────────────────────
 IF OBJECT_ID('Analisis_Caligrafico', 'U') IS NULL

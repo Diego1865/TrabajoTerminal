@@ -63,7 +63,8 @@ class IntentoTutorResponse(BaseModel):
     id_ejercicio_tutor: int
     titulo_ejercicio: str
     fecha_envio: datetime
-    imagen_codificada: str
+    # Vacía en la lista por alumno: la imagen se pide aparte (GET /intentos/{id}/imagen).
+    imagen_codificada: Optional[str] = None
     texto_detectado_ocr: Optional[str] = None
     evaluacion_preliminar: Optional[dict] = None
     puntuacion: Optional[int] = None

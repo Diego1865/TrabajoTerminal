@@ -241,6 +241,31 @@ def obtener_intentos_por_tutor(id_tutor: int, current_user: dict = Depends(requi
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/alumnos/{id_alumno}/intentos", response_model=List[IntentoTutorResponse])
+def obtener_intentos_alumno(id_alumno: int, current_user: dict = Depends(require_tutor)):
+    """Intentos de un alumno para revisarlos, sin imágenes (se piden una a una)."""
+    try:
+        return obtener_intentos_alumno_dao(id_alumno, current_user["id_usuario"])
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print(f"Error al obtener intentos del alumno: {e}")
+        raise HTTPException(status_code=500, detail="Error al obtener los intentos del alumno")
+
+@router.get("/intentos/{id_intento}/imagen")
+def obtener_imagen_intento(id_intento: int, current_user: dict = Depends(require_tutor)):
+    try:
+        return {"imagen_codificada": obtener_imagen_intento_dao(id_intento, current_user["id_usuario"])}
+    except PermissionError as pe:
+        raise HTTPException(status_code=403, detail=str(pe))
+    except ConnectionError as ce:
+        raise HTTPException(status_code=500, detail=str(ce))
+    except Exception as e:
+        print(f"Error al obtener la imagen del intento: {e}")
+        raise HTTPException(status_code=500, detail="Error al obtener la imagen")
+
 #ejercicios relacionados al tutor
 @router.get("/ejercicios")
 def get_ejercicios(current_user: dict = Depends(require_tutor)):
