@@ -56,11 +56,11 @@
   },
   {
     "titulo": "Separa en sílabas",
-    "descripcion": "Escribe cada palabra separada en sílabas, con un espacio entre sílaba y sílaba.",
+    "descripcion": "Escribe cada palabra separada en sílabas. Puedes separarlas con un espacio o con un guion.",
     "tipo": "Ortografía",
     "texto_guia": "mariposa     zapato",
     "modo": "completar",
-    "respuestas": ["ma ri po sa za pa to", "ma-ri-po-sa za-pa-to"],
+    "respuestas": ["ma ri po sa za pa to"],
     "pedagogia": {"metodo": "analitico", "error_objetivo": "omision_adicion", "nivel": 2,
       "habilidad": "Procesamiento fonológico", "estrategia": "Conciencia silábica",
       "pista": "Da un aplauso por cada sílaba: ma-ri-po-sa son cuatro aplausos."}

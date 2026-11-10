@@ -91,9 +91,9 @@ INSERT INTO dbo.Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatu
 IF NOT EXISTS (SELECT 1 FROM dbo.Ejercicios WHERE titulo = 'Separa en sílabas' AND id_tutor_creador IS NULL)
 INSERT INTO dbo.Ejercicios (titulo, descripcion, tipo, contenido_base, id_estatus) VALUES (
     'Separa en sílabas',
-    'Escribe cada palabra separada en sílabas, con un espacio entre sílaba y sílaba.',
+    'Escribe cada palabra separada en sílabas. Puedes separarlas con un espacio o con un guion.',
     'Ortografía',
-    '{"texto_guia":"mariposa     zapato","imagen_guia":null,"imagen_en_lienzo":false,"evaluacion":{"modo":"completar","respuestas_aceptadas":["ma ri po sa za pa to","ma-ri-po-sa za-pa-to"]},"pedagogia":{"metodo":"analitico","error_objetivo":"omision_adicion","nivel":2,"habilidad":"Procesamiento fonológico","estrategia":"Conciencia silábica","pista":"Da un aplauso por cada sílaba: ma-ri-po-sa son cuatro aplausos.","orden":6}}',
+    '{"texto_guia":"mariposa     zapato","imagen_guia":null,"imagen_en_lienzo":false,"evaluacion":{"modo":"completar","respuestas_aceptadas":["ma ri po sa za pa to"]},"pedagogia":{"metodo":"analitico","error_objetivo":"omision_adicion","nivel":2,"habilidad":"Procesamiento fonológico","estrategia":"Conciencia silábica","pista":"Da un aplauso por cada sílaba: ma-ri-po-sa son cuatro aplausos.","orden":6}}',
     1);
 
 -- 7. Sílabas trabadas: escribe lo que ves

@@ -6,7 +6,9 @@ from Servicios.cls import calcular_cls
 
 
 def tokens(texto):
-    return re.findall(r"\w+|[^\w\s]", unicodedata.normalize("NFC", texto), re.UNICODE)
+    # Un guion entre letras separa sílabas o palabras (ma-ri-po-sa = ma ri po sa), igual que en el CLS.
+    texto = re.sub(r"(?<=\w)-(?=\w)", " ", unicodedata.normalize("NFC", texto))
+    return re.findall(r"\w+|[^\w\s]", texto, re.UNICODE)
 
 
 def cls_de_intento(contenido, texto, evaluacion_guardada=None):
