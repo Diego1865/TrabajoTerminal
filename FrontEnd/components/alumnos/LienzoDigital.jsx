@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CheckCircle, Eraser, Pen, RotateCcw, Trash2, Maximize2, Minimize2, BookOpen, Image as ImageIcon } from 'lucide-react';
 import LectorEjercicio from './lectorejercicio';
+import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
 
 /* ─── Colores por tipo de ejercicio ─── */
@@ -88,6 +89,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   }, [ejercicio]);
 
   const textoGuia      = contenido.texto_guia   || null;
+  const pista = contenido.pedagogia?.pista || null;
   const imagenGuia     = contenido.imagen_guia  || null;
   // imagen_en_lienzo: true → se superpone sobre el canvas; false/undefined → tarjeta separada
   const imagenEnLienzo = !!contenido.imagen_en_lienzo;
@@ -409,6 +411,8 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
               </p>
             )}
 
+            <PistaEjercicio pista={pista} />
+
             {/* Imagen de referencia FUERA del lienzo */}
             {imagenGuia && !imagenEnLienzo && (
               <ImagenReferencia src={imagenGuia} />
@@ -422,6 +426,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
               titulo={ejercicio.titulo}
               descripcion={ejercicio.descripcion}
               texto={contenido.texto_guia}
+              pista={pista}
               etiqueta="Escuchar ejercicio"
               variante="boton"
             />}

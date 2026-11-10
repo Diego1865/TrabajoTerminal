@@ -33,7 +33,6 @@ services:
     command: [python, BD/inicializar_demo.py]
     environment:
       <<: *backend-env
-      SEED_DEMO: "true"
 
   backend:
     <<: *backend
