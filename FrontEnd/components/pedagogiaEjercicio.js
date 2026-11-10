@@ -15,6 +15,13 @@ export const ERRORES = {
   integracion: { etiqueta: 'Integración', emoji: '🎯' },
 };
 
+export const MODALIDADES = {
+  copia: 'Copia el modelo tal como está',
+  completar: 'Escribe completo lo que falta (palabras u oración)',
+  imagen: 'Escribe el nombre de cada dibujo, en orden',
+  dictado: 'Escribe las palabras que escucha',
+};
+
 export function leerContenido(ejercicio) {
   const valor = ejercicio?.contenido_base;
   if (!valor) return {};
