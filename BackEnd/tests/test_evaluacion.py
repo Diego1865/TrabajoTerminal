@@ -38,6 +38,17 @@ class EvaluacionTests(unittest.TestCase):
         self.assertEqual(r["observaciones"], [])
         self.assertNotIn("puntuacion", r)
 
+    def test_guion_entre_silabas_equivale_a_espacio(self):
+        for escrito in ("ma-ri-po-sa za-pa-to", "ma ri po sa za pa to", "ma-ri-po-sa za pa to"):
+            r = self.comparar("ma ri po sa za pa to", escrito)
+            self.assertEqual(r["observaciones"], [], escrito)
+            self.assertEqual((r["cls"]["correctas"], r["cls"]["posibles"]), (21, 21))
+        # El caso de la captura: solo quedan las diferencias reales, sin filas por guiones.
+        r = self.comparar("ma ri po sa za pa to", "man po sa Za-pa-to")
+        self.assertEqual([(d["tipo"], d["esperado"], d["detectado"]) for d in r["observaciones"]],
+                         [("sustitucion", "ma ri", "man"), ("mayusculas", "za", "Za")])
+        self.assertEqual(r["cls"]["correctas"], 15)
+
     def test_alternativas_aceptadas(self):
         r = evaluar({"evaluacion": {"modo": "completar", "respuestas_aceptadas": ["zapato", "zapatos"]}},
                     {"estado": "procesado", "texto": "zapatos"})
