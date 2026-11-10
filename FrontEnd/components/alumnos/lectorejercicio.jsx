@@ -9,6 +9,7 @@ import { Volume2, VolumeX, Square } from 'lucide-react';
      texto        string   — texto principal a leer (texto_guia)
      titulo       string   — (opcional) se lee antes del texto principal
      descripcion  string   — (opcional) se lee entre titulo y texto
+     pista        string   — (opcional) se lee al final
      etiqueta     string   — (opcional) texto del botón (default: "Escuchar")
      variante     'boton' | 'flotante'
                   boton    — botón rectangular (para integrar en la cabecera del ejercicio)
@@ -129,13 +130,14 @@ const LectorEjercicio = ({
   texto        = '',
   titulo       = '',
   descripcion  = '',
+  pista        = '',
   etiqueta     = 'Escuchar',
   variante     = 'boton',
 }) => {
   const { estado, leer, detener, soportado } = useLector();
 
   /* Armar el texto completo a leer (titulo → descripcion → texto) */
-  const textoCompleto = [titulo, descripcion, texto]
+  const textoCompleto = [titulo, descripcion, texto, pista && `Pista: ${pista}`]
     .filter(Boolean)
     .join('. ');
 

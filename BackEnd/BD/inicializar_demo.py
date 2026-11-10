@@ -32,10 +32,7 @@ def main():
         conexion.execute("""IF OBJECT_ID('dbo.SchemaMigrations', 'U') IS NULL
             CREATE TABLE dbo.SchemaMigrations (nombre NVARCHAR(255) NOT NULL PRIMARY KEY,
                 aplicada DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME())""")
-        if os.getenv("SEED_DEMO", "false").lower() == "true":
-            if conexion.execute("SELECT COUNT(*) FROM dbo.Ejercicios").fetchone()[0] == 0:
-                ejecutar_archivo(conexion, carpeta / "ejerciciosEjemplo.sql")
-                print("Ejercicios de ejemplo cargados; no se crearon usuarios.")
+        # El catálogo de ejercicios llega por migración (005), no como datos de ejemplo.
         for archivo in sorted((carpeta / "migraciones").glob("*.sql")):
             if conexion.execute("SELECT 1 FROM dbo.SchemaMigrations WHERE nombre=?", archivo.name).fetchone():
                 continue

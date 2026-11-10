@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Camera, Upload, X, CheckCircle, Loader, Aperture, RotateCw, Crop, Image as ImageIcon } from 'lucide-react';
 import LectorEjercicio from './lectorejercicio';
+import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
 
 /* ─── Colores por tipo de ejercicio ─── */
@@ -49,6 +50,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
   }, [ejercicio]);
 
   const textoGuia  = contenido.texto_guia  || null;
+  const pista = contenido.pedagogia?.pista || null;
   const imagenGuia = contenido.imagen_guia || null;
 
   /* ── Estado de captura ── */
@@ -310,6 +312,8 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
               </p>
             )}
 
+            <PistaEjercicio pista={pista} />
+
             {/* Imagen de referencia — siempre fuera del área de captura */}
             {imagenGuia && (
               <div className="mb-3 overflow-hidden"
@@ -348,6 +352,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
               titulo={ejercicio.titulo}
               descripcion={ejercicio.descripcion}
               texto={contenido.texto_guia}
+              pista={pista}
               etiqueta="Escuchar ejercicio"
               variante="boton"
             />}

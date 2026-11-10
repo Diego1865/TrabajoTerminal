@@ -1,7 +1,47 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { BookOpen, CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
 import CrearDictado from './CrearDictado';
+import { METODOS, ERRORES, leerPedagogia } from '../pedagogiaEjercicio';
+
+const ChipMetodo = ({ metodo }) => {
+  const m = METODOS[metodo];
+  return (
+    <span className="px-2 py-0.5 text-xs font-black whitespace-nowrap"
+      style={{ background: m.bg, border: `1.5px solid ${m.borde}`, borderRadius: '8px', color: m.color }}>
+      {m.etiqueta}
+    </span>
+  );
+};
+
+const ChipError = ({ error }) => {
+  const e = ERRORES[error];
+  if (!e) return null;
+  return (
+    <span className="px-2 py-0.5 text-xs font-black whitespace-nowrap text-gray-600"
+      style={{ background: '#F9FAFB', border: '1.5px solid #E5E7EB', borderRadius: '8px' }}>
+      <span aria-hidden="true">{e.emoji}</span> {e.etiqueta}
+    </span>
+  );
+};
+
+const Filtro = ({ etiqueta, valor, opciones, onCambiar }) => (
+  <div className="flex flex-wrap items-center gap-1.5" role="group" aria-label={etiqueta}>
+    <span className="text-xs font-black uppercase tracking-wider text-gray-400 mr-1">{etiqueta}</span>
+    {[['todos', 'Todos'], ...opciones].map(([clave, texto]) => (
+      <button key={clave} type="button" aria-pressed={valor === clave} onClick={() => onCambiar(clave)}
+        className="px-3 py-1 text-xs font-black transition-all"
+        style={{
+          borderRadius: '10px',
+          background: valor === clave ? '#7C3AED' : 'white',
+          color: valor === clave ? 'white' : '#6D28D9',
+          border: `2px solid ${valor === clave ? '#7C3AED' : '#DDD6FE'}`,
+        }}>
+        {texto}
+      </button>
+    ))}
+  </div>
+);
 
 const TabEjercicios = ({ idTutor }) => {
   const [ejercicios, setEjercicios] = useState([]);
@@ -14,6 +54,20 @@ const TabEjercicios = ({ idTutor }) => {
   const [token, setToken] = useState('');
   const [crearDictado, setCrearDictado] = useState(false);
   const [aviso, setAviso] = useState('');
+  const [filtroMetodo, setFiltroMetodo] = useState('todos');
+  const [filtroError, setFiltroError] = useState('todos');
+
+  // Dictados propios primero; luego el catálogo en el orden de la ruta pedagógica.
+  const ejerciciosVisibles = useMemo(() => ejercicios
+    .map(e => ({ ...e, pedagogia: leerPedagogia(e) }))
+    .filter(e => (filtroMetodo === 'todos' || e.pedagogia?.metodo === filtroMetodo)
+      && (filtroError === 'todos' || e.pedagogia?.error_objetivo === filtroError))
+    .sort((a, b) => (a.pedagogia?.orden ?? 0) - (b.pedagogia?.orden ?? 0)),
+  [ejercicios, filtroMetodo, filtroError]);
+  const erroresPresentes = useMemo(() => {
+    const claves = new Set(ejercicios.map(e => leerPedagogia(e)?.error_objetivo).filter(Boolean));
+    return Object.entries(ERRORES).filter(([clave]) => claves.has(clave)).map(([clave, e]) => [clave, e.etiqueta]);
+  }, [ejercicios]);
 
   useEffect(() => {
     const storedToken = localStorage.getItem('token');
@@ -133,9 +187,19 @@ const TabEjercicios = ({ idTutor }) => {
         </div>
       )}
 
+      {/* Filtros del catálogo */}
+      {erroresPresentes.length > 0 && (
+        <div className="mb-5 flex flex-col gap-2.5 p-4"
+          style={{ background: '#FAFAFF', border: '2px solid #EDE9FE', borderRadius: '18px' }}>
+          <Filtro etiqueta="Método" valor={filtroMetodo} onCambiar={setFiltroMetodo}
+            opciones={Object.entries(METODOS).map(([clave, m]) => [clave, m.etiqueta])} />
+          <Filtro etiqueta="Error" valor={filtroError} onCambiar={setFiltroError} opciones={erroresPresentes} />
+        </div>
+      )}
+
       {/* Tarjetas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ejercicios.map((ejercicio) => {
+        {ejerciciosVisibles.map((ejercicio) => {
           const activo = activados.has(ejercicio.id_ejercicio);
           return (
             <div
@@ -171,6 +235,12 @@ const TabEjercicios = ({ idTutor }) => {
                   {ejercicio.tipo}
                 </span>
               </div>
+              {ejercicio.pedagogia && (
+                <div className="flex flex-wrap gap-1.5 mb-3 pr-6">
+                  <ChipMetodo metodo={ejercicio.pedagogia.metodo} />
+                  <ChipError error={ejercicio.pedagogia.error_objetivo} />
+                </div>
+              )}
 
               {/* Contenido */}
               <div className="flex items-start gap-3">
@@ -201,6 +271,10 @@ const TabEjercicios = ({ idTutor }) => {
           );
         })}
       </div>
+
+      {ejercicios.length > 0 && ejerciciosVisibles.length === 0 && (
+        <p className="text-center py-10 font-black text-gray-400">No hay ejercicios con esos filtros.</p>
+      )}
 
       {ejercicios.length === 0 && (
         <div className="text-center py-16">
@@ -240,6 +314,29 @@ const TabEjercicios = ({ idTutor }) => {
             <p className="font-semibold text-gray-500 text-sm leading-relaxed mb-5">
               {ejercicioSeleccionado.descripcion}
             </p>
+
+            {ejercicioSeleccionado.pedagogia && (() => {
+              const p = ejercicioSeleccionado.pedagogia;
+              return (
+                <div className="mb-5 p-4" style={{ background: '#FAFAFF', border: '2px solid #EDE9FE', borderRadius: '16px' }}>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <ChipMetodo metodo={p.metodo} />
+                    <ChipError error={p.error_objetivo} />
+                    <span className="px-2 py-0.5 text-xs font-black text-gray-500">Nivel {p.nivel}</span>
+                  </div>
+                  <dl className="grid grid-cols-1 gap-2 text-sm">
+                    <div><dt className="font-black text-violet-900">Método</dt>
+                      <dd className="font-semibold text-gray-600">{METODOS[p.metodo].detalle}</dd></div>
+                    <div><dt className="font-black text-violet-900">Habilidad que fortalece</dt>
+                      <dd className="font-semibold text-gray-600">{p.habilidad}</dd></div>
+                    <div><dt className="font-black text-violet-900">Estrategia</dt>
+                      <dd className="font-semibold text-gray-600">{p.estrategia}</dd></div>
+                    {p.pista && <div><dt className="font-black text-violet-900">Pista que verá el alumno</dt>
+                      <dd className="font-semibold text-gray-600">💡 {p.pista}</dd></div>}
+                  </dl>
+                </div>
+              );
+            })()}
 
             {ejercicioSeleccionado.tipo === 'dictado' && <div className="mb-5 rounded-xl bg-violet-50 p-3">
               <h4 className="font-bold text-violet-900">Palabras del dictado (en orden)</h4>
