@@ -2,7 +2,70 @@
 import { useState, useEffect, useMemo } from 'react';
 import { BookOpen, CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
 import CrearDictado from './CrearDictado';
-import { METODOS, ERRORES, leerPedagogia } from '../pedagogiaEjercicio';
+import { METODOS, ERRORES, MODALIDADES, leerContenido, leerPedagogia } from '../pedagogiaEjercicio';
+
+const Seccion = ({ titulo, children }) => (
+  <section className="mb-5 p-4" style={{ background: '#FAFAFF', border: '2px solid #EDE9FE', borderRadius: '16px' }}>
+    <h4 className="font-black uppercase text-xs tracking-wider mb-3" style={{ color: '#8B5CF6' }}>{titulo}</h4>
+    {children}
+  </section>
+);
+
+// Lo esencial de contenido_base: lo que ve el alumno y contra qué se compara su escritura.
+const VistaAlumno = ({ ejercicio }) => {
+  const contenido = leerContenido(ejercicio);
+  const pista = contenido.pedagogia?.pista;
+  const modo = contenido.evaluacion?.modo;
+  const respuestas = contenido.evaluacion?.respuestas_aceptadas ?? [];
+  return (
+    <>
+      <Seccion titulo="Lo que verá el alumno">
+        <p className="text-xs font-black text-violet-900 mb-1">Instrucción</p>
+        <p className="font-semibold text-gray-700 text-sm leading-relaxed mb-3">{ejercicio.descripcion}</p>
+        {pista && (
+          <p className="mb-3 px-3 py-2 text-sm font-bold"
+            style={{ background: '#FFFBEB', border: '2px solid #FDE68A', borderRadius: '12px', color: '#92400E' }}>
+            💡 <span className="font-black">Pista:</span> {pista}
+          </p>
+        )}
+        {contenido.imagen_guia && (
+          <div className="mb-3 p-2 flex justify-center bg-white" style={{ border: '2px solid #EDE9FE', borderRadius: '12px' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={contenido.imagen_guia} alt="Imagen de referencia del ejercicio"
+              className="max-w-full object-contain" style={{ maxHeight: '120px' }} />
+          </div>
+        )}
+        {contenido.texto_guia && (
+          <div className="px-3 py-2 bg-white" style={{ border: '2px solid #EDE9FE', borderRadius: '12px' }}>
+            <p className="text-xs font-black text-violet-400 mb-1">Modelo</p>
+            <p className="font-black text-center text-gray-800 whitespace-pre-wrap" style={{ fontSize: '1.15rem' }}>
+              {contenido.texto_guia}
+            </p>
+          </div>
+        )}
+      </Seccion>
+      {respuestas.length > 0 && (
+        <Seccion titulo="Cómo se evalúa">
+          {MODALIDADES[modo] && <p className="text-sm font-semibold text-gray-600 mb-2">{MODALIDADES[modo]}.</p>}
+          <p className="text-xs font-black text-violet-900 mb-1">
+            {respuestas.length > 1 ? 'Respuestas aceptadas' : 'Respuesta esperada'}
+          </p>
+          <ul className="flex flex-col gap-1">
+            {respuestas.map(r => (
+              <li key={r} className="px-3 py-1.5 text-sm font-black text-green-900"
+                style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: '10px' }}>
+                ✓ {r}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs font-semibold text-gray-400 mt-2">
+            {respuestas.length > 1 ? 'El CLS compara la escritura del alumno con la respuesta aceptada más parecida' : 'El CLS compara la escritura del alumno con esta respuesta'}; tú confirmas el resultado al calificar.
+          </p>
+        </Seccion>
+      )}
+    </>
+  );
+};
 
 const ChipMetodo = ({ metodo }) => {
   const m = METODOS[metodo];
@@ -311,14 +374,19 @@ const TabEjercicios = ({ idTutor }) => {
             <h3 className="font-black mb-3 pr-8" style={{ fontSize: '1.4rem', color: '#1E3A5F' }}>
               {ejercicioSeleccionado.titulo}
             </h3>
-            <p className="font-semibold text-gray-500 text-sm leading-relaxed mb-5">
-              {ejercicioSeleccionado.descripcion}
-            </p>
+            {ejercicioSeleccionado.tipo !== 'dictado' && (
+              <VistaAlumno ejercicio={ejercicioSeleccionado} />
+            )}
+            {ejercicioSeleccionado.tipo === 'dictado' && (
+              <p className="font-semibold text-gray-500 text-sm leading-relaxed mb-5">
+                {ejercicioSeleccionado.descripcion}
+              </p>
+            )}
 
             {ejercicioSeleccionado.pedagogia && (() => {
               const p = ejercicioSeleccionado.pedagogia;
               return (
-                <div className="mb-5 p-4" style={{ background: '#FAFAFF', border: '2px solid #EDE9FE', borderRadius: '16px' }}>
+                <Seccion titulo="Propósito pedagógico">
                   <div className="flex flex-wrap gap-1.5 mb-3">
                     <ChipMetodo metodo={p.metodo} />
                     <ChipError error={p.error_objetivo} />
@@ -331,10 +399,8 @@ const TabEjercicios = ({ idTutor }) => {
                       <dd className="font-semibold text-gray-600">{p.habilidad}</dd></div>
                     <div><dt className="font-black text-violet-900">Estrategia</dt>
                       <dd className="font-semibold text-gray-600">{p.estrategia}</dd></div>
-                    {p.pista && <div><dt className="font-black text-violet-900">Pista que verá el alumno</dt>
-                      <dd className="font-semibold text-gray-600">💡 {p.pista}</dd></div>}
                   </dl>
-                </div>
+                </Seccion>
               );
             })()}
 
