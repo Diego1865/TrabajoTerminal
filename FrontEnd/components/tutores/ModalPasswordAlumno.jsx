@@ -101,8 +101,8 @@ export default function ModalPasswordAlumno({ alumno, onClose }) {
               <input type={visible ? "text" : "password"} placeholder="Nueva contraseña (mínimo 6 caracteres)"
                 value={nueva} onChange={(e) => setNueva(e.target.value)} maxLength={72}
                 className={campo} disabled={guardando} autoFocus required />
-              <button type="button" onClick={() => setVisible(!visible)} title={visible ? "Ocultar" : "Mostrar"}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700">
+              <button type="button" onClick={() => setVisible(!visible)} title={visible ? "Ocultar" : "Mostrar"} aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+                className="absolute right-0 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-gray-700">
                 {visible ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>

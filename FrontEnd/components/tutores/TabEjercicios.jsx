@@ -93,7 +93,7 @@ const Filtro = ({ etiqueta, valor, opciones, onCambiar }) => (
     <span className="text-xs font-black uppercase tracking-wider text-gray-400 mr-1">{etiqueta}</span>
     {[['todos', 'Todos'], ...opciones].map(([clave, texto]) => (
       <button key={clave} type="button" aria-pressed={valor === clave} onClick={() => onCambiar(clave)}
-        className="px-3 py-1 text-xs font-black transition-all"
+        className="min-h-10 px-3 py-2 text-xs font-black transition-all"
         style={{
           borderRadius: '10px',
           background: valor === clave ? '#7C3AED' : 'white',

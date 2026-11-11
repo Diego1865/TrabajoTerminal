@@ -175,7 +175,7 @@ const RecuperarPassword = ({ onNavigateLogin }) => {
             </p>
 
             <div className="mt-4 text-center">
-              <button onClick={onNavigateLogin} className="font-black hover:underline inline-flex items-center gap-1" style={{ color: '#7C3AED' }}>
+              <button onClick={onNavigateLogin} className="font-black hover:underline inline-flex items-center gap-1 min-h-11 px-2" style={{ color: '#7C3AED' }}>
                 <ArrowLeft size={16} /> Volver a iniciar sesión
               </button>
             </div>

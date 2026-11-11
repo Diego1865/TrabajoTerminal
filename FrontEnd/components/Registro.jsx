@@ -139,7 +139,7 @@ const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
               <h2 className="font-black mb-1" style={{ fontSize: '2.2rem', color: '#059669' }}>¡Regístrate! 🎊</h2>
               <p className="font-semibold text-gray-500 text-base">Únete como Docente/Tutor ahora</p>
               <p className="font-semibold text-gray-500 text-base">Consulta nuestro {' '}
-                <button onClick={onNavigateAviso} className="font-black hover:underline" style={{ color: '#059669' }}>
+                <button onClick={onNavigateAviso} className="inline-flex items-center min-h-11 px-1 font-black hover:underline" style={{ color: '#059669' }}>
                   Aviso de Privacidad
                 </button>
                  </p>
@@ -220,7 +220,7 @@ const Registro = ({ onRegister, onNavigateLogin , onNavigateAviso}) => {
             <div className="mt-6 text-center">
               <p className="font-semibold text-gray-600">
                 ¿Ya tienes cuenta?{' '}
-                <button onClick={onNavigateLogin} className="font-black hover:underline" style={{ color: '#059669' }}>
+                <button onClick={onNavigateLogin} className="inline-flex items-center min-h-11 px-1 font-black hover:underline" style={{ color: '#059669' }}>
                   Inicia sesión
                 </button>
               </p>

@@ -140,7 +140,7 @@ const Login = ({ onLogin, onNavigateRegister, onNavigateRecuperar }) => {
 
             {onNavigateRecuperar && (
               <div className="mt-4 text-center">
-                <button onClick={onNavigateRecuperar} className="font-bold text-sm hover:underline" style={{ color: '#7C3AED' }}>
+                <button onClick={onNavigateRecuperar} className="inline-flex items-center min-h-11 px-2 font-bold text-sm hover:underline" style={{ color: '#7C3AED' }}>
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
@@ -149,7 +149,7 @@ const Login = ({ onLogin, onNavigateRegister, onNavigateRecuperar }) => {
             <div className="mt-6 text-center">
               <p className="font-semibold text-gray-600">
                 ¿No tienes cuenta?{' '}
-                <button onClick={onNavigateRegister} className="font-black hover:underline" style={{ color: '#7C3AED' }}>
+                <button onClick={onNavigateRegister} className="inline-flex items-center min-h-11 px-1 font-black hover:underline" style={{ color: '#7C3AED' }}>
                   ¡Regístrate!
                 </button>
               </p>

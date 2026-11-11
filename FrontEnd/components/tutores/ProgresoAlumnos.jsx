@@ -26,7 +26,7 @@ export default function ProgresoAlumnos({ grupos, total, metrica, onMetrica, cat
           {METRICAS.map(({ clave, etiqueta }) => (
             <button key={clave} type="button" role="radio" aria-checked={metrica === clave}
               onClick={() => onMetrica(clave)}
-              className="min-w-0 px-1 sm:px-3 py-2 sm:py-1.5 font-black text-xs min-[360px]:text-sm transition-all"
+              className="min-w-0 min-h-10 px-1 sm:px-3 py-2 sm:py-1.5 font-black text-xs min-[360px]:text-sm transition-all"
               style={{
                 borderRadius: "12px",
                 background: metrica === clave ? "#7C3AED" : "transparent",

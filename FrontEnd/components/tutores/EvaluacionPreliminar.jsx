@@ -37,13 +37,13 @@ export default function EvaluacionPreliminar({ evaluacion, cls, calificacionSuge
       )}
       <div className="flex flex-wrap gap-2">
         {evaluacion.estado === 'preliminar' && <button type="button" onClick={() => onUsarSugerencia(sugerencia)}
-          className="mt-3 px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold">
+          className="mt-3 min-h-11 px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold">
           Copiar propuesta a comentarios
         </button>}
         {calificacionSugerida !== null && calificacionSugerida !== undefined && (
           <button type="button" onClick={onUsarCalificacion}
             title="Promedio de ortografía (CLS) y legibilidad indicadas abajo"
-            className="mt-3 px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold">
+            className="mt-3 min-h-11 px-3 py-2 bg-white border border-amber-300 rounded-lg text-sm font-bold">
             Copiar puntuación ({calificacionSugerida})
           </button>
         )}
