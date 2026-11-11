@@ -197,21 +197,22 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
-        
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-          <div>
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 sm:p-4 [@media(max-height:560px)]:p-0" onClick={onClose}>
+      {/* En celular (o con poca altura, p. ej. celular horizontal) ocupa toda la pantalla; dvh descuenta la barra del navegador. */}
+      <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-5xl h-[100dvh] sm:h-[85vh] [@media(max-height:560px)]:h-[100dvh] [@media(max-height:560px)]:rounded-none flex flex-col overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
+
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center gap-3 bg-gray-50">
+          <div className="min-w-0">
             <h2 className="text-xl font-bold text-gray-800">Expediente del Alumno</h2>
             <p className="text-sm text-gray-500">{alumno.nombre} {alumno.apellido_paterno} {alumno.apellido_materno}</p>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 bg-white p-2 rounded-full shadow-sm">
+          <button onClick={onClose} aria-label="Cerrar expediente" className="shrink-0 text-gray-400 hover:text-gray-700 bg-white p-2.5 rounded-full shadow-sm">
             <X size={20} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-          <div className={`${intentoActivo ? 'hidden md:flex' : 'flex'} w-full md:w-1/3 flex-col border-r border-gray-100 bg-white`}>
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col md:flex-row">
+          <div className={`${intentoActivo ? 'hidden md:flex' : 'flex'} flex-1 min-h-0 md:flex-none w-full md:w-1/3 flex-col border-r border-gray-100 bg-white`}>
             <div className="p-4 border-b border-gray-50 bg-gray-50/50">
               <h3 className="font-semibold text-gray-700">Historial de Ejercicios</h3>
             </div>
@@ -252,9 +253,9 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
             </div>
           </div>
 
-          <div className={`${!intentoActivo ? 'hidden md:flex' : 'flex'} w-full md:w-2/3 flex-col bg-gray-50`}>
-            {intentoActivo ? (
-              <div className="flex-1 overflow-y-auto p-6">
+          <div className={`${!intentoActivo ? 'hidden md:flex' : 'flex'} flex-1 min-h-0 md:flex-none w-full md:w-2/3 flex-col bg-gray-50`}>
+            {intentoActivo ? (<>
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
                 <button onClick={() => setIntentoActivo(null)} className="md:hidden text-blue-600 font-medium mb-4 flex items-center gap-1 text-sm">
                   ← Volver a la lista
                 </button>
@@ -305,7 +306,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                     <Award className="text-blue-600" size={20}/>
                     <h3 className="font-bold text-gray-800">Asignar Calificación</h3>
                   </div>
-                  <form onSubmit={handleGuardarCalificacion}>
+                  <form id="form-calificacion" onSubmit={handleGuardarCalificacion}>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                       <div className="md:col-span-1">
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Puntuación (0-100)</label>
@@ -380,20 +381,22 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                           : "Llena las 4 medidas (0 a 10) para que cuente."}
                       </p>
                     </div>
-                    <div className="flex justify-end">
-                      <button
-                        type="submit"
-                        disabled={guardando}
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg flex items-center gap-2 disabled:opacity-60"
-                      >
-                        {guardando && <Loader2 size={16} className="animate-spin" />}
-                        Guardar Evaluación
-                      </button>
-                    </div>
                   </form>
                 </div>
               </div>
-            ) : (
+              {/* Fuera del área con scroll: el botón siempre está a la vista. */}
+              <div className="shrink-0 flex justify-end px-4 sm:px-6 py-3 border-t border-gray-200 bg-white">
+                <button
+                  type="submit"
+                  form="form-calificacion"
+                  disabled={guardando}
+                  className="w-full sm:w-auto justify-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 sm:py-2 px-6 rounded-lg flex items-center gap-2 disabled:opacity-60"
+                >
+                  {guardando && <Loader2 size={16} className="animate-spin" />}
+                  Guardar Evaluación
+                </button>
+              </div>
+            </>) : (
               <div className="flex-1 flex flex-col items-center justify-center text-gray-400 p-8 text-center">
                 <Award size={48} className="mb-4 opacity-20" />
                 <p className="text-lg font-medium text-gray-500">Seleccione un intento</p>
