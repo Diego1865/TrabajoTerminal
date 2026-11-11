@@ -155,16 +155,18 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
           style={{ background: 'rgba(0,0,0,0.45)' }}
           onClick={() => setEjercicioSeleccionado(null)}>
-          <div className="bg-white w-full max-w-lg p-7 relative"
+          <div className="bg-white w-full max-w-lg relative flex flex-col overflow-hidden max-h-[calc(100dvh-2rem)]"
             style={{ borderRadius: '28px', border: '3px solid #BFDBFE', boxShadow: '0 10px 0 #93C5FD' }}
             onClick={(e) => e.stopPropagation()}>
 
-            <button onClick={() => setEjercicioSeleccionado(null)}
-              className="absolute top-4 right-4 p-2 font-bold"
+            <button onClick={() => setEjercicioSeleccionado(null)} aria-label="Cerrar"
+              className="absolute top-4 right-4 z-10 p-3 font-bold"
               style={{ background: '#F3F4F6', borderRadius: '12px', color: '#6B7280' }}>
               <X size={20} />
             </button>
 
+            {/* Contenido con scroll propio; el botón queda fijo abajo. */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7 pb-2 sm:pb-2">
             <div className="flex items-center gap-1.5 mb-3">
               <Tag size={13} style={{ color: '#93C5FD' }} />
               <span className="font-black uppercase text-xs tracking-wider" style={{ color: '#93C5FD' }}>
@@ -188,7 +190,9 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
                 <p className="font-bold text-gray-700 text-sm">{formatearFecha(ejercicioSeleccionado.fecha_fin)}</p>
               </div>
             </div>
+            </div>
 
+            <div className="shrink-0 px-5 sm:px-7 pt-2 pb-5 sm:pb-7">
             <button
               onClick={() => {
                 setEjercicioSeleccionado(null);
@@ -205,6 +209,7 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
               onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 5px 0 #1E40AF'; }}>
               ¡Hacer ejercicio! ✏️
             </button>
+            </div>
           </div>
         </div>
       )}

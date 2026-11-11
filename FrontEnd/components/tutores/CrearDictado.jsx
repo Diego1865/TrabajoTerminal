@@ -80,9 +80,10 @@ export default function CrearDictado({ token, onCreado, onCerrar }) {
   return (
     <dialog ref={dialogo} aria-labelledby="titulo-dictado" onCancel={event => {
       event.preventDefault(); if (!guardando) onCerrar();
-    }} className="m-auto max-h-[90vh] w-[min(95vw,720px)] overflow-y-auto rounded-3xl border-2 border-violet-200 bg-white p-6 shadow-xl backdrop:bg-black/50">
-      <form onSubmit={guardar}>
-        <div className="mb-4 flex items-center justify-between gap-3">
+    }} className="m-auto max-h-[calc(100dvh-2rem)] w-[min(95vw,720px)] overflow-y-auto overscroll-contain rounded-3xl border-2 border-violet-200 bg-white p-0 shadow-xl backdrop:bg-black/50">
+      <form onSubmit={guardar} className="px-4 sm:px-6 pb-4 sm:pb-6">
+        {/* Encabezado fijo: la X sigue a la vista al bajar por el formulario. */}
+        <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 mb-4 px-4 sm:px-6 pt-4 sm:pt-6 pb-3 flex items-center justify-between gap-3 bg-white border-b border-violet-100">
           <div>
             <h2 id="titulo-dictado" className="text-xl font-black text-violet-900">Nuevo dictado</h2>
             <p className="text-sm text-gray-600">Elige un pool o combina palabras de varios bancos.</p>

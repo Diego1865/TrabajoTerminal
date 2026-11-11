@@ -52,9 +52,9 @@ export default function ModalPasswordAlumno({ alumno, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={onClose}>
-      <div className="bg-white text-gray-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white text-gray-800 rounded-2xl shadow-xl w-full max-w-md max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain" onClick={(e) => e.stopPropagation()}>
 
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <div className="sticky top-0 z-10 px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center gap-3 bg-gray-50">
           <div className="flex items-center gap-3">
             <div className="bg-amber-100 text-amber-600 p-2 rounded-full"><KeyRound size={20} /></div>
             <div>
@@ -62,13 +62,13 @@ export default function ModalPasswordAlumno({ alumno, onClose }) {
               <p className="text-sm text-gray-500">{nombre}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 bg-white p-2 rounded-full shadow-sm" type="button">
+          <button onClick={onClose} aria-label="Cerrar" className="shrink-0 text-gray-400 hover:text-gray-700 bg-white p-3 rounded-full shadow-sm" type="button">
             <X size={20} />
           </button>
         </div>
 
         {listo ? (
-          <div className="p-6 space-y-4">
+          <div className="p-4 sm:p-6 space-y-4">
             <div className="flex items-center gap-2 text-green-700 font-semibold">
               <CheckCircle size={20} /> Contraseña actualizada
             </div>
@@ -93,7 +93,7 @@ export default function ModalPasswordAlumno({ alumno, onClose }) {
             </div>
           </div>
         ) : (
-          <form onSubmit={guardar} className="p-6 space-y-4">
+          <form onSubmit={guardar} className="p-4 sm:p-6 space-y-4">
             <p className="text-sm text-gray-600">
               El alumno inicia sesión con el usuario <strong className="font-mono">{alumno.usuario}</strong>.
             </p>
