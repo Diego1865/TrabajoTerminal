@@ -106,7 +106,6 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const [cursorPos,         setCursorPos]          = useState(null);
   const [mostrarMenuLapiz,  setMostrarMenuLapiz]   = useState(false);
   const [mostrarMenuGoma,   setMostrarMenuGoma]    = useState(false);
-  const [mostrarAviso,      setMostrarAviso]       = useState(false);
   const [notificacion,      setNotificacion]       = useState(null);
 
   /* ── Trazo en curso: refs para no esperar a React entre eventos del lápiz ── */
@@ -116,6 +115,9 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const lapizDetectadoRef = useRef(false);  // con lápiz, se ignoran palma y dedos
 
   const MAX_HISTORIAL = 30;
+  // Píxeles internos por píxel de pantalla (densidad). Tope de ancho para que la imagen no pese de más.
+  const MAX_ANCHO_INTERNO = 1600;
+  const ratioRef = useRef(1);
 
   const opcionesLapiz = [2, 4, 6, 10];
   const opcionesGoma  = [5, 10, 15, 20, 30];
@@ -150,24 +152,76 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
     ctx.restore();
   };
 
-  const inicializarCanvas = () => {
+  // Borde derecho e inferior de lo escrito (en píxeles del canvas), o null si está vacío.
+  const limiteTinta = (lienzo) => {
+    const { width, height } = lienzo;
+    const datos = lienzo.getContext('2d').getImageData(0, 0, width, height).data;
+    let derecha = -1, abajo = -1;
+    for (let y = 0; y < height; y++) {
+      const fila = y * width * 4;
+      for (let x = width - 1; x > derecha; x--) {
+        if (datos[fila + x * 4 + 3]) { derecha = x; abajo = y; break; }
+      }
+      if (abajo !== y) for (let x = 0; x <= derecha; x++) if (datos[fila + x * 4 + 3]) { abajo = y; break; }
+    }
+    return derecha < 0 ? null : { derecha: derecha + 1, abajo: abajo + 1 };
+  };
+
+  // Ajusta el canvas a su tamaño en pantalla × densidad, conservando lo ya escrito.
+  // Se llama al montar y cada vez que el contenedor cambia de tamaño (girar el dispositivo,
+  // pantalla completa, zoom). El dibujo se mantiene en su lugar y solo se reduce si ya no cabe.
+  const ajustarCanvas = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const parent = canvas.parentElement;
-    canvas.width  = parent.clientWidth;
-    canvas.height = parent.clientHeight;
+    const { clientWidth: w, clientHeight: h } = canvas.parentElement;
+    if (!w || !h) return;
+    const ratio = Math.max(1, Math.min(window.devicePixelRatio || 1, MAX_ANCHO_INTERNO / w));
+    const ancho = Math.round(w * ratio), alto = Math.round(h * ratio);
+    if (canvas.width === ancho && canvas.height === alto) return;
+
+    let copia = null;
+    if (contextRef.current) {
+      copia = document.createElement('canvas');
+      copia.width = canvas.width; copia.height = canvas.height;
+      copia.getContext('2d').drawImage(canvas, 0, 0);
+    }
+    const ratioAnterior = ratioRef.current;
+    dibujandoRef.current = false;  // un trazo a medias no sobrevive al cambio de tamaño
+    canvas.width = ancho; canvas.height = alto;
+    ratioRef.current = ratio;
     const ctx = canvas.getContext('2d');
     ctx.lineCap  = 'round';
     ctx.lineJoin = 'round';
     contextRef.current = ctx;
-    guardarEstado(true);
+    if (copia) {
+      const tinta = limiteTinta(copia);
+      if (tinta) {
+        // Solo se reduce si lo escrito ya no cabe; si cabe, queda igual y en el mismo lugar.
+        const derecha = tinta.derecha / ratioAnterior, abajo = tinta.abajo / ratioAnterior;
+        const escala = Math.min(1, w / derecha, h / abajo);
+        const f = escala * ratio / ratioAnterior;
+        ctx.drawImage(copia, 0, 0, copia.width * f, copia.height * f);
+      }
+    }
+    guardarEstado(true);  // las copias de deshacer tenían otro tamaño
   };
+  const ajustarRef = useRef(ajustarCanvas);
+  ajustarRef.current = ajustarCanvas;
 
   useEffect(() => {
-    if (esFullscreen) document.body.style.overflow = 'hidden';
-    else document.body.style.overflow = 'auto';
-    const timer = setTimeout(() => inicializarCanvas(), 150);
-    return () => { clearTimeout(timer); document.body.style.overflow = 'auto'; };
+    const contenedor = canvasRef.current?.parentElement;
+    if (!contenedor) return;
+    const ajustar = () => ajustarRef.current();
+    ajustar();
+    const observador = new ResizeObserver(ajustar);
+    observador.observe(contenedor);
+    window.addEventListener('resize', ajustar);  // cambios de densidad (zoom, otra pantalla)
+    return () => { observador.disconnect(); window.removeEventListener('resize', ajustar); };
+  }, []);
+
+  useEffect(() => {
+    document.body.style.overflow = esFullscreen ? 'hidden' : 'auto';
+    return () => { document.body.style.overflow = 'auto'; };
   }, [esFullscreen]);
 
   // Safari en iPad: el Apple Pencil también genera eventos touch, y tras cada trazo
@@ -232,7 +286,9 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
   const mostrarBorrador = (e) => {
     if (!esBorrador || e.pointerType === 'touch' && lapizDetectadoRef.current) { setCursorPos(null); return; }
-    setCursorPos(obtenerCoordenadas(e));
+    // El círculo de la goma se dibuja en píxeles de pantalla, no del canvas.
+    const rect = canvasRef.current.getBoundingClientRect();
+    setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
   };
 
   // Con lápiz detectado, el toque (palma o dedos) no dibuja; sin lápiz, el dedo sí.
@@ -259,11 +315,11 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
     const ctx = contextRef.current;
     if (esBorrador) {
       ctx.globalCompositeOperation = 'destination-out';
-      ctx.lineWidth = grosurGoma;
+      ctx.lineWidth = grosurGoma * ratioRef.current;
     } else {
       ctx.globalCompositeOperation = 'source-over';
       ctx.strokeStyle = 'black';
-      ctx.lineWidth   = grosurLapiz;
+      ctx.lineWidth   = grosurLapiz * ratioRef.current;
     }
     dibujandoRef.current = true;
     punteroRef.current = e.pointerId;
@@ -289,15 +345,8 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
     guardarEstado();
   };
 
-  const solicitarFullscreen = () => {
-    if (historial.length > 1) setMostrarAviso(true);
-    else setEsFullscreen(v => !v);
-  };
-
-  const confirmarFullscreen = () => {
-    setMostrarAviso(false);
-    setEsFullscreen(v => !v);
-  };
+  // Ya no borra el lienzo: ajustarCanvas conserva lo escrito al cambiar de tamaño.
+  const solicitarFullscreen = () => setEsFullscreen(v => !v);
 
   const mostrarMensaje = (texto, tipo) => {
     setNotificacion({ texto, tipo });
@@ -343,7 +392,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
 
       <div className={`flex flex-col items-center ${esFullscreen
-        ? 'fixed inset-0 z-[9999] w-full h-full p-4 pt-12 overflow-hidden'
+        ? 'fixed inset-0 z-[9999] w-full h-full p-4 pt-12 overflow-hidden [@media(max-height:560px)]:p-2 [@media(max-height:560px)]:grid [@media(max-height:560px)]:grid-cols-[auto_minmax(0,1fr)] [@media(max-height:560px)]:grid-rows-[auto_minmax(0,1fr)_auto] [@media(max-height:560px)]:items-stretch [@media(max-height:560px)]:gap-x-2'
         : 'relative w-full max-w-2xl mx-auto'}`}
         style={{ background: esFullscreen ? 'white' : 'transparent' }}>
 
@@ -358,33 +407,6 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
               boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
             }}>
             {notificacion.tipo === 'error' ? '😅' : '🎉'} {notificacion.texto}
-          </div>
-        )}
-
-        {/* ── Modal aviso fullscreen ── */}
-        {mostrarAviso && (
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4"
-            style={{ background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(4px)' }}>
-            <div className="bg-white p-7 max-w-sm w-full text-center"
-              style={{ borderRadius: '24px', border: '3px solid #FDE68A', boxShadow: '0 8px 0 #FDE68A' }}>
-              <div style={{ fontSize: '3rem' }} className="mb-3">⚠️</div>
-              <h3 className="font-black mb-2 text-gray-800" style={{ fontSize: '1.2rem' }}>¿Cambiar de vista?</h3>
-              <p className="font-semibold text-gray-500 mb-6 text-sm">
-                Al cambiar el tamaño, el lienzo se limpiará para evitar distorsiones.
-              </p>
-              <div className="flex gap-3">
-                <button onClick={() => setMostrarAviso(false)}
-                  className="flex-1 py-3 font-black"
-                  style={{ background: '#F3F4F6', borderRadius: '14px', color: '#374151', border: '2px solid #E5E7EB' }}>
-                  Cancelar
-                </button>
-                <button onClick={confirmarFullscreen}
-                  className="flex-1 py-3 font-black text-white"
-                  style={{ background: 'linear-gradient(135deg, #F59E0B, #D97706)', borderRadius: '14px', boxShadow: '0 4px 0 #92400E' }}>
-                  Aceptar
-                </button>
-              </div>
-            </div>
           </div>
         )}
 
@@ -433,22 +455,31 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
           </div>
         )}
 
-        {ejercicio?.tipo === 'dictado' && <div className="w-full mb-4">
+        {ejercicio?.tipo === 'dictado' && <div className="w-full mb-4 [@media(max-height:560px)]:col-start-2 [@media(max-height:560px)]:row-start-1 [@media(max-height:560px)]:mb-2">
           <ReproductorDictado key={idEjercicioTutor} palabras={contenido.dictado?.palabras} />
         </div>}
 
         {/* Texto guía compacto en fullscreen */}
         {esFullscreen && textoGuia && (
-          <div className="w-full mb-3 px-4 py-2 flex items-center gap-3"
+          <div className="w-full mb-3 px-4 py-2 flex items-center gap-3 [@media(max-height:560px)]:col-start-2 [@media(max-height:560px)]:row-start-1 [@media(max-height:560px)]:mb-2 [@media(max-height:560px)]:py-1"
             style={{ background: '#F5F3FF', border: '2px solid #DDD6FE', borderRadius: '14px' }}>
             <BookOpen size={16} style={{ color: '#7C3AED', flexShrink: 0 }} />
             <p className="font-black" style={{ fontSize: '1.1rem', color: '#1F2937' }}>{textoGuia}</p>
           </div>
         )}
 
+        {/* Con poca altura (celular horizontal) el lienzo queda chico: se sugiere pantalla completa. */}
+        {!esFullscreen && (
+          <button type="button" onClick={solicitarFullscreen}
+            className="hidden [@media(max-height:560px)]:flex w-full mb-3 items-center justify-center gap-2 py-2.5 font-black text-sm"
+            style={{ background: '#EDE9FE', color: '#6D28D9', borderRadius: '14px', border: '2px solid #DDD6FE' }}>
+            <Maximize2 size={18} /> Escribir en pantalla completa
+          </button>
+        )}
+
         {/* ── Barra de herramientas ── */}
         <div data-menu-area
-          className="flex gap-2 mb-4 p-2.5 w-full justify-center flex-wrap"
+          className={`flex gap-2 mb-4 p-2.5 w-full justify-center flex-wrap ${esFullscreen ? '[@media(max-height:560px)]:col-start-1 [@media(max-height:560px)]:row-start-1 [@media(max-height:560px)]:row-span-3 [@media(max-height:560px)]:flex-col [@media(max-height:560px)]:flex-nowrap [@media(max-height:560px)]:justify-start [@media(max-height:560px)]:items-stretch [@media(max-height:560px)]:w-auto [@media(max-height:560px)]:mb-0 [@media(max-height:560px)]:p-1.5' : ''}`}
           style={{ background: 'white', borderRadius: '20px', border: '2.5px solid #E5E7EB', boxShadow: '0 4px 0 #E5E7EB' }}>
 
           {/* Lápiz */}
@@ -515,7 +546,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
         {/* ══════════════════════════════════
             ÁREA DEL CANVAS
         ══════════════════════════════════ */}
-        <div className={`${esFullscreen ? 'flex-grow w-full' : 'w-full h-96'} relative overflow-hidden`}
+        <div className={`${esFullscreen ? 'flex-grow min-h-0 w-full [@media(max-height:560px)]:col-start-2 [@media(max-height:560px)]:row-start-2' : 'w-full h-[clamp(14rem,55dvh,24rem)]'} relative overflow-hidden`}
           style={{
             borderRadius: '20px',
             border: '2.5px solid #DDD6FE',
@@ -573,9 +604,10 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
           {/* Botón fullscreen */}
           <button onClick={solicitarFullscreen}
-            className="absolute bottom-3 right-3 p-2.5 transition-all hover:scale-110"
+            className="absolute bottom-3 right-3 p-3 transition-all hover:scale-110"
             style={{ background: 'white', borderRadius: '12px', border: '2px solid #DDD6FE', boxShadow: '0 2px 0 #DDD6FE', zIndex: 4 }}
-            title={esFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}>
+            title={esFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+            aria-label={esFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}>
             {esFullscreen
               ? <Minimize2 size={20} style={{ color: '#7C3AED' }} />
               : <Maximize2 size={20} style={{ color: '#7C3AED' }} />}
@@ -586,7 +618,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
         <button
           onClick={exportarDibujo}
           disabled={!canvasRef.current || enviando}
-          className="mt-4 py-3.5 font-black text-lg flex items-center justify-center gap-2 transition-all"
+          className={`mt-4 py-3.5 font-black text-lg flex items-center justify-center gap-2 transition-all ${esFullscreen ? '[@media(max-height:560px)]:col-start-2 [@media(max-height:560px)]:row-start-3 [@media(max-height:560px)]:mt-2 [@media(max-height:560px)]:py-2' : ''}`}
           style={{
             width: esFullscreen ? '100%' : 'auto', minWidth: '260px',
             borderRadius: '18px',
