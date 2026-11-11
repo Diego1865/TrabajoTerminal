@@ -722,8 +722,8 @@ export default function MainTutor({ onLogout }) {
         )}
 
         {tab === "alumnos" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-gray-100">
               <div className="flex items-center gap-2 mb-6">
                 <UserPlus className="text-blue-600" />
                 <h3 className="text-xl font-bold text-gray-800">Alta de Alumno</h3>
@@ -738,7 +738,7 @@ export default function MainTutor({ onLogout }) {
                   required
                   className="w-full p-2.5 border border-gray-300 bg-gray-50 text-gray-900 font-medium rounded-lg outline-none"
                 />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     type="text"
                     name="apellido_paterno"
@@ -775,7 +775,7 @@ export default function MainTutor({ onLogout }) {
                   required
                   className="w-full p-2.5 border border-gray-300 bg-gray-50 text-gray-900 font-medium rounded-lg outline-none"
                 />
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <input
                     type="text"
                     name="grado"
@@ -805,17 +805,17 @@ export default function MainTutor({ onLogout }) {
               </form>
             </div>
 
-            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-gray-100">
+              <div className="flex items-center justify-between gap-3 mb-6">
                 <h3 className="text-xl font-bold text-gray-800">Alumnos Inscritos</h3>
-                <span className="text-sm text-gray-500">{alumnos.length} alumno(s)</span>
+                <span className="text-sm text-gray-500 whitespace-nowrap">{alumnos.length} alumno(s)</span>
               </div>
               {errorAlumnos && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
                   {errorAlumnos}
                 </div>
               )}
-              <div className="space-y-3 overflow-y-auto max-h-[560px]">
+              <div className="space-y-3 lg:overflow-y-auto lg:max-h-[560px]">
                 {loadingAlumnos ? (
                   <div className="flex items-center justify-center h-48 text-gray-400 text-sm">
                     Cargando lista de alumnos...
@@ -824,16 +824,16 @@ export default function MainTutor({ onLogout }) {
                   <p className="text-center text-gray-500">No hay alumnos registrados aún.</p>
                 ) : (
                   alumnos.map((alumno) => (
-                    <div key={alumno.id_alumno} className="flex justify-between items-center p-3 border rounded-lg bg-gray-50 hover:border-blue-200 transition-colors">
-                      <div>
-                        <p className="font-semibold text-gray-800">
+                    <div key={alumno.id_alumno} className="flex flex-col min-[400px]:flex-row min-[400px]:justify-between min-[400px]:items-center gap-1 min-[400px]:gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50 hover:border-blue-200 transition-colors">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-800 break-words leading-snug">
                           {alumno.nombre} {alumno.apellido_paterno}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          Usr: {alumno.usuario} | {alumno.grado} "{alumno.grupo}"
+                        <p className="text-xs text-gray-500 break-all mt-0.5">
+                          Usr: {alumno.usuario} | {alumno.grado} &quot;{alumno.grupo}&quot;
                         </p>
                       </div>
-                      <div className="flex shrink-0 items-center gap-1">
+                      <div className="flex shrink-0 items-center gap-1 self-end min-[400px]:self-auto">
                         <button
                           onClick={() => setAlumnoSeleccionado(alumno)}
                           className="min-h-11 min-w-11 flex items-center justify-center text-blue-500 hover:bg-blue-100 rounded-lg transition-colors"
