@@ -133,15 +133,18 @@ const TabVencidos = ({ idAlumno }) => {
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
           style={{ background: 'rgba(0,0,0,0.45)' }}
           onClick={() => setEjercicioSeleccionado(null)}>
-          <div className="bg-white w-full max-w-lg p-7 relative"
+          <div className="bg-white w-full max-w-lg relative flex flex-col overflow-hidden max-h-[calc(100dvh-2rem)]"
             style={{ borderRadius: '28px', border: '3px solid #FED7AA', boxShadow: '0 10px 0 #FDBA74' }}
             onClick={(e) => e.stopPropagation()}>
 
-            <button onClick={() => setEjercicioSeleccionado(null)}
-              className="absolute top-4 right-4 p-2"
+            <button onClick={() => setEjercicioSeleccionado(null)} aria-label="Cerrar"
+              className="absolute top-4 right-4 z-10 p-3"
               style={{ background: '#F3F4F6', borderRadius: '12px', color: '#6B7280' }}>
               <X size={20} />
             </button>
+
+            {/* Solo el contenido hace scroll: la X queda siempre visible. */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7">
 
             <div className="flex items-center gap-1.5 mb-3">
               <Tag size={13} style={{ color: '#FDBA74' }} />
@@ -172,6 +175,7 @@ const TabVencidos = ({ idAlumno }) => {
             <div className="w-full py-4 font-black flex items-center justify-center gap-2"
               style={{ background: '#FFF7ED', borderRadius: '18px', border: '2.5px solid #FED7AA', color: '#F97316' }}>
               <span style={{ fontSize: '1.2rem' }}>🚫</span> Este ejercicio ya no está disponible
+            </div>
             </div>
           </div>
         </div>

@@ -351,16 +351,18 @@ const TabEjercicios = ({ idTutor }) => {
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4"
           style={{ background: 'rgba(0,0,0,0.45)' }}
           onClick={() => setEjercicioSeleccionado(null)}>
-          <div className="bg-white w-full max-w-lg max-h-[90vh] overflow-y-auto p-7 relative"
+          <div className="bg-white w-full max-w-lg relative flex flex-col overflow-hidden max-h-[calc(100dvh-2rem)]"
             style={{ borderRadius: '28px', border: '3px solid #DDD6FE', boxShadow: '0 10px 0 #C4B5FD' }}
             onClick={(e) => e.stopPropagation()}>
 
-            <button onClick={() => setEjercicioSeleccionado(null)}
-              className="absolute top-4 right-4 p-2"
+            <button onClick={() => setEjercicioSeleccionado(null)} aria-label="Cerrar"
+              className="absolute top-4 right-4 z-10 p-3"
               style={{ background: '#F3F4F6', borderRadius: '12px', color: '#6B7280' }}>
               <X size={20} />
             </button>
 
+            {/* Contenido con scroll propio; Activar/Desactivar queda fijo abajo. */}
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7 pb-2 sm:pb-2">
             <div className="flex items-center gap-1.5 mb-3">
               <Tag size={13} style={{ color: '#A78BFA' }} />
               <span className="font-black uppercase text-xs tracking-wider" style={{ color: '#8B5CF6' }}>
@@ -437,8 +439,10 @@ const TabEjercicios = ({ idTutor }) => {
                 />
               )}
             </div>
+            </div>
 
             {/* Botón activar/desactivar */}
+            <div className="shrink-0 px-5 sm:px-7 pt-2 pb-5 sm:pb-7">
             <button
               disabled={loadingToggle === ejercicioSeleccionado.id_ejercicio}
               onClick={() => handleToggle(ejercicioSeleccionado.id_ejercicio)}
@@ -464,6 +468,7 @@ const TabEjercicios = ({ idTutor }) => {
                   : '🚀 Activar para mis alumnos'
               }
             </button>
+            </div>
           </div>
         </div>
       )}
