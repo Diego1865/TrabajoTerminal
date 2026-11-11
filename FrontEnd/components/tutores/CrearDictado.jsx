@@ -16,7 +16,7 @@ export default function CrearDictado({ token, onCreado, onCerrar }) {
   const dialogo = useRef(null);
   const pool = pools.find(item => item.id === poolId);
   const campo = 'w-full rounded-xl border-2 border-violet-200 bg-white p-3 text-gray-800';
-  const boton = 'rounded-xl border-2 border-violet-200 px-3 py-2 font-bold text-violet-800 disabled:opacity-40';
+  const boton = 'min-h-11 min-w-11 rounded-xl border-2 border-violet-200 px-3 py-2 font-bold text-violet-800 disabled:opacity-40';
 
   useEffect(() => {
     dialogo.current?.showModal();

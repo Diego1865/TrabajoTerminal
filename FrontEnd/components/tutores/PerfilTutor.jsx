@@ -54,7 +54,7 @@ const CampoPassword = ({ valor, onChange, placeholder, autoComplete }) => {
       <input type={visible ? 'text' : 'password'} value={valor} onChange={e => onChange(e.target.value)}
         placeholder={placeholder} autoComplete={autoComplete} className={`${campo} pr-11`} />
       <button type="button" onClick={() => setVisible(v => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700"
+        className="absolute right-0 top-1/2 -translate-y-1/2 min-h-11 min-w-11 flex items-center justify-center text-gray-400 hover:text-gray-700"
         aria-label={visible ? 'Ocultar contraseña' : 'Mostrar contraseña'}>
         {visible ? <EyeOff size={18} /> : <Eye size={18} />}
       </button>

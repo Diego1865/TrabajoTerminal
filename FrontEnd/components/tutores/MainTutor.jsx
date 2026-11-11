@@ -58,6 +58,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
   const [error, setError] = useState(null);
   
   const [intentoActivo, setIntentoActivo] = useState(null);
+  const [imagenAmpliada, setImagenAmpliada] = useState(null);
   const [calificacion, setCalificacion] = useState("");
   const [retroalimentacion, setRetroalimentacion] = useState("");
   const [clsCorrectas, setClsCorrectas] = useState("");
@@ -201,6 +202,18 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
       {/* En celular (o con poca altura, p. ej. celular horizontal) ocupa toda la pantalla; dvh descuenta la barra del navegador. */}
       <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-5xl h-[100dvh] sm:h-[85vh] [@media(max-height:560px)]:h-[100dvh] [@media(max-height:560px)]:rounded-none flex flex-col overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
 
+        {imagenAmpliada && (
+          <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-2" onClick={() => setImagenAmpliada(null)}
+            role="dialog" aria-label="Imagen del intento ampliada">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imagenAmpliada} alt="Intento del alumno ampliado" className="max-w-full max-h-full object-contain" />
+            <button type="button" onClick={() => setImagenAmpliada(null)} aria-label="Cerrar imagen"
+              className="absolute top-3 right-3 p-3 rounded-full bg-white/90 text-gray-800 shadow">
+              <X size={22} />
+            </button>
+          </div>
+        )}
+
         <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center gap-3 bg-gray-50">
           <div className="min-w-0">
             <h2 className="text-xl font-bold text-gray-800">Expediente del Alumno</h2>
@@ -233,16 +246,16 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                     <p className="font-semibold text-sm text-gray-800 mb-1">{intento.titulo_ejercicio}</p>
                     <p className="text-xs text-gray-500">{formatearFecha(intento.fecha_envio)}</p>
                     <div className="mt-2 flex justify-between items-center">
-                      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${intento.puntuacion !== undefined && intento.puntuacion !== null ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${intento.puntuacion !== undefined && intento.puntuacion !== null ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                         {intento.puntuacion !== undefined && intento.puntuacion !== null ? `${intento.puntuacion} pts` : 'Sin calificar'}
                       </span>
                       {intento.cls_confirmado && (
-                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                        <span className="text-xs font-bold px-2 py-1 rounded-full bg-blue-100 text-blue-700">
                           CLS confirmado
                         </span>
                       )}
                       {intento.legibilidad_confirmada && (
-                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                        <span className="text-xs font-bold px-2 py-1 rounded-full bg-purple-100 text-purple-700">
                           Legibilidad confirmada
                         </span>
                       )}
@@ -256,7 +269,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
           <div className={`${!intentoActivo ? 'hidden md:flex' : 'flex'} flex-1 min-h-0 md:flex-none w-full md:w-2/3 flex-col bg-gray-50`}>
             {intentoActivo ? (<>
               <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6">
-                <button onClick={() => setIntentoActivo(null)} className="md:hidden text-blue-600 font-medium mb-4 flex items-center gap-1 text-sm">
+                <button onClick={() => setIntentoActivo(null)} className="md:hidden min-h-11 text-blue-600 font-medium mb-2 flex items-center gap-1 text-sm">
                   ← Volver a la lista
                 </button>
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 mb-6">
@@ -277,7 +290,12 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                         </button>
                       </div>
                     ) : imagenes[intentoActivo.id_intento] ? (
-                      <img src={obtenerSrcImagen(imagenes[intentoActivo.id_intento])} alt="Intento del alumno" className="max-w-full max-h-[300px] object-contain rounded" />
+                      <button type="button" onClick={() => setImagenAmpliada(obtenerSrcImagen(imagenes[intentoActivo.id_intento]))}
+                        className="group relative cursor-zoom-in" aria-label="Ampliar imagen del intento">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={obtenerSrcImagen(imagenes[intentoActivo.id_intento])} alt="Intento del alumno" className="max-w-full max-h-[50dvh] md:max-h-[300px] object-contain rounded" />
+                        <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">Toca para ampliar</span>
+                      </button>
                     ) : (
                       <div className="flex flex-col items-center justify-center text-gray-400">
                         <ImageIcon size={32} className="mb-2 opacity-50" />
@@ -319,7 +337,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                           onChange={(e) => setCalificacion(e.target.value)}
                           className="w-full p-2 border border-gray-300 rounded outline-none focus:border-blue-500 bg-gray-50 text-gray-900 font-medium"
                         />
-                        <p className="text-[11px] text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                           {resumenNotas}{calificacionSugerida !== null ? ` → sugerida ${calificacionSugerida}` : ""}
                         </p>
                       </div>
@@ -815,10 +833,10 @@ export default function MainTutor({ onLogout }) {
                           Usr: {alumno.usuario} | {alumno.grado} "{alumno.grupo}"
                         </p>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex shrink-0 items-center gap-1">
                         <button
                           onClick={() => setAlumnoSeleccionado(alumno)}
-                          className="text-blue-500 hover:bg-blue-100 p-2 rounded transition-colors"
+                          className="min-h-11 min-w-11 flex items-center justify-center text-blue-500 hover:bg-blue-100 rounded-lg transition-colors"
                           title="Ver intentos y calificar"
                           type="button"
                         >
@@ -826,7 +844,7 @@ export default function MainTutor({ onLogout }) {
                         </button>
                         <button
                           onClick={() => setAlumnoPassword(alumno)}
-                          className="text-amber-600 hover:bg-amber-50 p-2 rounded transition-colors"
+                          className="min-h-11 min-w-11 flex items-center justify-center text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
                           title="Restablecer contraseña"
                           type="button"
                         >
@@ -834,7 +852,7 @@ export default function MainTutor({ onLogout }) {
                         </button>
                         <button
                           onClick={() => handleDarDeBaja(alumno.id_alumno)}
-                          className="text-red-500 hover:bg-red-50 p-2 rounded transition-colors"
+                          className="min-h-11 min-w-11 flex items-center justify-center text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           title="Dar de baja"
                           type="button"
                         >

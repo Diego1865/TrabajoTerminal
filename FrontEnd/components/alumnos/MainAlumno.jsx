@@ -89,7 +89,7 @@ const MainAlumno = ({ onLogout }) => {
           {/* Botón volver */}
           <button
             onClick={() => { setModoVista('tabs'); setEjercicioActivo(null); }}
-            className="absolute top-5 left-5 flex items-center gap-2 font-bold px-4 py-2 transition-all hover:scale-105"
+            aria-label="Volver" className="absolute top-5 left-5 flex items-center justify-center gap-2 font-bold min-h-11 min-w-11 px-3 sm:px-4 py-2 transition-all hover:scale-105"
             style={{ color: '#6D28D9', background: '#EDE9FE', borderRadius: '14px', border: '2px solid #DDD6FE' }}>
             <ArrowLeft size={18} />
             <span className="hidden sm:inline">Volver</span>

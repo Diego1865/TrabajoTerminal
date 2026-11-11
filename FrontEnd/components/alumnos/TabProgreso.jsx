@@ -114,7 +114,7 @@ const StatChip = ({ emoji, label, valor, color }) => (
     style={{ background: 'white', border: '2px solid #E5E7EB', borderRadius: '16px', boxShadow: '0 3px 0 #E5E7EB' }}>
     <span style={{ fontSize: '1.5rem' }}>{emoji}</span>
     <span className="font-black mt-0.5" style={{ fontSize: '1.1rem', color }}>{valor}</span>
-    <span className="font-semibold text-gray-400 text-center" style={{ fontSize: '0.68rem', lineHeight: 1.3 }}>{label}</span>
+    <span className="font-semibold text-gray-400 text-center" style={{ fontSize: '0.75rem', lineHeight: 1.3 }}>{label}</span>
   </div>
 );
 

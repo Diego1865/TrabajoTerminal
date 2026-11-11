@@ -8,7 +8,7 @@ const AvisoDePrivacidad = ({ onNavigateBack }) => {
         
         <button 
           onClick={onNavigateBack}
-          className="mb-6 text-sm font-bold text-gray-600 hover:text-gray-900"
+          className="mb-6 inline-flex items-center min-h-11 text-sm font-bold text-gray-600 hover:text-gray-900"
           style={{ color: '#059669' }}
         >
           &larr; Volver
