@@ -633,30 +633,35 @@ export default function MainTutor({ onLogout }) {
         <ModalPasswordAlumno alumno={alumnoPassword} onClose={() => setAlumnoPassword(null)} />
       )}
 
-      <button
-        onClick={onLogout}
-        className="absolute top-6 right-6 flex items-center gap-2 text-gray-500 hover:text-red-600 transition-colors font-medium"
-      >
-        <LogOut size={20} />
-        <span className="hidden sm:inline">Cerrar Sesión</span>
-      </button>
-
-      <main className="max-w-7xl mx-auto px-6 py-6">
-        <div className="mb-6">
-          <p className="text-sm text-gray-400">{fecha}</p>
-          <h1 className="text-4xl font-bold mt-1">
-            <span className="text-blue-500">Hola </span>
-            <span className="text-blue-900">{nombreTutor}</span>
-          </h1>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Saludo y cierre de sesión en la misma fila: un nombre largo ya no se encima con el botón. */}
+        <div className="mb-6 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm text-gray-400">{fecha}</p>
+            <h1 className="text-2xl sm:text-4xl font-bold mt-1 break-words">
+              <span className="text-blue-500">Hola </span>
+              <span className="text-blue-900">{nombreTutor}</span>
+            </h1>
+          </div>
+          <button
+            onClick={onLogout}
+            aria-label="Cerrar sesión"
+            className="shrink-0 flex items-center gap-2 min-h-11 min-w-11 justify-center px-2 sm:px-3 rounded-lg text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors font-medium"
+          >
+            <LogOut size={20} />
+            <span className="hidden sm:inline">Cerrar Sesión</span>
+          </button>
         </div>
 
         <div className="flex justify-center mb-8">
-          <div className="flex bg-gray-200 p-1 rounded-full shadow-inner">
+          {/* En celular las 4 pestañas se reparten el ancho; desde sm vuelven a su tamaño natural. */}
+          <div className="grid grid-cols-4 w-full sm:flex sm:w-auto bg-gray-200 p-1 rounded-full shadow-inner">
             {tabs.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setTab(item.key)}
-                className={`px-5 py-2 rounded-full font-medium transition-all ${
+                aria-pressed={tab === item.key}
+                className={`min-w-0 px-1 sm:px-5 py-2.5 sm:py-2 rounded-full text-sm sm:text-base font-medium transition-all ${
                   tab === item.key
                     ? "bg-blue-500 text-white shadow-md"
                     : "text-gray-600 hover:text-gray-800"
