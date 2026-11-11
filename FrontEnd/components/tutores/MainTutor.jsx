@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { LogOut, UserPlus, Trash2, Loader2, Eye, X, Image as ImageIcon, CheckCircle, Award, KeyRound } from "lucide-react";
+import { LogOut, UserPlus, Trash2, Loader2, Eye, X, Image as ImageIcon, CheckCircle, Award, KeyRound, Search, ChevronDown } from "lucide-react";
 import AlumnosCategoria from "./AlumnosCategoria";
 import ProgresoAlumnos from "./ProgresoAlumnos";
 import { clasificar, categoriaInicial } from "./categoriasProgreso";
@@ -448,6 +448,17 @@ export default function MainTutor({ onLogout }) {
   
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
   const [alumnoPassword, setAlumnoPassword] = useState(null);
+  // En celular y tablet el formulario de alta inicia plegado para que la lista quede arriba.
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  // Sin acentos ni mayúsculas: "jose" encuentra a "José".
+  const normalizar = (texto) => (texto ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const alumnosFiltrados = useMemo(() => {
+    const termino = normalizar(busqueda).trim();
+    if (!termino) return alumnos;
+    return alumnos.filter((a) =>
+      normalizar(`${a.nombre} ${a.apellido_paterno ?? ""} ${a.apellido_materno ?? ""} ${a.usuario ?? ""}`).includes(termino));
+  }, [alumnos, busqueda]);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -723,12 +734,19 @@ export default function MainTutor({ onLogout }) {
 
         {tab === "alumnos" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-gray-100">
-              <div className="flex items-center gap-2 mb-6">
+            <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-gray-100 lg:self-start">
+              {/* Celular y tablet: el formulario se despliega con este botón. */}
+              <button type="button" onClick={() => setFormAbierto((v) => !v)}
+                aria-expanded={formAbierto} aria-controls="form-alta-alumno"
+                className="lg:hidden w-full min-h-11 flex items-center justify-between gap-2 font-bold text-blue-700">
+                <span className="flex items-center gap-2"><UserPlus className="text-blue-600" /> Registrar alumno</span>
+                <ChevronDown size={20} className={`transition-transform ${formAbierto ? "rotate-180" : ""}`} />
+              </button>
+              <div className="hidden lg:flex items-center gap-2 mb-6">
                 <UserPlus className="text-blue-600" />
                 <h3 className="text-xl font-bold text-gray-800">Alta de Alumno</h3>
               </div>
-              <form onSubmit={handleAgregarAlumno} className="space-y-4">
+              <form id="form-alta-alumno" onSubmit={handleAgregarAlumno} className={`space-y-4 ${formAbierto ? "mt-4" : "hidden"} lg:block lg:mt-0`}>
                 <input
                   type="text"
                   name="nombre"
@@ -808,8 +826,18 @@ export default function MainTutor({ onLogout }) {
             <div className="bg-white p-4 sm:p-6 rounded-xl shadow-md border border-gray-100">
               <div className="flex items-center justify-between gap-3 mb-6">
                 <h3 className="text-xl font-bold text-gray-800">Alumnos Inscritos</h3>
-                <span className="text-sm text-gray-500 whitespace-nowrap">{alumnos.length} alumno(s)</span>
+                <span className="text-sm text-gray-500 whitespace-nowrap">
+                  {busqueda.trim() ? `${alumnosFiltrados.length} de ${alumnos.length}` : `${alumnos.length} alumno(s)`}
+                </span>
               </div>
+              {alumnos.length > 0 && (
+                <div className="relative mb-4">
+                  <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" aria-hidden="true" />
+                  <input type="search" value={busqueda} onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Buscar por nombre o usuario" aria-label="Buscar alumno por nombre o usuario"
+                    className="w-full min-h-11 pl-10 pr-3 border border-gray-300 bg-gray-50 text-gray-900 rounded-lg outline-none focus:border-blue-500" />
+                </div>
+              )}
               {errorAlumnos && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
                   {errorAlumnos}
@@ -822,8 +850,10 @@ export default function MainTutor({ onLogout }) {
                   </div>
                 ) : alumnos.length === 0 ? (
                   <p className="text-center text-gray-500">No hay alumnos registrados aún.</p>
+                ) : alumnosFiltrados.length === 0 ? (
+                  <p className="text-center text-gray-500 py-6">Ningún alumno coincide con «{busqueda.trim()}».</p>
                 ) : (
-                  alumnos.map((alumno) => (
+                  alumnosFiltrados.map((alumno) => (
                     <div key={alumno.id_alumno} className="flex flex-col min-[400px]:flex-row min-[400px]:justify-between min-[400px]:items-center gap-1 min-[400px]:gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50 hover:border-blue-200 transition-colors">
                       <div className="min-w-0">
                         <p className="font-semibold text-gray-800 break-words leading-snug">
