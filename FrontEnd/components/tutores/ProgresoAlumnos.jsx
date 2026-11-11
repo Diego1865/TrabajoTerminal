@@ -21,12 +21,12 @@ export default function ProgresoAlumnos({ grupos, total, metrica, onMetrica, cat
           </div>
           <p className="text-sm font-semibold text-gray-400">{total} alumno{total !== 1 ? "s" : ""} activo{total !== 1 ? "s" : ""}</p>
         </div>
-        <div role="radiogroup" aria-label="Métrica" className="flex p-1 gap-1"
+        <div role="radiogroup" aria-label="Métrica" className="grid grid-cols-3 w-full sm:flex sm:w-auto p-1 gap-1"
           style={{ background: "#EDE9FE", borderRadius: "16px", border: "2px solid #DDD6FE" }}>
           {METRICAS.map(({ clave, etiqueta }) => (
             <button key={clave} type="button" role="radio" aria-checked={metrica === clave}
               onClick={() => onMetrica(clave)}
-              className="px-3 py-1.5 font-black text-sm transition-all"
+              className="min-w-0 px-1 sm:px-3 py-2 sm:py-1.5 font-black text-xs min-[360px]:text-sm transition-all"
               style={{
                 borderRadius: "12px",
                 background: metrica === clave ? "#7C3AED" : "transparent",

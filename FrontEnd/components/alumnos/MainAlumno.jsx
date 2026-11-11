@@ -10,11 +10,11 @@ import CapturaEscritura from './CapturaEscritura';
 import PerfilAlumno     from './PerfilAlumno';
 
 const TABS = [
-  { id: 'proximos',    label: '📋 Próximos',    color: '#3B82F6', shadow: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
-  { id: 'completados', label: '✅ Completados',  color: '#10B981', shadow: '#065F46', bg: '#ECFDF5', border: '#A7F3D0' },
-  { id: 'vencidos',    label: '⏰ Vencidos',     color: '#F97316', shadow: '#C2410C', bg: '#FFF7ED', border: '#FED7AA' },
-  { id: 'progreso',    label: '📈 Mi Progreso',  color: '#EC4899', shadow: '#9D174D', bg: '#FDF2F8', border: '#FBCFE8' },
-  { id: 'perfil',      label: '👤 Perfil',       color: '#8B5CF6', shadow: '#4C1D95', bg: '#F5F3FF', border: '#DDD6FE' },
+  { id: 'proximos',    emoji: '📋', label: 'Próximos',    color: '#3B82F6', shadow: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
+  { id: 'completados', emoji: '✅', label: 'Completados', color: '#10B981', shadow: '#065F46', bg: '#ECFDF5', border: '#A7F3D0' },
+  { id: 'vencidos',    emoji: '⏰', label: 'Vencidos',    color: '#F97316', shadow: '#C2410C', bg: '#FFF7ED', border: '#FED7AA' },
+  { id: 'progreso',    emoji: '📈', label: 'Mi Progreso', color: '#EC4899', shadow: '#9D174D', bg: '#FDF2F8', border: '#FBCFE8' },
+  { id: 'perfil',      emoji: '👤', label: 'Perfil',      color: '#8B5CF6', shadow: '#4C1D95', bg: '#F5F3FF', border: '#DDD6FE' },
 ];
 
 const decodificarJwt = (token) => {
@@ -157,30 +157,30 @@ const MainAlumno = ({ onLogout }) => {
       <div className="min-h-screen flex flex-col p-5 relative"
         style={{ background: 'linear-gradient(160deg, #FEFCE8 0%, #EFF6FF 50%, #F0FDF4 100%)' }}>
 
-        {/* Botón cerrar sesión */}
-        <button
-          onClick={onLogout}
-          className="absolute top-5 right-5 flex items-center gap-2 font-bold px-4 py-2 transition-all hover:scale-105"
-          style={{ color: '#DC2626', background: '#FEF2F2', borderRadius: '14px', border: '2px solid #FECACA' }}>
-          <LogOut size={18} />
-          <span className="hidden sm:inline">Salir</span>
-        </button>
-
-        {/* Encabezado */}
-        <div className="mb-5 mt-3 max-w-4xl mx-auto w-full">
-          <h1 className="font-black" style={{ fontSize: '2rem', color: '#1E3A5F' }}>
-            ¡Hola, <span style={{ color: '#7C3AED' }}>{nombreAlumno}</span>! <span className="wave-hand">👋</span>
-          </h1>
-          <p className="font-semibold text-gray-500 mt-0.5">¿Qué vamos a practicar hoy?</p>
+        {/* Encabezado: saludo y "Salir" en la misma fila, así un nombre largo no queda debajo del botón */}
+        <div className="mb-5 mt-3 max-w-4xl mx-auto w-full flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-black break-words" style={{ fontSize: 'clamp(1.5rem, 6vw, 2rem)', color: '#1E3A5F', lineHeight: 1.2 }}>
+              ¡Hola, <span style={{ color: '#7C3AED' }}>{nombreAlumno}</span>! <span className="wave-hand">👋</span>
+            </h1>
+            <p className="font-semibold text-gray-500 mt-0.5">¿Qué vamos a practicar hoy?</p>
+          </div>
+          <button
+            onClick={onLogout}
+            aria-label="Salir"
+            className="shrink-0 flex items-center justify-center gap-2 font-bold min-h-11 min-w-11 px-3 sm:px-4 transition-all hover:scale-105"
+            style={{ color: '#DC2626', background: '#FEF2F2', borderRadius: '14px', border: '2px solid #FECACA' }}>
+            <LogOut size={18} />
+            <span className="hidden sm:inline">Salir</span>
+          </button>
         </div>
 
-        {/* Tabs */}
-        <div className="flex justify-center mb-7 px-2 w-full">
-          <div className="flex gap-2 p-2 overflow-x-auto max-w-full"
+        {/* Tabs: en celular, cuadrícula 3 + 2 (centrada) con el emoji arriba; desde sm, una sola fila. */}
+        <div className="flex justify-center mb-7 w-full">
+          <div className="grid grid-cols-6 gap-2 p-2 w-full max-w-md sm:flex sm:w-auto sm:max-w-full [&>*]:col-span-2 [&>*:nth-child(4)]:col-start-2"
             style={{
               background: 'rgba(255,255,255,0.7)', borderRadius: '22px',
               border: '2px solid #E5E7EB', boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-              scrollbarWidth: 'none',
             }}>
             {TABS.map((tab) => {
               const isActive = pestañaActiva === tab.id;
@@ -188,7 +188,8 @@ const MainAlumno = ({ onLogout }) => {
                 <button
                   key={tab.id}
                   onClick={() => setPestañaActiva(tab.id)}
-                  className="tab-btn px-4 py-2.5 font-black text-sm whitespace-nowrap"
+                  aria-pressed={isActive}
+                  className="tab-btn min-w-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-4 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap"
                   style={{
                     borderRadius: '15px',
                     background: isActive ? tab.color : 'transparent',
@@ -197,7 +198,8 @@ const MainAlumno = ({ onLogout }) => {
                     border:     isActive ? 'none'    : `2px solid ${tab.border}`,
                     transform:  isActive ? 'translateY(-2px)' : 'none',
                   }}>
-                  {tab.label}
+                  <span aria-hidden="true" className="text-lg sm:text-sm leading-none">{tab.emoji}</span>
+                  <span>{tab.label}</span>
                 </button>
               );
             })}
