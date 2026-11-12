@@ -79,6 +79,17 @@ const ToolBtn = ({ onClick, active, activeColor, activeShadow, label, children }
      idEjercicioTutor  – ID para el endpoint
      alTerminar        – callback con imagenDataUrl
    ════════════════════════════════════════ */
+
+// Margen izquierdo estilo cuaderno: «. . x» repetido de arriba hacia abajo.
+// Es solo fondo CSS (no se dibuja en el canvas), así que no se borra ni se envía al OCR.
+const ANCHO_MARGEN = 28;
+const MOSAICO_MARGEN = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36">'
+  + '<g fill="#A78BFA"><circle cx="14" cy="6" r="2"/><circle cx="14" cy="15" r="2"/></g>'
+  + '<path d="M10 23l8 8M18 23l-8 8" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>'
+  + '</svg>'
+)}")`;
+
 const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
   /* ── Parsear contenido_base ── */
@@ -557,6 +568,17 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             userSelect: 'none',
           }}>
 
+          {/* Margen izquierdo (decorativo; empieza arriba y se repite solo al cambiar la altura) */}
+          <div aria-hidden="true" className="absolute left-0 top-0 bottom-0 pointer-events-none"
+            style={{
+              width: `${ANCHO_MARGEN}px`,
+              zIndex: 1,
+              borderRight: '2px solid #DDD6FE',
+              backgroundImage: MOSAICO_MARGEN,
+              backgroundRepeat: 'repeat-y',
+              backgroundPosition: 'center top',
+            }} />
+
           {/* Imagen superpuesta DENTRO del lienzo (guía semitransparente) */}
           {imagenGuia && imagenEnLienzo && (
             <img
@@ -569,7 +591,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
           {/* Badge indicador cuando hay imagen en lienzo */}
           {imagenGuia && imagenEnLienzo && (
-            <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 z-10 pointer-events-none"
+            <div className="absolute top-2 left-10 flex items-center gap-1 px-2 py-1 z-10 pointer-events-none"
               style={{ background: 'rgba(109,40,217,0.12)', borderRadius: '8px', border: '1px solid #DDD6FE' }}>
               <ImageIcon size={12} style={{ color: '#7C3AED' }} />
               <span className="text-xs font-black" style={{ color: '#7C3AED' }}>Guía visible</span>
