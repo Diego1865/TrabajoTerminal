@@ -1,7 +1,10 @@
-"""Genera migraciones/005_catalogo_ejercicios.sql a partir de catalogo_ejercicios.json.
+"""Genera las migraciones del catálogo a partir de catalogo_ejercicios.json.
 
 Uso (desde BackEnd/):  python BD/catalogo/generar_migracion.py
 El JSON es la fuente: si cambias el catálogo, vuelve a generar y no edites el .sql a mano.
+Cada ejercicio pertenece a un lote ("lote", 1 si no lo indica) y cada lote tiene su migración:
+una base que ya aplicó la 005 no la vuelve a correr, así que los ejercicios nuevos van en un
+lote nuevo con su propia migración. No cambies un lote ya publicado; agrega uno.
 Las imágenes son SVG con emojis numerados, en base64 porque Ejercicios.contenido_base es VARCHAR
 y un emoji sin codificar se guardaría como '?'.
 """
@@ -12,7 +15,10 @@ from xml.sax.saxutils import escape
 
 CARPETA = Path(__file__).resolve().parent
 CATALOGO = CARPETA / "catalogo_ejercicios.json"
-MIGRACION = CARPETA.parent / "migraciones" / "005_catalogo_ejercicios.sql"
+MIGRACIONES = {
+    1: CARPETA.parent / "migraciones" / "005_catalogo_ejercicios.sql",
+    2: CARPETA.parent / "migraciones" / "006_catalogo_ampliacion.sql",
+}
 
 METODOS = ("sintetico", "analitico", "eclectico")
 ERRORES = ("grafias_dudosas", "inversion", "omision_adicion", "tildes", "trazo", "integracion")
@@ -52,30 +58,16 @@ def sql_texto(valor):
     return "'" + valor.replace("'", "''") + "'"
 
 
-def generar_sql(catalogo):
-    partes = [
-        "-- GENERADO por BD/catalogo/generar_migracion.py a partir de catalogo_ejercicios.json; no editar a mano.",
-        "-- Catálogo de ejercicios por método (sintético, analítico, ecléctico) y error ortográfico común.",
-        "-- Reemplaza el catálogo de ejemplo: se desactiva (no se borra, hay intentos que lo referencian)",
-        "-- y se cierran sus asignaciones activas para que los alumnos dejen de verlo.",
-        "USE TT;",
-        "GO",
-        "",
-        "DECLARE @nuevos TABLE (titulo VARCHAR(150) PRIMARY KEY);",
-        "INSERT INTO @nuevos (titulo) VALUES",
-        ",\n".join(f"    ({sql_texto(e['titulo'])})" for e in catalogo) + ";",
-        "",
-        "UPDATE et SET et.id_estatus = 2, et.fecha_desactivacion = GETDATE()",
-        "FROM dbo.Ejercicios_Tutor et JOIN dbo.Ejercicios e ON e.id_ejercicio = et.id_ejercicio",
-        "WHERE et.id_estatus = 1 AND e.id_tutor_creador IS NULL AND e.tipo <> 'dictado'",
-        "  AND e.titulo NOT IN (SELECT titulo FROM @nuevos);",
-        "",
-        "UPDATE dbo.Ejercicios SET id_estatus = 2",
-        "WHERE id_estatus = 1 AND id_tutor_creador IS NULL AND tipo <> 'dictado'",
-        "  AND titulo NOT IN (SELECT titulo FROM @nuevos);",
-        "GO",
-    ]
+def lote(ejercicio):
+    return ejercicio.get("lote", 1)
+
+
+def _inserciones(catalogo, numero_lote):
+    # orden es global (posición en el JSON) para que la ruta siga numerada al sumar lotes.
+    partes = []
     for orden, ejercicio in enumerate(catalogo, start=1):
+        if lote(ejercicio) != numero_lote:
+            continue
         contenido = json.dumps(contenido_base(ejercicio, orden), ensure_ascii=False, separators=(",", ":"))
         titulo = sql_texto(ejercicio["titulo"])
         partes += [
@@ -90,12 +82,60 @@ def generar_sql(catalogo):
             "    1);",
         ]
     partes.append("GO")
-    return "\n".join(partes) + "\n"
+    return partes
+
+
+def generar_sql(catalogo, numero_lote=1):
+    if numero_lote != 1:
+        return generar_sql_ampliacion(catalogo, numero_lote)
+    catalogo_lote = [e for e in catalogo if lote(e) == 1]
+    partes = [
+        "-- GENERADO por BD/catalogo/generar_migracion.py a partir de catalogo_ejercicios.json; no editar a mano.",
+        "-- Catálogo de ejercicios por método (sintético, analítico, ecléctico) y error ortográfico común.",
+        "-- Reemplaza el catálogo de ejemplo: se desactiva (no se borra, hay intentos que lo referencian)",
+        "-- y se cierran sus asignaciones activas para que los alumnos dejen de verlo.",
+        "USE TT;",
+        "GO",
+        "",
+        "DECLARE @nuevos TABLE (titulo VARCHAR(150) PRIMARY KEY);",
+        "INSERT INTO @nuevos (titulo) VALUES",
+        ",\n".join(f"    ({sql_texto(e['titulo'])})" for e in catalogo_lote) + ";",
+        "",
+        "UPDATE et SET et.id_estatus = 2, et.fecha_desactivacion = GETDATE()",
+        "FROM dbo.Ejercicios_Tutor et JOIN dbo.Ejercicios e ON e.id_ejercicio = et.id_ejercicio",
+        "WHERE et.id_estatus = 1 AND e.id_tutor_creador IS NULL AND e.tipo <> 'dictado'",
+        "  AND e.titulo NOT IN (SELECT titulo FROM @nuevos);",
+        "",
+        "UPDATE dbo.Ejercicios SET id_estatus = 2",
+        "WHERE id_estatus = 1 AND id_tutor_creador IS NULL AND tipo <> 'dictado'",
+        "  AND titulo NOT IN (SELECT titulo FROM @nuevos);",
+        "GO",
+    ]
+    return "\n".join(partes + _inserciones(catalogo, 1)) + "\n"
+
+
+def generar_sql_ampliacion(catalogo, numero_lote):
+    """Lotes posteriores: solo agregan ejercicios; no desactivan nada."""
+    partes = [
+        "-- GENERADO por BD/catalogo/generar_migracion.py a partir de catalogo_ejercicios.json; no editar a mano.",
+        f"-- Ampliación del catálogo (lote {numero_lote}): solo inserta ejercicios nuevos, no desactiva los existentes.",
+        "-- Los tutores deben activarlos para que sus alumnos los vean.",
+        "USE TT;",
+        "GO",
+    ]
+    return "\n".join(partes + _inserciones(catalogo, numero_lote)) + "\n"
 
 
 def main():
-    MIGRACION.write_text(generar_sql(cargar_catalogo()), encoding="utf-8")
-    print(f"Escrito {MIGRACION}")
+    catalogo = cargar_catalogo()
+    lotes = {lote(e) for e in catalogo}
+    faltan = lotes - MIGRACIONES.keys()
+    if faltan:
+        raise SystemExit(f"Agrega a MIGRACIONES el archivo de los lotes {sorted(faltan)}.")
+    for numero_lote in sorted(lotes):
+        destino = MIGRACIONES[numero_lote]
+        destino.write_text(generar_sql(catalogo, numero_lote), encoding="utf-8")
+        print(f"Escrito {destino}")
 
 
 if __name__ == "__main__":

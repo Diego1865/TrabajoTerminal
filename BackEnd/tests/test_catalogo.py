@@ -1,6 +1,7 @@
 import base64
 import importlib.util
 import json
+import re
 import unittest
 from pathlib import Path
 
@@ -62,14 +63,32 @@ class CatalogoTests(unittest.TestCase):
         self.assertIn(">2</text>", svg)
 
     def test_migracion_generada_esta_al_dia(self):
-        actual = (BD / "migraciones" / "005_catalogo_ejercicios.sql").read_text(encoding="utf-8")
-        self.assertEqual(actual, generador.generar_sql(self.catalogo),
-                         "Vuelve a correr BD/catalogo/generar_migracion.py")
-        self.assertIn("UPDATE dbo.Ejercicios SET id_estatus = 2", actual)
-        self.assertEqual(actual.count("INSERT INTO dbo.Ejercicios "), len(self.catalogo))
+        for numero_lote, archivo in generador.MIGRACIONES.items():
+            with self.subTest(archivo.name):
+                actual = archivo.read_text(encoding="utf-8")
+                self.assertEqual(actual, generador.generar_sql(self.catalogo, numero_lote),
+                                 "Vuelve a correr BD/catalogo/generar_migracion.py")
+                del_lote = [e for e in self.catalogo if generador.lote(e) == numero_lote]
+                self.assertEqual(actual.count("INSERT INTO dbo.Ejercicios "), len(del_lote))
+                # Solo el primer lote reemplaza el catálogo de ejemplo; las ampliaciones no desactivan nada.
+                self.assertEqual("UPDATE dbo.Ejercicios SET id_estatus = 2" in actual, numero_lote == 1)
+        self.assertEqual({generador.lote(e) for e in self.catalogo}, set(generador.MIGRACIONES))
         # Todo el contenido_base es JSON válido dentro de la migración.
         self.assertTrue(all(json.dumps(generador.contenido_base(e, 1), ensure_ascii=False)
                             for e in self.catalogo))
+
+    def test_lotes_no_se_repiten(self):
+        """Un lote nuevo no repite respuestas ni palabras de contenido de los anteriores."""
+        vacias = {"el", "la", "los", "las", "un", "una", "y", "en", "a", "mi", "su", "de", "me", "con", "por", "ve"}
+        vistas = set()
+        for numero_lote in sorted(generador.MIGRACIONES):
+            del_lote = [e for e in self.catalogo if generador.lote(e) == numero_lote]
+            palabras = {p for e in del_lote for r in e["respuestas"]
+                        for p in re.findall(r"[^\W\d_]+", r.lower())} - vacias
+            with self.subTest(lote=numero_lote):
+                self.assertEqual(palabras & vistas, set())
+            vistas |= palabras
+        self.assertEqual(len({e["titulo"].lower() for e in self.catalogo}), len(self.catalogo))
 
     def test_cls_castiga_los_errores_objetivo(self):
         self.assertEqual(cls_palabra("plato", "pato"), 4)    # omisión: 4 de 6
@@ -78,6 +97,15 @@ class CatalogoTests(unittest.TestCase):
         self.assertLess(cls_palabra("vaca", "baca"), 5)      # grafía dudosa
         self.assertEqual(evaluar({"evaluacion": {"modo": "imagen", "respuestas_aceptadas": ["vaca"]}},
                                  {"estado": "procesado", "texto": "baca"})["cls"]["correctas"], 3)
+        self.assertLess(cls_palabra("hola", "ola"), 5)       # h muda omitida (lote 2)
+
+    def test_cls_castiga_palabras_unidas(self):
+        def cls(esperado, escrito):
+            return evaluar({"evaluacion": {"modo": "copia", "respuestas_aceptadas": [esperado]}},
+                           {"estado": "procesado", "texto": escrito})["cls"]
+        self.assertEqual((cls("Vamos a la playa.", "Vamosalaplaya.")["correctas"],
+                          cls("Vamos a la playa.", "Vamos a la playa.")["correctas"]), (5, 17))
+        self.assertLess(cls("Esta silla está rota.", "Esta silla esta rota.")["correctas"], 21)
 
 
 if __name__ == "__main__":
