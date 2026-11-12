@@ -80,8 +80,7 @@ const MainAlumno = ({ onLogout }) => {
   ══════════════════════════════════════════════ */
   if (modoVista !== 'tabs') {
     return (
-      <div style={{ fontFamily: "'Nunito', sans-serif" }}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+      <div className="letra-escolar">
 
         <div className="min-h-screen flex flex-col items-center p-6 relative"
           style={{ background: 'linear-gradient(145deg, #F5F0FF 0%, #EFF6FF 60%, #F0FDF4 100%)' }}>
@@ -145,9 +144,8 @@ const MainAlumno = ({ onLogout }) => {
      VISTA PRINCIPAL (TABS)
   ══════════════════════════════════════════════ */
   return (
-    <div style={{ fontFamily: "'Nunito', sans-serif" }}>
+    <div className="letra-escolar">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
         @keyframes wave { 0%,100%{transform:rotate(-5deg)} 50%{transform:rotate(10deg)} }
         .wave-hand { display:inline-block; animation: wave 0.8s ease-in-out 3; }
         .tab-btn { transition: all 0.15s ease; }

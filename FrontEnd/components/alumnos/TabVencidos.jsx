@@ -48,8 +48,7 @@ const TabVencidos = ({ idAlumno }) => {
   }
 
   return (
-    <div style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+    <div className="letra-escolar">
 
       {/* Header */}
       <div className="mb-6 flex items-center gap-3">

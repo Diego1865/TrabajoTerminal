@@ -63,7 +63,7 @@ const ToolBtn = ({ onClick, active, activeColor, activeShadow, label, children }
       background: active ? activeColor : '#F3F4F6',
       color: active ? 'white' : '#6B7280',
       boxShadow: active ? `0 3px 0 ${activeShadow}` : '0 2px 0 #D1D5DB',
-      fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: '0.75rem',
+      fontFamily: 'inherit', fontWeight: 800, fontSize: '0.75rem',
       border: 'none', cursor: 'pointer',
       transform: active ? 'translateY(-1px)' : 'none',
     }}>
@@ -388,8 +388,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
      RENDER
   ───────────────────────────────────────── */
   return (
-    <div style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+    <div className="letra-escolar">
 
       <div className={`flex flex-col items-center ${esFullscreen
         ? 'fixed inset-0 z-[9999] w-full h-full p-4 pt-12 overflow-hidden [@media(max-height:560px)]:p-2 [@media(max-height:560px)]:grid [@media(max-height:560px)]:grid-cols-[auto_minmax(0,1fr)] [@media(max-height:560px)]:grid-rows-[auto_minmax(0,1fr)_auto] [@media(max-height:560px)]:items-stretch [@media(max-height:560px)]:gap-x-2'
@@ -536,7 +535,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
               padding: '8px 12px', borderRadius: '14px', minWidth: '64px',
               background: '#FEF2F2', color: '#EF4444',
               boxShadow: '0 2px 0 #FECACA', border: '2px solid #FECACA',
-              fontFamily: "'Nunito', sans-serif", fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer',
+              fontFamily: 'inherit', fontWeight: 800, fontSize: '0.75rem', cursor: 'pointer',
             }}>
             <Trash2 size={esFullscreen ? 22 : 18} />
             <span>Limpiar</span>
