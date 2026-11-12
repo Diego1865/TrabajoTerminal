@@ -19,7 +19,7 @@ x-backend: &backend
     CORS_ORIGINS: https://${APP_DOMAIN:?Define APP_DOMAIN}
     GOOGLE_VISION_ENABLED: ${GOOGLE_VISION_ENABLED:-true}
     GOOGLE_CLOUD_QUOTA_PROJECT: ${GOOGLE_CLOUD_PROJECT:?Define GOOGLE_CLOUD_PROJECT}
-    GOOGLE_VISION_LANGUAGE_HINTS: ${GOOGLE_VISION_LANGUAGE_HINTS:-}
+    GOOGLE_VISION_LANGUAGE_HINTS: ${GOOGLE_VISION_LANGUAGE_HINTS:-es}
     # Cuenta de Gmail que manda los códigos (deploy/cargar-correo.sh la copia de Secret Manager).
     CORREO_MODO: smtp
     SMTP_USER: ${SMTP_USER:-}

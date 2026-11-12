@@ -15,6 +15,22 @@ MAX_BYTES = 10 * 1024 * 1024
 MAX_PIXELS = 20_000_000
 
 
+def pistas_idioma():
+    """Idiomas que se indican a Cloud Vision. Por defecto español.
+
+    Sin pista, Vision adivina el idioma de cada imagen y, con trazos infantiles poco claros,
+    puede devolver otro alfabeto (por ejemplo devanagari: "लाव" en lugar de "ola").
+    GOOGLE_VISION_LANGUAGE_HINTS acepta códigos separados por coma ("es,en") o "auto"
+    para volver a la autodetección.
+    """
+    valor = os.getenv("GOOGLE_VISION_LANGUAGE_HINTS", "").strip()
+    if not valor:
+        return ["es"]
+    if valor.lower() == "auto":
+        return []
+    return [v.strip() for v in valor.split(",") if v.strip()]
+
+
 def preparar_imagen(data_url):
     from PIL import Image, UnidentifiedImageError
 
@@ -62,7 +78,7 @@ def reconocer_escritura(data_url):
 
     try:
         cliente = vision.ImageAnnotatorClient()
-        idiomas = [v.strip() for v in os.getenv("GOOGLE_VISION_LANGUAGE_HINTS", "").split(",") if v.strip()]
+        idiomas = pistas_idioma()
         try:
             respuesta = cliente.document_text_detection(
                 image=vision.Image(content=imagen),
