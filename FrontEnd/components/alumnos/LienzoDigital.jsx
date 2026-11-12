@@ -80,13 +80,18 @@ const ToolBtn = ({ onClick, active, activeColor, activeShadow, label, children }
      alTerminar        – callback con imagenDataUrl
    ════════════════════════════════════════ */
 
-// Margen izquierdo estilo cuaderno: «. . x» repetido de arriba hacia abajo.
+// Cuadro grande del cuaderno de primer grado (cuadrícula de fondo del lienzo).
+const CUADRO = 40;
+
+// Margen izquierdo estilo cuaderno: ocupa la primera columna de cuadros y pone
+// un símbolo por cuadro, de arriba hacia abajo: «•», «•», «x», «•», «•», «x»…
 // Es solo fondo CSS (no se dibuja en el canvas), así que no se borra ni se envía al OCR.
-const ANCHO_MARGEN = 28;
+const MEDIO = CUADRO / 2;  // centro de un cuadro
 const MOSAICO_MARGEN = `url("data:image/svg+xml,${encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36">'
-  + '<g fill="#A78BFA"><circle cx="14" cy="6" r="2"/><circle cx="14" cy="15" r="2"/></g>'
-  + '<path d="M10 23l8 8M18 23l-8 8" stroke="#A78BFA" stroke-width="2" stroke-linecap="round"/>'
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${CUADRO}" height="${CUADRO * 3}">`
+  + `<g fill="#A78BFA"><circle cx="${MEDIO}" cy="${MEDIO}" r="3.5"/><circle cx="${MEDIO}" cy="${CUADRO + MEDIO}" r="3.5"/></g>`
+  + `<path d="M${MEDIO - 8} ${2 * CUADRO + MEDIO - 8}l16 16M${MEDIO + 8} ${2 * CUADRO + MEDIO - 8}l-16 16"`
+  + ' stroke="#A78BFA" stroke-width="3" stroke-linecap="round"/>'
   + '</svg>'
 )}")`;
 
@@ -563,20 +568,21 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             boxShadow: '0 4px 0 #DDD6FE',
             background: '#FAFAFE',
             backgroundImage: 'linear-gradient(#EDE9FE 1px, transparent 1px), linear-gradient(90deg, #EDE9FE 1px, transparent 1px)',
-            backgroundSize: '40px 40px',
+            backgroundSize: `${CUADRO}px ${CUADRO}px`,
             touchAction: 'none',
             userSelect: 'none',
           }}>
 
-          {/* Margen izquierdo (decorativo; empieza arriba y se repite solo al cambiar la altura) */}
+          {/* Margen izquierdo: primera columna de cuadros, un símbolo por cuadro.
+              El ancho CUADRO + 1 hace que la raya del margen caiga sobre la línea de la cuadrícula. */}
           <div aria-hidden="true" className="absolute left-0 top-0 bottom-0 pointer-events-none"
             style={{
-              width: `${ANCHO_MARGEN}px`,
+              width: `${CUADRO + 1}px`,
               zIndex: 1,
-              borderRight: '2px solid #DDD6FE',
+              borderRight: '2px solid #C4B5FD',
               backgroundImage: MOSAICO_MARGEN,
               backgroundRepeat: 'repeat-y',
-              backgroundPosition: 'center top',
+              backgroundPosition: 'left top',
             }} />
 
           {/* Imagen superpuesta DENTRO del lienzo (guía semitransparente) */}
@@ -591,7 +597,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
           {/* Badge indicador cuando hay imagen en lienzo */}
           {imagenGuia && imagenEnLienzo && (
-            <div className="absolute top-2 left-10 flex items-center gap-1 px-2 py-1 z-10 pointer-events-none"
+            <div className="absolute top-2 left-12 flex items-center gap-1 px-2 py-1 z-10 pointer-events-none"
               style={{ background: 'rgba(109,40,217,0.12)', borderRadius: '8px', border: '1px solid #DDD6FE' }}>
               <ImageIcon size={12} style={{ color: '#7C3AED' }} />
               <span className="text-xs font-black" style={{ color: '#7C3AED' }}>Guía visible</span>
