@@ -265,8 +265,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
      RENDER
   ───────────────────────────────────────── */
   return (
-    <div style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+    <div className="letra-escolar">
 
       <div className="max-w-md mx-auto relative overflow-hidden"
         style={{ background: 'white', borderRadius: '24px', border: '3px solid #DDD6FE', boxShadow: '0 8px 0 #C4B5FD', padding: '24px' }}>

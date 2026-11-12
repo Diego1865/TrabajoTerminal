@@ -46,8 +46,7 @@ export default function PerfilAlumno() {
   const valores = perfil && { ...perfil, desde: formatearFecha(perfil.fecha_registro) };
 
   return (
-    <div style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+    <div className="letra-escolar">
 
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center gap-3 mb-2">

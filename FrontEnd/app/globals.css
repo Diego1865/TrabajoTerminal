@@ -19,6 +19,11 @@
   }
 }
 
+/* Letra escolar (Andika): todo lo que lee el alumno y la vista previa que ve el tutor. */
+.letra-escolar {
+  font-family: var(--font-escolar), sans-serif;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

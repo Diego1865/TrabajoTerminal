@@ -4,8 +4,8 @@ import { BookOpen, CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
 import CrearDictado from './CrearDictado';
 import { METODOS, ERRORES, MODALIDADES, leerContenido, leerPedagogia } from '../pedagogiaEjercicio';
 
-const Seccion = ({ titulo, children }) => (
-  <section className="mb-5 p-4" style={{ background: '#FAFAFF', border: '2px solid #EDE9FE', borderRadius: '16px' }}>
+const Seccion = ({ titulo, children, className = '' }) => (
+  <section className={`mb-5 p-4 ${className}`} style={{ background: '#FAFAFF', border: '2px solid #EDE9FE', borderRadius: '16px' }}>
     <h4 className="font-black uppercase text-xs tracking-wider mb-3" style={{ color: '#8B5CF6' }}>{titulo}</h4>
     {children}
   </section>
@@ -19,7 +19,7 @@ const VistaAlumno = ({ ejercicio }) => {
   const respuestas = contenido.evaluacion?.respuestas_aceptadas ?? [];
   return (
     <>
-      <Seccion titulo="Lo que verá el alumno">
+      <Seccion titulo="Lo que verá el alumno" className="letra-escolar">
         <p className="text-xs font-black text-violet-900 mb-1">Instrucción</p>
         <p className="font-semibold text-gray-700 text-sm leading-relaxed mb-3">{ejercicio.descripcion}</p>
         {pista && (
@@ -52,7 +52,7 @@ const VistaAlumno = ({ ejercicio }) => {
           </p>
           <ul className="flex flex-col gap-1">
             {respuestas.map(r => (
-              <li key={r} className="px-3 py-1.5 text-sm font-black text-green-900"
+              <li key={r} className="letra-escolar px-3 py-1.5 text-sm font-black text-green-900"
                 style={{ background: '#F0FDF4', border: '1.5px solid #BBF7D0', borderRadius: '10px' }}>
                 ✓ {r}
               </li>
