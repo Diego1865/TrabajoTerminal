@@ -68,8 +68,10 @@ Agregar `GOOGLE_VISION_ENABLED=true` al `.env` existente de BackEnd y reiniciar:
 .\.venv\Scripts\python.exe -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-`GOOGLE_VISION_LANGUAGE_HINTS` es opcional, vacío por defecto (autodetección).
-Se puede probar `es` como pista; no corrige la ortografía del alumno.
+`GOOGLE_VISION_LANGUAGE_HINTS` indica el idioma de la escritura; vacío equivale a `es`.
+Sin esa pista, Vision adivina el idioma y, con letra infantil poco clara, llegó a devolver
+otro alfabeto (devanagari). `auto` vuelve a la autodetección. La pista no corrige la
+ortografía del alumno: solo evita que se lea en otro idioma.
 
 ## 3. Si ejecutas con Docker
 

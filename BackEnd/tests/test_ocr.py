@@ -8,7 +8,7 @@ from PIL import Image
 from google.cloud import vision
 from google.auth.exceptions import DefaultCredentialsError
 from google.api_core.exceptions import DeadlineExceeded
-from Servicios.ocr import OcrError, preparar_imagen, reconocer_escritura
+from Servicios.ocr import OcrError, pistas_idioma, preparar_imagen, reconocer_escritura
 from Modelo.dao_alumno import registrar_intento_dao
 
 
@@ -60,6 +60,23 @@ class GoogleTests(unittest.TestCase):
         self.assertAlmostEqual(simbolo["confidence"], 0.9, places=5)
         self.assertEqual(cliente.return_value.document_text_detection.call_args.kwargs["timeout"], 30)
         cliente.return_value.transport.close.assert_called_once()
+
+    @patch.dict(os.environ, {"GOOGLE_VISION_LANGUAGE_HINTS": ""})
+    @patch("google.cloud.vision.ImageAnnotatorClient")
+    def test_pide_espanol_por_defecto(self, cliente):
+        # Sin pista, Vision llegó a leer "ola" infantil como devanagari ("लाव").
+        cliente.return_value.document_text_detection.return_value = vision.AnnotateImageResponse()
+        reconocer_escritura(imagen_prueba())
+        contexto = cliente.return_value.document_text_detection.call_args.kwargs["image_context"]
+        self.assertEqual(list(contexto.language_hints), ["es"])
+
+    def test_pistas_idioma_configurables(self):
+        for valor, esperado in (("", ["es"]), ("  ", ["es"]), ("auto", []), ("AUTO", []),
+                                ("es", ["es"]), (" es , en ", ["es", "en"])):
+            with self.subTest(valor=valor), patch.dict(os.environ, {"GOOGLE_VISION_LANGUAGE_HINTS": valor}):
+                self.assertEqual(pistas_idioma(), esperado)
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(pistas_idioma(), ["es"])
 
     @patch("google.cloud.vision.ImageAnnotatorClient")
     def test_sin_texto(self, cliente):
