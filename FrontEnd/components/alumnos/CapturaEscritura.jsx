@@ -352,8 +352,8 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
               descripcion={ejercicio.descripcion}
               texto={contenido.texto_guia}
               pista={pista}
+              modo={contenido.evaluacion?.modo}
               etiqueta="Escuchar ejercicio"
-              variante="boton"
             />}
           </div>
         )}

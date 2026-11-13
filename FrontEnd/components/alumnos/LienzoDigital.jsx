@@ -109,6 +109,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const imagenGuia     = contenido.imagen_guia  || null;
   // imagen_en_lienzo: true → se superpone sobre el canvas; false/undefined → tarjeta separada
   const imagenEnLienzo = !!contenido.imagen_en_lienzo;
+  const imagenFuera    = !!imagenGuia && !imagenEnLienzo;  // tarjeta aparte (p. ej. ejercicios de emojis)
 
   /* ── Estado del lienzo ── */
   const canvasRef    = useRef(null);
@@ -464,8 +465,8 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
               descripcion={ejercicio.descripcion}
               texto={contenido.texto_guia}
               pista={pista}
+              modo={contenido.evaluacion?.modo}
               etiqueta="Escuchar ejercicio"
-              variante="boton"
             />}
           </div>
         )}
@@ -474,12 +475,15 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
           <ReproductorDictado key={idEjercicioTutor} palabras={contenido.dictado?.palabras} />
         </div>}
 
-        {/* Texto guía compacto en fullscreen */}
-        {esFullscreen && textoGuia && (
-          <div className="w-full mb-3 px-4 py-2 flex items-center gap-3 [@media(max-height:560px)]:col-start-2 [@media(max-height:560px)]:row-start-1 [@media(max-height:560px)]:mb-2 [@media(max-height:560px)]:py-1"
+        {/* Guía compacta en fullscreen: imagen de referencia (ejercicios de emojis) y/o texto guía */}
+        {esFullscreen && (textoGuia || imagenFuera) && (
+          <div className={`w-full mb-3 px-4 py-2 flex items-center gap-3 ${textoGuia ? '' : 'justify-center'} [@media(max-height:560px)]:col-start-2 [@media(max-height:560px)]:row-start-1 [@media(max-height:560px)]:mb-2 [@media(max-height:560px)]:py-1`}
             style={{ background: '#F5F3FF', border: '2px solid #DDD6FE', borderRadius: '14px' }}>
-            <BookOpen size={16} style={{ color: '#7C3AED', flexShrink: 0 }} />
-            <p className="font-black" style={{ fontSize: '1.1rem', color: '#1F2937' }}>{textoGuia}</p>
+            {imagenFuera
+              ? <img src={imagenGuia} alt="Imagen de referencia"
+                  className="h-28 [@media(max-height:560px)]:h-12 w-auto max-w-full object-contain flex-shrink-0" />
+              : <BookOpen size={16} style={{ color: '#7C3AED', flexShrink: 0 }} />}
+            {textoGuia && <p className="font-black" style={{ fontSize: '1.1rem', color: '#1F2937' }}>{textoGuia}</p>}
           </div>
         )}
 
