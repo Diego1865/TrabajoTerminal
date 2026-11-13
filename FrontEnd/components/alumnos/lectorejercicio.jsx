@@ -42,6 +42,41 @@ const leerVelocidadGuardada = () => {
   } catch { return 'lento'; }
 };
 
+/* ── Elección de voz ──
+   El navegador solo ofrece las voces instaladas en el dispositivo. Se descartan las
+   voces «de juguete» de Apple y se prefiere: la elegida por el usuario → la voz del
+   sistema (si es español) → las de mejor calidad → es-MX. */
+const CLAVE_VOZ = 'lector-voz';
+const VOCES_JUGUETE = /\b(Eddy|Flo|Grandma|Grandpa|Abuel[ao]|Reed|Rocko|Sandy|Shelley|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Junior|Kathy|Ralph|Fred)\b/i;
+const VOZ_DE_CALIDAD = /premium|mejorad|enhanced|natural|neural|online/i;
+
+const puntaje = (v) =>
+  (v.default ? 100 : 0)
+  + (VOZ_DE_CALIDAD.test(v.name) ? 50 : 0)
+  + (/google/i.test(v.name) ? 30 : 0)
+  + (v.lang === 'es-MX' ? 10 : /^es[-_](US|419)/i.test(v.lang) ? 5 : 0);
+
+// Voces en español utilizables, de mejor a peor.
+export const vocesEspanol = (voces) => voces
+  .filter(v => /^es\b/i.test(v.lang) && !VOCES_JUGUETE.test(v.name))
+  .sort((a, b) => puntaje(b) - puntaje(a));
+
+export const leerVozGuardada = () => {
+  try { return localStorage.getItem(CLAVE_VOZ) || ''; } catch { return ''; }
+};
+
+export const elegirVoz = (voces, uriPreferido = leerVozGuardada()) => {
+  const opciones = vocesEspanol(voces);
+  return opciones.find(v => v.voiceURI === uriPreferido) || opciones[0] || null;
+};
+
+// Nombre corto para el menú: «Mónica (España)», «Paulina (México)».
+const REGION = { MX: 'México', ES: 'España', US: 'EE. UU.', AR: 'Argentina', CO: 'Colombia', CL: 'Chile', '419': 'Latinoamérica' };
+const nombreVoz = (v) => {
+  const region = REGION[v.lang.split(/[-_]/)[1]?.toUpperCase()] || v.lang;
+  return `${v.name.replace(/\s*\(.*\)\s*$/, '')} (${region})`;
+};
+
 /* ── Ondas animadas que indican que está hablando ── */
 const Ondas = ({ color = '#7C3AED' }) => (
   <span className="inline-flex items-end gap-[2px]" aria-hidden="true">
@@ -74,12 +109,33 @@ const useLector = () => {
   const [hablando, setHablando] = useState(false);
   // El lector solo se monta al abrir un ejercicio (en el cliente), así que leer localStorage aquí es seguro.
   const [velocidad, setVelocidadEstado] = useState(leerVelocidadGuardada);
+  const [vozUri, setVozUriEstado] = useState(leerVozGuardada);
+  const [voces, setVoces] = useState(() => (soportado ? window.speechSynthesis.getVoices() : []));
   const turnoRef = useRef(0);       // invalida lecturas anteriores al detener o volver a empezar
   const pausaRef = useRef(null);
+
+  /* Las voces cargan de forma asíncrona: se actualiza la lista cuando llegan. */
+  useEffect(() => {
+    if (!soportado) return;
+    const actualizar = () => setVoces(window.speechSynthesis.getVoices());
+    window.speechSynthesis.addEventListener?.('voiceschanged', actualizar);
+    const respaldo = setTimeout(actualizar, 500);
+    return () => {
+      clearTimeout(respaldo);
+      window.speechSynthesis.removeEventListener?.('voiceschanged', actualizar);
+    };
+  }, [soportado]);
 
   const setVelocidad = useCallback((v) => {
     setVelocidadEstado(v);
     try { localStorage.setItem(CLAVE_VELOCIDAD, v); } catch { /* sin almacenamiento: solo dura esta sesión */ }
+  }, []);
+
+  const setVozUri = useCallback((uri) => {
+    setVozUriEstado(uri);
+    try {
+      if (uri) localStorage.setItem(CLAVE_VOZ, uri); else localStorage.removeItem(CLAVE_VOZ);
+    } catch { /* sin almacenamiento: solo dura esta sesión */ }
   }, []);
 
   const detener = useCallback(() => {
@@ -98,19 +154,14 @@ const useLector = () => {
     const turno = turnoRef.current;
     const sintesis = window.speechSynthesis;
 
-    const vozEspanol = () => {
-      const voces = sintesis.getVoices();
-      return voces.find(v => v.lang === 'es-MX') || voces.find(v => v.lang.startsWith('es')) || null;
-    };
-
     const decir = (i) => {
       if (turno !== turnoRef.current) return;
       if (i >= frases.length) { setHablando(false); return; }
       const utter = new SpeechSynthesisUtterance(frases[i]);
-      utter.lang  = 'es-MX';
+      const voz = elegirVoz(sintesis.getVoices(), vozUri);
+      utter.lang  = voz?.lang || 'es-MX';
       utter.rate  = VELOCIDADES[velocidad];
       utter.pitch = 1.05;
-      const voz = vozEspanol();
       if (voz) utter.voice = voz;
       const siguiente = () => { pausaRef.current = setTimeout(() => decir(i + 1), PAUSA_MS); };
       utter.onend   = siguiente;
@@ -125,9 +176,9 @@ const useLector = () => {
     const iniciar = () => { if (!iniciado) { iniciado = true; sintesis.onvoiceschanged = null; decir(0); } };
     sintesis.onvoiceschanged = iniciar;
     setTimeout(iniciar, 500);
-  }, [soportado, detener, velocidad]);
+  }, [soportado, detener, velocidad, vozUri]);
 
-  return { hablando, leer, detener, soportado, velocidad, setVelocidad };
+  return { hablando, leer, detener, soportado, velocidad, setVelocidad, voces, vozUri, setVozUri };
 };
 
 /* ── Selector lento / normal ── */
@@ -155,8 +206,10 @@ const LectorEjercicio = ({
   modo        = '',
   etiqueta    = 'Escuchar',
 }) => {
-  const { hablando, leer, detener, soportado, velocidad, setVelocidad } = useLector();
+  const { hablando, leer, detener, soportado, velocidad, setVelocidad, voces, vozUri, setVozUri } = useLector();
   const frases = partesParaLeer({ titulo, descripcion, texto, pista, modo });
+  const opcionesVoz = vocesEspanol(voces);
+  const vozActual = elegirVoz(voces, vozUri);
 
   if (!soportado) {
     return (
@@ -205,6 +258,21 @@ const LectorEjercicio = ({
           <Rabbit size={15} /> Normal
         </BotonVelocidad>
       </div>
+
+      {opcionesVoz.length > 1 && (
+        <label className="flex items-center gap-1.5 text-xs font-black" style={{ color: '#6D28D9' }}>
+          Voz
+          <select
+            value={vozActual?.voiceURI || ''}
+            onChange={(e) => { detener(); setVozUri(e.target.value); }}
+            className="px-2 py-1.5 text-xs font-bold max-w-[11rem]"
+            style={{ borderRadius: '10px', border: '2px solid #DDD6FE', background: 'white', color: '#4C1D95', fontFamily: 'inherit' }}>
+            {opcionesVoz.map(v => (
+              <option key={v.voiceURI} value={v.voiceURI}>{nombreVoz(v)}</option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   );
 };
