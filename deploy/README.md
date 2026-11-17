@@ -495,3 +495,176 @@ conexión simulada; para la verificación con SQL Server, aplicar la migración 
 veces (debe ser idempotente), crear un dictado, comprobar su aislamiento entre
 profesores, entregar como alumno y revisar OCR/CLS en el panel del profesor.
 - https://caddyserver.com/docs/automatic-https
+
+## 9. CI/CD de main con GitHub Actions
+
+`.github/workflows/main.yml` ejecuta pruebas del backend, compila el frontend y
+valida el despliegue en cada PR hacia `main` y cada push a `main`. Las pruebas usan
+conexiones simuladas: no necesitan las contraseñas de la demo ni acceso a Cloud SQL.
+El trabajo `deploy` solo corre tras pasar los tres trabajos, desde `main`, y si la
+variable **de repositorio** `DEPLOY_ENABLED` vale exactamente `true`.
+
+El despliegue usa GitHub OIDC → Workload Identity Federation → cuenta de servicio
+→ SSH por IAP con OS Login. No requiere claves JSON ni abrir SSH a Internet.
+El script `deploy/deploy-main.sh` recibe el SHA probado, exige un checkout limpio
+y completo en `/opt/grafia`, y solo avanza `main` con fast-forward. Omite ejecuciones
+antiguas si ya existe otro commit en `origin/main`. No hace reset, clean ni push.
+
+Compila secuencialmente en la VM, exporta un respaldo de Cloud SQL con
+`respaldo-nube.sh`, aplica las migraciones y recrea los servicios. Comprueba el
+frontend por HTTPS y que la ruta protegida de la API responda 401 sin credenciales.
+La prueba de API verifica conectividad y autenticación, no una consulta a la base.
+`.env.demo`, los datos de Cloud SQL y los volúmenes de Caddy se conservan.
+La recreación puede causar una interrupción breve; no es un despliegue sin cortes.
+
+### Preparación de la VM
+
+Antes de activar el CD, comprobar que la demo ya funciona y que las exportaciones
+de la sección 8 están configuradas (metadatos `grafia-bucket`, `grafia-sql` y permisos
+de las cuentas de servicio). En la VM:
+
+```bash
+cd /opt/grafia
+sudo git status
+sudo git rev-parse --is-shallow-repository  # debe responder false
+sudo docker compose version              # versión que soporte up --wait
+sudo bash deploy/respaldo-nube.sh          # debe terminar con éxito
+```
+
+Resolver primero cualquier conflicto o commit local exclusivo. El usuario root
+debe poder descargar el repositorio con `git fetch` sin pedir credenciales; para el
+repositorio público actual basta HTTPS. No subir `.env.demo` a GitHub.
+
+### Configurar Google Cloud una vez
+
+Ejecutar estos bloques **en Cloud Shell (Bash)** con una cuenta administradora.
+Crean una identidad de despliegue y conceden acceso administrativo a la VM para
+Docker; no crean otra VM ni otra base. Si algún recurso ya existe, inspeccionarlo
+y reutilizarlo en lugar de repetir su creación.
+
+```bash
+set -euo pipefail
+PROJECT_ID=trabajoterminal-510019
+ZONE=us-central1-a
+INSTANCE=grafia-demo
+REPOSITORY=Diego1865/TrabajoTerminal
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
+DEPLOY_SA="grafia-github-deploy@$PROJECT_ID.iam.gserviceaccount.com"
+VM_SA=$(gcloud compute instances describe "$INSTANCE" --project="$PROJECT_ID" \
+  --zone="$ZONE" --format='value(serviceAccounts[0].email)')
+ADMIN_EMAIL=$(gcloud config get-value account)
+REPO_ID=$(curl -fsS "https://api.github.com/repos/$REPOSITORY" | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')
+OWNER_ID=$(curl -fsS "https://api.github.com/repos/$REPOSITORY" | python3 -c 'import json,sys; print(json.load(sys.stdin)["owner"]["id"])')
+
+gcloud services enable iamcredentials.googleapis.com sts.googleapis.com \
+  iap.googleapis.com oslogin.googleapis.com --project="$PROJECT_ID"
+gcloud iam service-accounts create grafia-github-deploy \
+  --display-name='Despliegue GitHub Grafia' --project="$PROJECT_ID"
+gcloud iam workload-identity-pools create grafia-github \
+  --location=global --display-name='GitHub Grafia' --project="$PROJECT_ID"
+gcloud iam workload-identity-pools providers create-oidc main \
+  --project="$PROJECT_ID" --location=global --workload-identity-pool=grafia-github \
+  --issuer-uri=https://token.actions.githubusercontent.com \
+  --attribute-mapping='google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.repository_owner_id=assertion.repository_owner_id,attribute.ref=assertion.ref,attribute.workflow_ref=assertion.workflow_ref,attribute.event_name=assertion.event_name' \
+  --attribute-condition="assertion.repository_id == '$REPO_ID' && assertion.repository_owner_id == '$OWNER_ID' && assertion.ref == 'refs/heads/main' && assertion.workflow_ref == '$REPOSITORY/.github/workflows/main.yml@refs/heads/main' && (assertion.event_name == 'push' || assertion.event_name == 'workflow_dispatch')"
+gcloud iam service-accounts add-iam-policy-binding "$DEPLOY_SA" \
+  --project="$PROJECT_ID" --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/grafia-github/attribute.repository_id/$REPO_ID"
+
+# Lectura de Compute para descubrir la VM/proyecto e iniciar SSH.
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$DEPLOY_SA" --role=roles/compute.viewer --condition=None
+# Solo puerto SSH por IAP. Este permiso se concede al nivel del proyecto.
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$DEPLOY_SA" --role=roles/iap.tunnelResourceAccessor \
+  --condition='expression=destination.port == 22,title=ssh-only'
+# Administración del sistema limitada a esta VM.
+gcloud compute instances add-iam-policy-binding "$INSTANCE" \
+  --project="$PROJECT_ID" --zone="$ZONE" \
+  --member="serviceAccount:$DEPLOY_SA" --role=roles/compute.osAdminLogin
+gcloud iam service-accounts add-iam-policy-binding "$VM_SA" \
+  --project="$PROJECT_ID" --member="serviceAccount:$DEPLOY_SA" \
+  --role=roles/iam.serviceAccountUser
+```
+
+OS Login reemplaza el acceso mediante claves SSH guardadas en metadatos. Antes de
+habilitarlo, dar acceso a la cuenta humana administradora y a los demás operadores
+que lo necesiten. Los siguientes comandos usan `ADMIN_EMAIL` de Cloud Shell; debe
+ser tu cuenta humana. Mantener abierta la sesión actual y probar una nueva conexión
+antes de cerrarla. El usuario Linux asignado por OS Login puede cambiar.
+
+```bash
+gcloud compute instances add-iam-policy-binding "$INSTANCE" \
+  --project="$PROJECT_ID" --zone="$ZONE" \
+  --member="user:$ADMIN_EMAIL" --role=roles/compute.osAdminLogin
+gcloud iam service-accounts add-iam-policy-binding "$VM_SA" \
+  --project="$PROJECT_ID" --member="user:$ADMIN_EMAIL" --role=roles/iam.serviceAccountUser
+gcloud compute instances add-metadata "$INSTANCE" --project="$PROJECT_ID" \
+  --zone="$ZONE" --metadata=enable-oslogin=TRUE
+gcloud compute ssh "$INSTANCE" --project="$PROJECT_ID" --zone="$ZONE" \
+  --tunnel-through-iap --command='sudo -n true'
+
+# Copiar estos valores a las variables de GitHub indicadas abajo.
+printf 'GCP_WIF_PROVIDER=projects/%s/locations/global/workloadIdentityPools/grafia-github/providers/main\n' "$PROJECT_NUMBER"
+printf 'GCP_DEPLOY_SERVICE_ACCOUNT=%s\n' "$DEPLOY_SA"
+```
+
+La cuenta humana también necesita acceso IAP y lectura de Compute, como en la
+sección 1. La cuenta de GitHub no recibe permisos directos de Cloud SQL: el respaldo
+se ejecuta dentro de la VM con la identidad que ya usa `respaldo-nube.sh`.
+
+### Configurar GitHub y activar
+
+En el repositorio, crear el environment `demo` y limitar sus deployment branches
+a `main`. En **Settings → Secrets and variables → Actions → Variables**, crear
+estas variables **de repositorio** (no contienen contraseñas):
+
+| Variable | Valor |
+| --- | --- |
+| `GCP_PROJECT_ID` | `trabajoterminal-510019` |
+| `GCP_ZONE` | `us-central1-a` |
+| `GCP_INSTANCE` | `grafia-demo` |
+| `GCP_WIF_PROVIDER` | Valor impreso en Cloud Shell |
+| `GCP_DEPLOY_SERVICE_ACCOUNT` | `grafia-github-deploy@trabajoterminal-510019.iam.gserviceaccount.com` |
+| `DEPLOY_ENABLED` | `true`, solo cuando la configuración anterior esté lista |
+
+Subir el workflow, el script, sus pruebas y esta guía mediante un PR. Primero
+comprobar que pasan **Pruebas backend**, **Compilar frontend** y **Validar despliegue**;
+configurarlos como checks requeridos en la protección de `main`. Con CD habilitado,
+los pushes y merges a `main` despliegan automáticamente. Para la primera prueba
+manual: **Actions → CI y despliegue demo → Run workflow → main**.
+Si aún no existe `DEPLOY_ENABLED=true`, CI funciona y `deploy` aparece como omitido.
+
+### Fallos, diagnóstico y recuperación
+
+GitHub serializa los despliegues y no cancela el que está aplicando migraciones.
+El script también toma un bloqueo en la VM. Si falla un build o respaldo, mantiene
+los contenedores existentes. Si falla una migración, detiene el despliegue antes
+de recrearlos; la migración puede haber cambiado parte del esquema. Si falla una
+comprobación después de recrearlos, el job falla y se requiere revisar el servicio.
+No hay rollback automático de código ni de base de datos.
+
+En la VM, consultar sin imprimir `.env.demo`:
+
+```bash
+cd /opt/grafia
+sudo docker compose --env-file .env.demo -f compose.demo.yml ps -a
+sudo docker compose --env-file .env.demo -f compose.demo.yml logs --tail=100 backend frontend web
+sudo cat /var/lib/grafia-deploy/current   # último SHA verificado, tras el primer éxito
+sudo cat /var/lib/grafia-deploy/previous  # anterior verificado, tras dos versiones distintas
+```
+
+`previous-checkout` registra el checkout al comenzar cada intento; no garantiza
+que esa versión estuviera sana. `db-init` corre como tarea temporal y su salida
+queda en GitHub Actions. Antes de restaurar código, comprobar compatibilidad con
+el esquema; restaurar una exportación de Cloud SQL es una operación independiente.
+Preferir revertir el cambio problemático mediante un nuevo commit/PR en `main` y
+desplegarlo. Para detener nuevos despliegues, cambiar `DEPLOY_ENABLED` a `false`;
+no interrumpe uno que ya está corriendo. Un build fallido puede dejar el checkout
+avanzado aunque los contenedores sigan en la versión anterior: corregir y repetir
+el workflow sobre el último commit de `main`.
+
+Referencias: [autenticación oficial de Google para GitHub Actions](https://github.com/google-github-actions/auth),
+[OS Login](https://cloud.google.com/compute/docs/oslogin/set-up-oslogin),
+[IAP para SSH](https://cloud.google.com/iap/docs/using-tcp-forwarding),
+[Docker Compose up](https://docs.docker.com/reference/cli/docker/compose/up/).
