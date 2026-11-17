@@ -83,7 +83,8 @@ deploy_main() {
     echo "Despliegue verificado: $sha en https://$domain"
 }
 
-if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+# SSH lo ejecuta con bash -s: sin archivo, BASH_SOURCE no tiene elementos.
+if [[ "${BASH_SOURCE[0]:-$0}" == "$0" ]]; then
     if (( EUID != 0 )); then
         echo 'Ejecuta el despliegue con sudo.' >&2
         exit 1

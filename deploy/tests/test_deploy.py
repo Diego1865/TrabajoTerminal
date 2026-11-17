@@ -51,6 +51,20 @@ deploy_main "$TARGET_SHA" "$APP_DIR" "$STATE_DIR" "$LOCK_FILE"
 
 @unittest.skipUnless(BASH, "Se requiere Bash")
 class DeploymentTests(unittest.TestCase):
+    def test_stdin_entrypoint_matches_file_without_deploying(self):
+        # El workflow usa bash -s: BASH_SOURCE puede estar vacío con set -u.
+        # Un SHA inválido detiene la ejecución antes de acceder a la VM o Docker.
+        direct = subprocess.run([BASH, SCRIPT.as_posix(), "invalid"],
+                                text=True, encoding="utf-8", capture_output=True, timeout=30)
+        streamed = subprocess.run([BASH, "-s", "--", "invalid"],
+                                  input=SCRIPT.read_text(encoding="utf-8"),
+                                  text=True, encoding="utf-8", capture_output=True, timeout=30)
+        self.assertEqual(direct.returncode, 1, direct.stderr)
+        self.assertTrue("Ejecuta el despliegue con sudo." in direct.stderr or
+                        "Se requiere el SHA completo" in direct.stderr, direct.stderr)
+        self.assertEqual(streamed.returncode, direct.returncode, streamed.stderr)
+        self.assertEqual(streamed.stderr, direct.stderr)
+
     def deploy(self, scenario, sha=SHA):
         with tempfile.TemporaryDirectory() as folder:
             root = Path(folder)
