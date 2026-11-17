@@ -1,6 +1,7 @@
 from Modelo.database import connect_to_database
 from Servicios.evaluacion import cls_de_intento
 from Modelo.dao_retroalimentacion import guardar_recomendacion
+from Servicios.retroalimentacion import adaptar_recomendacion
 from Servicios.legibilidad import medir_legibilidad
 import json
 from datetime import timezone
@@ -510,7 +511,7 @@ def _consultar_intentos(cursor, id_usuario_tutor, id_alumno=None, con_imagen=Tru
             "texto_detectado_ocr": row[7],
             "puntuacion": row[8],
             "retroalimentacion": row[9],
-            "recomendacion": _json(row[17]),
+            "recomendacion": adaptar_recomendacion(_json(row[17]), row[0]),
             "evaluacion_preliminar": evaluacion,
             "cls_confirmado": _json(row[11]),
             "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion),

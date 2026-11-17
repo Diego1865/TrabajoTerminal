@@ -66,7 +66,7 @@ export default function TabRetroalimentacion({ recomendaciones, cargando, error,
             <p className="mb-2 text-sm font-semibold text-slate-600">
               {item.titulo_ejercicio} · Intento del {new Date(item.fecha_envio).toLocaleString('es-MX')}
             </p>
-            <RetroalimentacionEjercicio recomendacion={item.recomendacion} />
+            <RetroalimentacionEjercicio recomendacion={item.recomendacion} idIntento={item.id_intento} />
           </article>)}
         </div>
       )}

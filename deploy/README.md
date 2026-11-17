@@ -403,10 +403,15 @@ legibilidad). Sin medidas confirmadas o con todos los promedios disponibles
 en 6/10 o más, no se genera. El corte se define en
 `BackEnd/Servicios/retroalimentacion.py`; sigue el límite de riesgo actual.
 
-La recomendación conserva el promedio al calificar, instrucciones, texto modelo,
-fecha y fuente. Legibilidad propone practicar sobre pauta; ortografía, una plana
-breve con hasta cinco palabras de la respuesta de referencia (o un modelo genérico
-si no hay referencia). No interpreta diferencias del OCR como errores confirmados.
+La recomendación conserva el promedio al calificar, fecha, materiales, tiempo
+sugerido, instrucciones y una ficha propia. Para legibilidad se proponen
+actividades de motricidad: laberintos, bolitas de papel y rasgado de tiras con
+las manos. El identificador del intento selecciona una de las tres propuestas;
+no se infiere una dificultad motora específica a partir de la calificación.
+El laberinto se genera con una semilla estable y tiene una ruta entre la entrada
+y la salida. Ortografía propone una plana breve con hasta cinco palabras de la
+respuesta de referencia (o un modelo genérico si no hay referencia). No interpreta
+diferencias del OCR como errores confirmados.
 Si se vuelve a calificar, reemplaza la recomendación de ese intento o la retira
 si ya no hace falta. Notas y recomendación se guardan en una sola transacción.
 
@@ -417,22 +422,38 @@ Son prácticas opcionales, sin entrega, vencimiento ni nota. No aparecen en
 **Ejercicios** ni tienen una acción o API para asignarlas. El alumno solo recibe
 sus recomendaciones; el tutor solo ve las de sus alumnos.
 
-Recursos consultados el 17 de noviembre de 2026:
+Las instrucciones y el modelo se muestran dentro de la aplicación. El botón
+**Descargar ficha PDF** genera una ficha tamaño carta, lista para imprimir, con
+ReportLab en el backend. No necesita consultar páginas externas ni usar el
+diálogo de impresión del navegador. También es posible practicar en el cuaderno
+con las instrucciones, sin descargar ni imprimir.
 
-- [RecursosTIC: fichas y papel pautado](https://recursostic.net/fichas-de-caligrafia-para-imprimir/).
-- [EduTools: generador de caligrafía](https://edutools.tools/herramientas/generador-caligrafia/).
+Las descargas requieren autenticación y se filtran por propietario del intento
+o tutor actual: `GET /api/alumno/retroalimentacion/{id_intento}/pdf` y
+`GET /api/tutor/intentos/{id_intento}/retroalimentacion/pdf`. Se generan en memoria,
+sin archivos públicos ni envío de información a terceros. El PDF contiene la
+actividad y campos en blanco para nombre/fecha; no incluye notas del alumno.
 
-Los enlaces abren otra pestaña; no se envían automáticamente nombres, notas ni
-textos del alumno al proveedor. Las instrucciones y el texto modelo también
-permiten practicar en un cuaderno si el recurso externo no está disponible.
-Los modelos e instrucciones de la aplicación son propios; no se copian fichas
-de terceros ni se consulta la web durante la calificación.
+Las recomendaciones antiguas (versión 1, con enlaces) se adaptan al leerlas para
+mostrar actividades propias. Se conservan área, promedio, motivo y fecha
+originales; no hace falta recalificar ni ejecutar otra migración SQL. Las nuevas
+guardan la actividad y la geometría de la ficha como versión 2, de modo que alumno,
+tutor y PDF vean lo mismo. Los registros del catálogo de la migración 007 se
+siguen usando como categorías de recomendación; sus antiguos enlaces no se muestran.
+
+Para actualizar una instalación Docker, reconstruir backend y frontend con
+`up -d --build`, conservando los mismos archivos Compose y el mismo `.env` del
+arranque habitual (incluido el override OCR si se usa). Sin Docker, instalar las
+dependencias actualizadas de `BackEnd/requirements.txt` y reiniciar ambos servicios.
 
 Validación local: desde `BackEnd`, `python -m unittest discover -s tests -v`;
 desde `FrontEnd`, `npm run build`. Para comprobar con SQL Server, aplica la
 migración dos veces, califica con promedios bajos y abre la recomendación como
 alumno y tutor. Recalifica con promedios suficientes y verifica que desaparezca,
 que no se duplique al guardar dos veces y que el catálogo de ejercicios no cambie.
+Las pruebas cubren también la adaptación de recomendaciones anteriores, la
+conectividad de los laberintos, permisos de descarga y contenido de las cuatro
+fichas PDF. Revisar las fichas en papel o mediante renderizado para comprobar su diseño.
 
 ## Módulo de dictado
 

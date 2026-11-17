@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from Control.auth import get_password_hash, verify_password, enviar_codigo
 from Control.dependencies import require_tutor
+from Control.retroalimentacion import descargar_ficha
 from typing import List
 from Modelo.schemas_alumno import AlumnoCreate, AlumnoResponse, AlumnoProgresoResponse
 from Modelo.dao_tutor import * 
@@ -11,6 +12,11 @@ from Servicios.codigos import verificar_codigo
 from Servicios.correo import CorreoError
 
 router = APIRouter()
+
+
+@router.get("/intentos/{id_intento}/retroalimentacion/pdf")
+def descargar_retroalimentacion(id_intento: int, current_user: dict = Depends(require_tutor)):
+    return descargar_ficha(id_intento, current_user["id_usuario"], "tutor")
 
 #Funciones relacionadas con el tutor y sus alumnos
 @router.post("/registrar", response_model=dict)

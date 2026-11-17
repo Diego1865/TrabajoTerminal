@@ -326,7 +326,8 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                   )}
                 </div>
 
-                <RetroalimentacionEjercicio recomendacion={intentoActivo.recomendacion} />
+                <RetroalimentacionEjercicio key={intentoActivo.id_intento} recomendacion={intentoActivo.recomendacion}
+                  idIntento={intentoActivo.id_intento} rol="tutor" />
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center gap-2 mb-4">
                     <Award className="text-blue-600" size={20}/>

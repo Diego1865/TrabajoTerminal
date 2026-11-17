@@ -8,3 +8,4 @@ apscheduler
 PyJWT
 google-cloud-vision>=3.10,<4
 Pillow>=11.3,<13
+reportlab>=4,<5

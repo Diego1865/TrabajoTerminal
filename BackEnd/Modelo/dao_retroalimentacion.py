@@ -2,7 +2,7 @@
 import json
 
 from Modelo.database import connect_to_database
-from Servicios.retroalimentacion import crear_recomendacion
+from Servicios.retroalimentacion import crear_recomendacion, adaptar_recomendacion
 
 
 def guardar_recomendacion(cursor, id_intento, id_alumno, contenido):
@@ -16,7 +16,7 @@ def guardar_recomendacion(cursor, id_intento, id_alumno, contenido):
         FROM vw_Progreso_Alumno WHERE id_alumno = ?
     """, (id_alumno,))
     promedios = cursor.fetchone()
-    recomendacion = crear_recomendacion(*promedios, contenido) if promedios else None
+    recomendacion = crear_recomendacion(*promedios, contenido, semilla=id_intento) if promedios else None
     cursor.execute("DELETE FROM Recomendacion WHERE id_intento = ? AND detalle_json IS NOT NULL", (id_intento,))
     if recomendacion:
         cursor.execute("""
@@ -50,7 +50,38 @@ def obtener_retroalimentacion_alumno_dao(id_usuario):
             ORDER BY r.fecha_generacion DESC, r.id_recomendacion DESC
         """, (id_usuario,))
         return [{"id_intento": r[0], "titulo_ejercicio": r[1], "fecha_envio": r[2],
-                 "recomendacion": json.loads(r[3])} for r in cursor.fetchall()]
+                 "recomendacion": adaptar_recomendacion(json.loads(r[3]), r[0])} for r in cursor.fetchall()]
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def obtener_recomendacion_intento_dao(id_intento, id_usuario, rol):
+    """Solo permite descargar al alumno dueño del intento o a su tutor actual."""
+    if rol not in ("alumno", "tutor"):
+        raise PermissionError("Rol no permitido")
+    filtro = "a.id_usuario = ?" if rol == "alumno" else "t.id_usuario = ?"
+    conn = connect_to_database()
+    if not conn:
+        raise ConnectionError("Error de conexión a la base de datos")
+    cursor = conn.cursor()
+    try:
+        cursor.execute(f"""
+            SELECT TOP (1) r.detalle_json
+            FROM Recomendacion r
+            JOIN Intentos i ON i.id_intento = r.id_intento
+            JOIN Alumno a ON a.id_alumno = i.id_alumno
+            JOIN Tutor t ON t.id_tutor = a.id_tutor
+            WHERE i.id_intento = ? AND {filtro}
+                AND i.puntuacion IS NOT NULL AND r.detalle_json IS NOT NULL
+            ORDER BY r.id_recomendacion DESC
+        """, (id_intento, id_usuario))
+        fila = cursor.fetchone()
+        recomendacion = adaptar_recomendacion(json.loads(fila[0]), id_intento) if fila else None
+        if not recomendacion:
+            # La misma respuesta para una recomendación ausente o de otra persona.
+            raise FileNotFoundError("No se encontró una recomendación disponible para este intento")
+        return recomendacion
     finally:
         cursor.close()
         conn.close()
