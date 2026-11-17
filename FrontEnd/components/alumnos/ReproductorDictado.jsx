@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Volume2, Square } from 'lucide-react';
+import { elegirVoz } from './lectorejercicio';
 
 export default function ReproductorDictado({ palabras = [] }) {
   const [indice, setIndice] = useState(0);
@@ -35,10 +36,10 @@ export default function ReproductorDictado({ palabras = [] }) {
     detener();
     setError('');
     const voz = new SpeechSynthesisUtterance(palabras[indice]);
-    const voces = window.speechSynthesis.getVoices();
-    const vozEspanol = voces.find(v => v.lang.toLowerCase() === 'es-mx') || voces.find(v => v.lang.startsWith('es'));
+    // Misma voz que el lector del ejercicio (la del sistema o la elegida en el menú «Voz»).
+    const vozEspanol = elegirVoz(window.speechSynthesis.getVoices());
     if (vozEspanol) voz.voice = vozEspanol;
-    voz.lang = 'es-MX';
+    voz.lang = vozEspanol?.lang || 'es-MX';
     voz.rate = 0.8;
     voz.onend = () => {
       setHablando(false);
