@@ -227,9 +227,9 @@ def restablecer_password_alumno(id_alumno: int, data: PasswordAlumnoUpdate, curr
 def calificar_intento(id_intento: int, datos: CalificarIntentoRequest, current_user: dict = Depends(require_tutor)):
     try:
         intento = obtener_intento_tutor_dao(id_intento, current_user["id_usuario"])
-        calificar_intento_dao(id_intento, datos.calificacion, datos.retroalimentacion, datos.cls_correctas,
+        recomendacion = calificar_intento_dao(id_intento, datos.calificacion, datos.retroalimentacion, datos.cls_correctas,
                               datos.legibilidad.model_dump() if datos.legibilidad else None)
-        return {"message": "Calificación registrada correctamente."}
+        return {"message": "Calificación registrada correctamente.", "recomendacion": recomendacion}
     except PermissionError as pe:
         raise HTTPException(status_code=403, detail=str(pe))
     except ValueError as ve:

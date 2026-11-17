@@ -8,12 +8,14 @@ import TabProgreso      from './TabProgreso';
 import LienzoDigital    from './LienzoDigital';
 import CapturaEscritura from './CapturaEscritura';
 import PerfilAlumno     from './PerfilAlumno';
+import TabRetroalimentacion, { useRetroalimentacion } from './TabRetroalimentacion';
 
 const TABS = [
   { id: 'proximos',    emoji: '📋', label: 'Próximos',    color: '#3B82F6', shadow: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
   { id: 'completados', emoji: '✅', label: 'Completados', color: '#10B981', shadow: '#065F46', bg: '#ECFDF5', border: '#A7F3D0' },
   { id: 'vencidos',    emoji: '⏰', label: 'Vencidos',    color: '#F97316', shadow: '#C2410C', bg: '#FFF7ED', border: '#FED7AA' },
   { id: 'progreso',    emoji: '📈', label: 'Mi Progreso', color: '#EC4899', shadow: '#9D174D', bg: '#FDF2F8', border: '#FBCFE8' },
+  { id: 'retroalimentacion', emoji: '💡', label: 'Retroalimentación', color: '#7C3AED', shadow: '#4C1D95', bg: '#F5F3FF', border: '#DDD6FE' },
   { id: 'perfil',      emoji: '👤', label: 'Perfil',      color: '#8B5CF6', shadow: '#4C1D95', bg: '#F5F3FF', border: '#DDD6FE' },
 ];
 
@@ -37,6 +39,7 @@ const MainAlumno = ({ onLogout }) => {
   const [modoVista,       setModoVista]       = useState('tabs');
   const [ejercicioActivo, setEjercicioActivo] = useState(null);
   const [tutorActivo,     setTutorActivo]     = useState(true);
+  const retroalimentacion = useRetroalimentacion(idAlumno);
 
   useEffect(() => {
     const verificarTutor = async () => {
@@ -173,9 +176,9 @@ const MainAlumno = ({ onLogout }) => {
           </button>
         </div>
 
-        {/* Tabs: en celular, cuadrícula 3 + 2 (centrada) con el emoji arriba; desde sm, una sola fila. */}
+        {/* Tres columnas en pantallas pequeñas; fila flexible en pantallas grandes. */}
         <div className="flex justify-center mb-7 w-full">
-          <div className="grid grid-cols-6 gap-2 p-2 w-full max-w-md sm:flex sm:w-auto sm:max-w-full [&>*]:col-span-2 [&>*:nth-child(4)]:col-start-2"
+          <div className="grid grid-cols-3 gap-2 p-2 w-full max-w-xl lg:flex lg:w-auto lg:max-w-full"
             style={{
               background: 'rgba(255,255,255,0.7)', borderRadius: '22px',
               border: '2px solid #E5E7EB', boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
@@ -185,9 +188,12 @@ const MainAlumno = ({ onLogout }) => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setPestañaActiva(tab.id)}
+                  onClick={() => {
+                    setPestañaActiva(tab.id);
+                    if (tab.id === 'retroalimentacion') retroalimentacion.actualizar();
+                  }}
                   aria-pressed={isActive}
-                  className="tab-btn min-w-0 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-4 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-nowrap"
+                  className="tab-btn min-w-0 flex flex-col lg:flex-row items-center justify-center gap-0.5 sm:gap-1.5 px-1 sm:px-4 py-2 sm:py-2.5 font-black text-xs sm:text-sm whitespace-normal lg:whitespace-nowrap"
                   style={{
                     borderRadius: '15px',
                     background: isActive ? tab.color : 'transparent',
@@ -197,7 +203,8 @@ const MainAlumno = ({ onLogout }) => {
                     transform:  isActive ? 'translateY(-2px)' : 'none',
                   }}>
                   <span aria-hidden="true" className="text-lg sm:text-sm leading-none">{tab.emoji}</span>
-                  <span>{tab.label}</span>
+                  <span className="max-w-full break-words leading-tight">{tab.label}{tab.id === 'retroalimentacion' && retroalimentacion.recomendaciones.length > 0
+                    ? ` (${retroalimentacion.recomendaciones.length})` : ''}</span>
                 </button>
               );
             })}
@@ -206,8 +213,17 @@ const MainAlumno = ({ onLogout }) => {
 
         {/* Contenido por tab */}
         <div className="w-full max-w-4xl mx-auto">
+          {pestañaActiva !== 'retroalimentacion' && retroalimentacion.recomendaciones.length > 0 && (
+            <div className="mb-5 rounded-2xl border-2 border-violet-200 bg-violet-50 p-4 text-violet-900" role="status">
+              <p className="font-bold">Tienes prácticas opcionales para seguir mejorando.</p>
+              <button type="button" onClick={() => { setPestañaActiva('retroalimentacion'); retroalimentacion.actualizar(); }}
+                className="min-h-11 underline font-bold text-sm">Ver mi retroalimentación</button>
+            </div>
+          )}
           {pestañaActiva === 'perfil' ? (
             <PerfilAlumno />
+          ) : pestañaActiva === 'retroalimentacion' ? (
+            <TabRetroalimentacion {...retroalimentacion} />
           ) : pestañaActiva === 'progreso' ? (
             <TabProgreso idAlumno={idAlumno} />
           ) : !tutorActivo ? (

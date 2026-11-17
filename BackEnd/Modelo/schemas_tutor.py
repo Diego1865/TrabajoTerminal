@@ -73,6 +73,7 @@ class IntentoTutorResponse(BaseModel):
     cls_sugerido: Optional[dict] = None
     legibilidad_confirmada: Optional[dict] = None
     legibilidad_sugerida: Optional[dict] = None
+    recomendacion: Optional[dict] = None
 
 class EjercicioTutorResponse(BaseModel):
     id_ejercicio_tutor: int

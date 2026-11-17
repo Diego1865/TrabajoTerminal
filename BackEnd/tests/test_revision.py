@@ -20,12 +20,13 @@ class ProgresoComoVistaTests(unittest.TestCase):
     @patch("Modelo.dao_tutor.connect_to_database")
     def test_calificar_no_escribe_tablas_de_progreso(self, conectar):
         cursor = conectar.return_value.cursor.return_value
-        cursor.fetchone.return_value = (5, None, None, None)
+        cursor.fetchone.side_effect = [(5, None, None, None), (None, 8)]
         dao_tutor.calificar_intento_dao(1, 80, "bien", legibilidad={
             "alineacion": 8, "tamano": 8, "espaciado": 8, "inclinacion": 8})
         sql = sql_ejecutado(cursor)
         self.assertIn("Analisis_Caligrafico", sql)
-        self.assertNotIn("Progreso_Alumno", sql)
+        self.assertNotIn("UPDATE Progreso_Alumno", sql)
+        self.assertNotIn("INSERT INTO Progreso_Alumno", sql)
         self.assertNotIn("Historial_Alumno", sql)
         conectar.return_value.commit.assert_called_once()
 

@@ -6,8 +6,17 @@ from Modelo.schemas_auth import PasswordUpdate
 from Modelo.dao_alumno import *
 from Modelo.dao_auth import obtener_hash_contrasena_dao
 from Servicios.ocr import OcrError
+from Modelo.dao_retroalimentacion import obtener_retroalimentacion_alumno_dao
 
 router = APIRouter()
+
+
+@router.get("/retroalimentacion")
+def obtener_retroalimentacion(current_user: dict = Depends(require_alumno)):
+    try:
+        return obtener_retroalimentacion_alumno_dao(current_user["id_usuario"])
+    except Exception:
+        raise HTTPException(status_code=500, detail="No se pudieron cargar las recomendaciones")
 
 #Perfil del alumno (solo lectura en la app: sus datos y contraseña los cambia el tutor)
 @router.get("/perfil")

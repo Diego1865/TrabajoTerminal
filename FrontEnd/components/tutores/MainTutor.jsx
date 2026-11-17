@@ -8,6 +8,7 @@ import TabEjercicios from "./TabEjercicios";
 import PerfilTutor from "./PerfilTutor";
 import EvaluacionPreliminar from "./EvaluacionPreliminar";
 import ModalPasswordAlumno from "./ModalPasswordAlumno";
+import RetroalimentacionEjercicio from "../RetroalimentacionEjercicio";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -181,15 +182,21 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
         throw new Error(typeof data.detail === "string" ? data.detail : "Error al guardar la calificación.");
       }
       
-      alert("Calificación guardada correctamente.");
+      const resultado = await res.json();
+      alert(resultado.recomendacion
+        ? "Calificación guardada. El alumno ya puede ver su práctica recomendada en Retroalimentación."
+        : "Calificación guardada. No se necesita una práctica de retroalimentación con los promedios confirmados disponibles.");
       
       setIntentos(prev => prev.map(i => 
         i.id_intento === intentoActivo.id_intento 
           ? { ...i, puntuacion: calificacion, retroalimentacion, cls_confirmado: clsConfirmado,
+              recomendacion: resultado.recomendacion,
               legibilidad_confirmada: legibilidadConfirmada || i.legibilidad_confirmada }
           : i
       ));
-      setIntentoActivo(null);
+      setIntentoActivo(prev => prev?.id_intento === intentoActivo.id_intento ? ({ ...prev, puntuacion: calificacion, retroalimentacion,
+        cls_confirmado: clsConfirmado, legibilidad_confirmada: legibilidadConfirmada || prev.legibilidad_confirmada,
+        recomendacion: resultado.recomendacion }) : prev);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -319,12 +326,17 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                   )}
                 </div>
 
+                <RetroalimentacionEjercicio recomendacion={intentoActivo.recomendacion} />
                 <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
                   <div className="flex items-center gap-2 mb-4">
                     <Award className="text-blue-600" size={20}/>
                     <h3 className="font-bold text-gray-800">Asignar Calificación</h3>
                   </div>
                   <form id="form-calificacion" onSubmit={handleGuardarCalificacion}>
+                    <p className="mb-4 text-sm text-slate-600">
+                      Al guardar, si un promedio confirmado es menor a 6/10, el alumno recibirá una práctica opcional
+                      para el área de menor promedio. Puedes consultarla aquí; no se asigna al panel de ejercicios.
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                       <div className="md:col-span-1">
                         <label className="block text-xs font-semibold text-gray-600 mb-1">Puntuación (0-100)</label>

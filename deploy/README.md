@@ -386,6 +386,54 @@ Referencias:
 - https://docs.cloud.google.com/sql/docs/sqlserver/import-export/import-export-bak
 - https://docs.cloud.google.com/sql/docs/sqlserver/users
 
+## Retroalimentación opcional
+
+Antes de iniciar esta versión sobre una base existente, aplica
+`BackEnd/BD/migraciones/007_retroalimentacion.sql`. Los inicializadores de
+`docker-compose.yml` (local) y `compose.demo.yml` (VM) la descubren automáticamente.
+Ambos esperan a que termine la inicialización antes de arrancar el backend.
+Es idempotente; agrega
+`Recomendacion.detalle_json` y dos actividades en `Actividad_Sugerida`, sin
+crear ejercicios asignables ni modificar las entregas existentes.
+
+Al guardar una calificación, se consultan los promedios confirmados de ortografía
+y legibilidad, incluyendo el intento recién calificado. Si alguno es menor a
+6/10, se guarda una sola recomendación para el menor promedio (empate:
+legibilidad). Sin medidas confirmadas o con todos los promedios disponibles
+en 6/10 o más, no se genera. El corte se define en
+`BackEnd/Servicios/retroalimentacion.py`; sigue el límite de riesgo actual.
+
+La recomendación conserva el promedio al calificar, instrucciones, texto modelo,
+fecha y fuente. Legibilidad propone practicar sobre pauta; ortografía, una plana
+breve con hasta cinco palabras de la respuesta de referencia (o un modelo genérico
+si no hay referencia). No interpreta diferencias del OCR como errores confirmados.
+Si se vuelve a calificar, reemplaza la recomendación de ese intento o la retira
+si ya no hace falta. Notas y recomendación se guardan en una sola transacción.
+
+El alumno la ve en **Retroalimentación**, con un aviso en su inicio; se actualiza
+al entrar, recuperar el foco o cada minuto mientras la página está visible.
+El tutor la consulta en el detalle del intento y justo después de calificar.
+Son prácticas opcionales, sin entrega, vencimiento ni nota. No aparecen en
+**Ejercicios** ni tienen una acción o API para asignarlas. El alumno solo recibe
+sus recomendaciones; el tutor solo ve las de sus alumnos.
+
+Recursos consultados el 17 de noviembre de 2026:
+
+- [RecursosTIC: fichas y papel pautado](https://recursostic.net/fichas-de-caligrafia-para-imprimir/).
+- [EduTools: generador de caligrafía](https://edutools.tools/herramientas/generador-caligrafia/).
+
+Los enlaces abren otra pestaña; no se envían automáticamente nombres, notas ni
+textos del alumno al proveedor. Las instrucciones y el texto modelo también
+permiten practicar en un cuaderno si el recurso externo no está disponible.
+Los modelos e instrucciones de la aplicación son propios; no se copian fichas
+de terceros ni se consulta la web durante la calificación.
+
+Validación local: desde `BackEnd`, `python -m unittest discover -s tests -v`;
+desde `FrontEnd`, `npm run build`. Para comprobar con SQL Server, aplica la
+migración dos veces, califica con promedios bajos y abre la recomendación como
+alumno y tutor. Recalifica con promedios suficientes y verifica que desaparezca,
+que no se duplique al guardar dos veces y que el catálogo de ejercicios no cambie.
+
 ## Módulo de dictado
 
 En **Profesor → Ejercicios → Nuevo dictado**, selecciona palabras de los seis
@@ -408,8 +456,9 @@ del profesor, igual que los ejercicios existentes.
 Antes de arrancar el backend actualizado sobre una base existente, aplica
 `BackEnd/BD/migraciones/003_dictados.sql` a SQL Server. Añade la columna nullable
 `Ejercicios.id_tutor_creador` y su clave foránea sin modificar las entregas.
-`compose.demo.yml` la aplica con el inicializador de migraciones al arrancar;
-el entorno local antiguo requiere ejecutar el archivo manualmente. Los dictados
+`docker-compose.yml` y `compose.demo.yml` la aplican con el inicializador de
+migraciones al arrancar; al ejecutar el backend sin Compose, aplica el archivo
+manualmente. Los dictados
 guardan fechas límite en UTC y las muestran en la hora local del navegador.
 La entrega de un dictado vencido se rechaza aunque el cierre periódico no haya corrido.
 

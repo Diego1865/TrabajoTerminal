@@ -1,5 +1,6 @@
 from Modelo.database import connect_to_database
 from Servicios.evaluacion import cls_de_intento
+from Modelo.dao_retroalimentacion import guardar_recomendacion
 from Servicios.legibilidad import medir_legibilidad
 import json
 from datetime import timezone
@@ -399,7 +400,7 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
             JOIN Ejercicios e ON e.id_ejercicio = et.id_ejercicio
             WHERE i.id_intento = ?
         """, (id_intento,))
-        _, resultado, texto, contenido = cursor.fetchone()
+        id_alumno, resultado, texto, contenido = cursor.fetchone()
 
         if cls_correctas is not None:
             # CLS confirmado por el tutor: las posibles las fija la respuesta esperada (no el cliente).
@@ -438,7 +439,9 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
                     VALUES (origen.id_intento, ?, ?, ?, ?, ?);
             """, (id_intento, *valores, detalle, *valores, detalle))
 
+        recomendacion = guardar_recomendacion(cursor, id_intento, id_alumno, _json(contenido))
         conn.commit()
+        return recomendacion
     except Exception:
         conn.rollback()
         raise
@@ -472,7 +475,8 @@ def _consultar_intentos(cursor, id_usuario_tutor, id_alumno=None, con_imagen=Tru
             ac.alineacion_score,
             ac.tamano_letra_score,
             ac.espaciado_score,
-            ac.inclinacion_score
+            ac.inclinacion_score,
+            recomendacion.detalle_json
         FROM Intentos i
         LEFT JOIN Analisis_Ortografico ao ON ao.id_intento = i.id_intento
         LEFT JOIN Analisis_Caligrafico ac ON ac.id_intento = i.id_intento
@@ -481,6 +485,11 @@ def _consultar_intentos(cursor, id_usuario_tutor, id_alumno=None, con_imagen=Tru
         JOIN Tutor t ON a.id_tutor = t.id_tutor
         JOIN Ejercicios_Tutor et ON i.id_ejercicio_tutor = et.id_ejercicio_tutor
         JOIN Ejercicios e ON et.id_ejercicio = e.id_ejercicio
+        OUTER APPLY (
+            SELECT TOP (1) r.detalle_json FROM Recomendacion r
+            WHERE r.id_intento = i.id_intento AND r.detalle_json IS NOT NULL
+            ORDER BY r.id_recomendacion DESC
+        ) recomendacion
         WHERE t.id_usuario = ? {filtro_alumno}
         ORDER BY i.fecha_envio DESC
     """, (id_usuario_tutor, id_alumno) if id_alumno is not None else (id_usuario_tutor,))
@@ -501,6 +510,7 @@ def _consultar_intentos(cursor, id_usuario_tutor, id_alumno=None, con_imagen=Tru
             "texto_detectado_ocr": row[7],
             "puntuacion": row[8],
             "retroalimentacion": row[9],
+            "recomendacion": _json(row[17]),
             "evaluacion_preliminar": evaluacion,
             "cls_confirmado": _json(row[11]),
             "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion),

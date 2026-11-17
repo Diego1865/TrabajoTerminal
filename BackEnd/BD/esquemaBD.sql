@@ -158,6 +158,7 @@ CREATE TABLE Recomendacion (
     fecha_generacion  DATETIME2     NOT NULL DEFAULT GETDATE(),
     estado            VARCHAR(15)   NOT NULL DEFAULT 'pendiente',
     prioridad         VARCHAR(15)       NULL,              
+    detalle_json      NVARCHAR(MAX)     NULL,
     CONSTRAINT PK_Recomendacion       PRIMARY KEY (id_recomendacion),
     CONSTRAINT FK_Recom_intento       FOREIGN KEY (id_intento)   REFERENCES Intentos(id_intento),
     CONSTRAINT FK_Recom_actividad     FOREIGN KEY (id_actividad) REFERENCES Actividad_Sugerida(id_actividad)
