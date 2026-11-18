@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { CheckCircle, Eraser, Pen, RotateCcw, Trash2, Maximize2, Minimize2, BookOpen, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, Eraser, Pen, RotateCcw, Trash2, Maximize2, Minimize2, MoveVertical, BookOpen, Image as ImageIcon } from 'lucide-react';
 import LectorEjercicio from './lectorejercicio';
 import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
@@ -56,9 +56,10 @@ const TextoGuia = ({ texto }) => (
 
 /* ─── Botón de herramienta ─── */
 const ToolBtn = ({ onClick, active, activeColor, activeShadow, label, children }) => (
-  <button onClick={onClick}
-    className="flex flex-col items-center gap-1 transition-all"
+  <button type="button" onClick={onClick} aria-pressed={active}
+    className="flex min-h-11 items-center justify-center gap-1 transition-all"
     style={{
+      flexDirection: 'var(--direccion-herramienta, column)',
       padding: '8px 12px', borderRadius: '14px', minWidth: '64px',
       background: active ? activeColor : '#F3F4F6',
       color: active ? 'white' : '#6B7280',
@@ -82,6 +83,7 @@ const ToolBtn = ({ onClick, active, activeColor, activeShadow, label, children }
 
 // Cuadro grande del cuaderno de primer grado (cuadrícula de fondo del lienzo).
 const CUADRO = 40;
+const ALTO_MINIMO_PAPEL = 24 * CUADRO;
 
 // Margen izquierdo estilo cuaderno: ocupa la primera columna de cuadros y pone
 // un símbolo por cuadro, de arriba hacia abajo: «•», «•», «x», «•», «•», «x»…
@@ -113,7 +115,8 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   /* ── Estado del lienzo ── */
   const canvasRef    = useRef(null);
   const contextRef   = useRef(null);
-  const [esBorrador,        setEsBorrador]        = useState(false);
+  const areaVisibleRef = useRef(null);
+  const [herramienta,      setHerramienta]       = useState('lapiz');
   const [historial,         setHistorial]          = useState([]);
   const [esFullscreen,      setEsFullscreen]       = useState(false);
   const [enviando,          setEnviando]           = useState(false);
@@ -123,6 +126,8 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const [mostrarMenuLapiz,  setMostrarMenuLapiz]   = useState(false);
   const [mostrarMenuGoma,   setMostrarMenuGoma]    = useState(false);
   const [notificacion,      setNotificacion]       = useState(null);
+  const esBorrador = herramienta === 'goma';
+  const esDesplazamiento = herramienta === 'mover';
 
   /* ── Trazo en curso: refs para no esperar a React entre eventos del lápiz ── */
   const dibujandoRef      = useRef(false);
@@ -131,8 +136,9 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   const lapizDetectadoRef = useRef(false);  // con lápiz, se ignoran palma y dedos
 
   const MAX_HISTORIAL = 30;
-  // Píxeles internos por píxel de pantalla (densidad). Tope de ancho para que la imagen no pese de más.
+  // Limita el tamaño de las copias de deshacer en una hoja más alta que la vista.
   const MAX_ANCHO_INTERNO = 1600;
+  const MAX_PIXELES_INTERNOS = 2_000_000;
   const ratioRef = useRef(1);
 
   const opcionesLapiz = [2, 4, 6, 10];
@@ -191,7 +197,11 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
     if (!canvas) return;
     const { clientWidth: w, clientHeight: h } = canvas.parentElement;
     if (!w || !h) return;
-    const ratio = Math.max(1, Math.min(window.devicePixelRatio || 1, MAX_ANCHO_INTERNO / w));
+    const ratio = Math.min(
+      window.devicePixelRatio || 1,
+      MAX_ANCHO_INTERNO / w,
+      Math.sqrt(MAX_PIXELES_INTERNOS / (w * h)),
+    );
     const ancho = Math.round(w * ratio), alto = Math.round(h * ratio);
     if (canvas.width === ancho && canvas.height === alto) return;
 
@@ -264,13 +274,23 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
   }, [mostrarMenuLapiz, mostrarMenuGoma]);
 
   const manejarClickLapiz = () => {
-    if (!esBorrador) { setMostrarMenuLapiz(v => !v); setMostrarMenuGoma(false); }
-    else { setEsBorrador(false); setMostrarMenuLapiz(false); setMostrarMenuGoma(false); }
+    setMostrarMenuLapiz(herramienta === 'lapiz' && !mostrarMenuLapiz);
+    setMostrarMenuGoma(false);
+    setHerramienta('lapiz');
   };
 
   const manejarClickGoma = () => {
-    if (esBorrador) { setMostrarMenuGoma(v => !v); setMostrarMenuLapiz(false); }
-    else { setEsBorrador(true); setMostrarMenuGoma(false); setMostrarMenuLapiz(false); }
+    setMostrarMenuGoma(esBorrador && !mostrarMenuGoma);
+    setMostrarMenuLapiz(false);
+    setHerramienta('goma');
+  };
+
+  const manejarClickMover = () => {
+    terminarDibujo();
+    setCursorPos(null);
+    setMostrarMenuLapiz(false);
+    setMostrarMenuGoma(false);
+    setHerramienta('mover');
   };
 
   const deshacer = () => {
@@ -374,9 +394,12 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
       if (!canvasRef.current) return;
       setEnviando(true);
       const original = canvasRef.current;
+      const tinta = limiteTinta(original);
+      const altoVisible = areaVisibleRef.current.clientHeight * ratioRef.current;
+      const altoEscrito = tinta ? tinta.abajo + CUADRO * ratioRef.current : 0;
       const exportacion = document.createElement('canvas');
       exportacion.width = original.width;
-      exportacion.height = original.height;
+      exportacion.height = Math.min(original.height, Math.ceil(Math.max(altoVisible, altoEscrito)));
       const ctx = exportacion.getContext('2d');
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, exportacion.width, exportacion.height);
@@ -494,12 +517,17 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
         {/* ── Barra de herramientas ── */}
         <div data-menu-area
-          className={`flex gap-2 mb-4 p-2.5 w-full justify-center flex-wrap ${esFullscreen ? '[@media(max-height:560px)]:col-start-1 [@media(max-height:560px)]:row-start-1 [@media(max-height:560px)]:row-span-3 [@media(max-height:560px)]:flex-col [@media(max-height:560px)]:flex-nowrap [@media(max-height:560px)]:justify-start [@media(max-height:560px)]:items-stretch [@media(max-height:560px)]:w-auto [@media(max-height:560px)]:mb-0 [@media(max-height:560px)]:p-1.5' : ''}`}
+          className={`flex gap-2 mb-4 p-2.5 w-full justify-center flex-wrap ${esFullscreen ? `
+            [@media(max-height:560px)]:col-start-1 [@media(max-height:560px)]:row-start-1 [@media(max-height:560px)]:row-span-3
+            [@media(max-height:560px)]:flex-col [@media(max-height:560px)]:flex-nowrap [@media(max-height:560px)]:justify-start
+            [@media(max-height:560px)]:items-stretch [@media(max-height:560px)]:w-auto [@media(max-height:560px)]:mb-0
+            [@media(max-height:560px)]:p-1.5 [@media(max-height:560px)]:gap-1
+            [@media(max-height:560px)]:[--direccion-herramienta:row] [@media(max-height:560px)]:[&>div>button]:w-full` : ''}`}
           style={{ background: 'white', borderRadius: '20px', border: '2.5px solid #E5E7EB', boxShadow: '0 4px 0 #E5E7EB' }}>
 
           {/* Lápiz */}
           <div className="relative">
-            <ToolBtn onClick={manejarClickLapiz} active={!esBorrador} activeColor="#7C3AED" activeShadow="#4C1D95" label="Lápiz">
+            <ToolBtn onClick={manejarClickLapiz} active={herramienta === 'lapiz'} activeColor="#7C3AED" activeShadow="#4C1D95" label="Lápiz">
               <Pen size={esFullscreen ? 22 : 18} />
             </ToolBtn>
             {mostrarMenuLapiz && (
@@ -539,15 +567,21 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             )}
           </div>
 
-          <div style={{ width: '2px', background: '#E5E7EB', margin: '4px 4px' }} />
+          <ToolBtn onClick={manejarClickMover} active={esDesplazamiento} activeColor="#7C3AED" activeShadow="#4C1D95" label="Mover">
+            <MoveVertical size={esFullscreen ? 22 : 18} />
+          </ToolBtn>
 
-          <ToolBtn onClick={deshacer} active={false} label="Deshacer">
+          <div className={esFullscreen ? '[@media(max-height:560px)]:hidden' : undefined}
+            style={{ width: '2px', background: '#E5E7EB', margin: '4px 4px' }} />
+
+          <ToolBtn onClick={deshacer} label="Deshacer">
             <RotateCcw size={esFullscreen ? 22 : 18} />
           </ToolBtn>
 
           <button onClick={limpiarCanvas}
-            className="flex flex-col items-center gap-1 transition-all hover:scale-105"
+            className="flex min-h-11 items-center justify-center gap-1 transition-all hover:scale-105"
             style={{
+              flexDirection: 'var(--direccion-herramienta, column)',
               padding: '8px 12px', borderRadius: '14px', minWidth: '64px',
               background: '#FEF2F2', color: '#EF4444',
               boxShadow: '0 2px 0 #FECACA', border: '2px solid #FECACA',
@@ -567,71 +601,81 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             border: '2.5px solid #DDD6FE',
             boxShadow: '0 4px 0 #DDD6FE',
             background: '#FAFAFE',
-            backgroundImage: 'linear-gradient(#EDE9FE 1px, transparent 1px), linear-gradient(90deg, #EDE9FE 1px, transparent 1px)',
-            backgroundSize: `${CUADRO}px ${CUADRO}px`,
-            touchAction: 'none',
             userSelect: 'none',
           }}>
-
-          {/* Margen izquierdo: primera columna de cuadros, un símbolo por cuadro.
-              El ancho CUADRO + 1 hace que la raya del margen caiga sobre la línea de la cuadrícula. */}
-          <div aria-hidden="true" className="absolute left-0 top-0 bottom-0 pointer-events-none"
-            style={{
-              width: `${CUADRO + 1}px`,
-              zIndex: 1,
-              borderRight: '2px solid #C4B5FD',
-              backgroundImage: MOSAICO_MARGEN,
-              backgroundRepeat: 'repeat-y',
-              backgroundPosition: 'left top',
-            }} />
-
-          {/* Imagen superpuesta DENTRO del lienzo (guía semitransparente) */}
-          {imagenGuia && imagenEnLienzo && (
-            <img
-              src={imagenGuia}
-              alt="Guía"
-              className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-              style={{ opacity: 0.18, zIndex: 1 }}
-            />
-          )}
-
-          {/* Badge indicador cuando hay imagen en lienzo */}
-          {imagenGuia && imagenEnLienzo && (
-            <div className="absolute top-2 left-12 flex items-center gap-1 px-2 py-1 z-10 pointer-events-none"
-              style={{ background: 'rgba(109,40,217,0.12)', borderRadius: '8px', border: '1px solid #DDD6FE' }}>
-              <ImageIcon size={12} style={{ color: '#7C3AED' }} />
-              <span className="text-xs font-black" style={{ color: '#7C3AED' }}>Guía visible</span>
-            </div>
-          )}
-
-          <canvas
-            ref={canvasRef}
-            onPointerDown={iniciarDibujo}
-            onPointerMove={dibujar}
-            onPointerUp={terminarDibujo}
-            onPointerCancel={terminarDibujo}
-            onPointerLeave={() => setCursorPos(null)}
-            onContextMenu={(e) => e.preventDefault()}
-            className="absolute top-0 left-0 w-full h-full cursor-crosshair"
-            style={{ zIndex: 2, touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
-          />
-
-          {/* Cursor goma visual */}
-          {esBorrador && cursorPos && (
-            <div className="absolute pointer-events-none border-2 border-dashed rounded-full"
+          <div
+            ref={areaVisibleRef}
+            className="h-full overflow-x-hidden overflow-y-auto"
+            style={{ containerType: 'size' }}
+            role="region"
+            aria-label="Área de escritura"
+            tabIndex={0}
+            onScroll={esBorrador ? () => setCursorPos(null) : undefined}
+          >
+            <div className="relative"
               style={{
-                left: `${cursorPos.x}px`, top: `${cursorPos.y}px`,
-                width: `${grosurGoma * 2}px`, height: `${grosurGoma * 2}px`,
-                transform: 'translate(-50%, -50%)',
-                borderColor: '#EC4899',
-                boxShadow: 'inset 0 0 5px rgba(236,72,153,0.3)',
-                zIndex: 3,
-              }} />
-          )}
+                height: `max(${ALTO_MINIMO_PAPEL}px, calc(100% + ${3 * CUADRO}px))`,
+                backgroundImage: 'linear-gradient(#EDE9FE 1px, transparent 1px), linear-gradient(90deg, #EDE9FE 1px, transparent 1px)',
+                backgroundSize: `${CUADRO}px ${CUADRO}px`,
+              }}>
+              {/* Margen izquierdo: un símbolo por cuadro, alineado con la cuadrícula. */}
+              <div aria-hidden="true" className="absolute left-0 top-0 bottom-0 pointer-events-none"
+                style={{
+                  width: `${CUADRO + 1}px`,
+                  zIndex: 1,
+                  borderRight: '2px solid #C4B5FD',
+                  backgroundImage: MOSAICO_MARGEN,
+                  backgroundRepeat: 'repeat-y',
+                  backgroundPosition: 'left top',
+                }} />
+
+              {/* La guía ocupa la parte inicial de la hoja y se desplaza con ella. */}
+              {imagenGuia && imagenEnLienzo && (
+                <>
+                  <img
+                    src={imagenGuia}
+                    alt="Guía"
+                    className="absolute left-0 top-0 w-full h-[100cqh] object-contain pointer-events-none select-none"
+                    style={{ opacity: 0.18, zIndex: 1 }}
+                  />
+                  <div className="absolute top-2 left-12 flex items-center gap-1 px-2 py-1 z-10 pointer-events-none"
+                    style={{ background: 'rgba(109,40,217,0.12)', borderRadius: '8px', border: '1px solid #DDD6FE' }}>
+                    <ImageIcon size={12} style={{ color: '#7C3AED' }} />
+                    <span className="text-xs font-black" style={{ color: '#7C3AED' }}>Guía visible</span>
+                  </div>
+                </>
+              )}
+
+              <canvas
+                ref={canvasRef}
+                onPointerDown={iniciarDibujo}
+                onPointerMove={dibujar}
+                onPointerUp={terminarDibujo}
+                onPointerCancel={terminarDibujo}
+                onPointerLeave={() => setCursorPos(null)}
+                onContextMenu={(e) => e.preventDefault()}
+                className={`absolute top-0 left-0 w-full h-full ${esDesplazamiento ? 'pointer-events-none' : 'cursor-crosshair'}`}
+                style={{ zIndex: 2, touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}
+              />
+
+              {/* Cursor goma visual */}
+              {esBorrador && cursorPos && (
+                <div className="absolute pointer-events-none border-2 border-dashed rounded-full"
+                  style={{
+                    left: `${cursorPos.x}px`, top: `${cursorPos.y}px`,
+                    width: `${grosurGoma * 2}px`, height: `${grosurGoma * 2}px`,
+                    transform: 'translate(-50%, -50%)',
+                    borderColor: '#EC4899',
+                    boxShadow: 'inset 0 0 5px rgba(236,72,153,0.3)',
+                    zIndex: 3,
+                  }} />
+              )}
+            </div>
+          </div>
 
           {/* Botón fullscreen */}
           <button onClick={solicitarFullscreen}
-            className="absolute bottom-3 right-3 p-3 transition-all hover:scale-110"
+            className="absolute bottom-3 right-8 p-3 transition-all hover:scale-110"
             style={{ background: 'white', borderRadius: '12px', border: '2px solid #DDD6FE', boxShadow: '0 2px 0 #DDD6FE', zIndex: 4 }}
             title={esFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
             aria-label={esFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}>
