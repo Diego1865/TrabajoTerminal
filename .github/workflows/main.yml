@@ -1,0 +1,131 @@
+name: CI y despliegue demo
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Pruebas backend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: BackEnd
+    env:
+      SECRET_KEY: clave-exclusiva-de-pruebas-sin-acceso-a-produccion
+      GOOGLE_VISION_ENABLED: "false"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: BackEnd/requirements*.txt
+      - name: Instalar dependencias
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unixodbc
+          python -m pip install -r requirements-dev.txt
+      - name: Ejecutar pruebas sin servicios de producción
+        run: python -m unittest discover -s tests -v
+
+  frontend:
+    name: Compilar frontend
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: FrontEnd
+    env:
+      NEXT_PUBLIC_API_URL: ""
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: FrontEnd/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+  deployment_checks:
+    name: Validar despliegue
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: bash -n deploy/deploy-main.sh
+      - run: python3 -m unittest discover -s deploy/tests -v
+      - name: Validar Compose con valores ficticios
+        env:
+          APP_DOMAIN: example.invalid
+          GOOGLE_CLOUD_PROJECT: proyecto-de-pruebas
+          DB_SERVER: 127.0.0.1
+          DB_PASSWORD: solo-validacion
+          SECRET_KEY: solo-validacion
+        run: docker compose -f compose.demo.yml config --quiet
+
+  deploy:
+    name: Desplegar en grafia-demo
+    needs: [backend, frontend, deployment_checks]
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: demo
+    concurrency:
+      group: grafia-demo-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_ZONE: ${{ vars.GCP_ZONE }}
+      GCP_INSTANCE: ${{ vars.GCP_INSTANCE }}
+      DEPLOY_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Comprobar configuración
+        env:
+          WIF_PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+          DEPLOY_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          : "${GCP_PROJECT_ID:?Configura GCP_PROJECT_ID}"
+          : "${GCP_ZONE:?Configura GCP_ZONE}"
+          : "${GCP_INSTANCE:?Configura GCP_INSTANCE}"
+          : "${WIF_PROVIDER:?Configura GCP_WIF_PROVIDER}"
+          : "${DEPLOY_ACCOUNT:?Configura GCP_DEPLOY_SERVICE_ACCOUNT}"
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Actualizar la VM por IAP
+        run: |
+          gcloud compute ssh "$GCP_INSTANCE" \
+            --project="$GCP_PROJECT_ID" --zone="$GCP_ZONE" \
+            --tunnel-through-iap --quiet \
+            --ssh-key-expire-after=70m \
+            --command="sudo -n bash -s -- '$DEPLOY_SHA'" \
+            -- -T -o ServerAliveInterval=30 -o ServerAliveCountMax=10 \
+            < deploy/deploy-main.sh

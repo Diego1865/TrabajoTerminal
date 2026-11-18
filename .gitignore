@@ -9,6 +9,7 @@ __pycache__/
 credentials/
 *-credentials.json
 .env.demo
+.env.demo.contenedor
 deploy/*.tar.gz
 deploy/*.bak
 !deploy/README.md
@@ -16,3 +17,4 @@ backups/
 
 # Archivo temporal con la cuenta de correo (deploy/README.md, sección 7)
 smtp.txt
+.instalado
