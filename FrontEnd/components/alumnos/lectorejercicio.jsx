@@ -8,7 +8,7 @@ import { Volume2, Square, Turtle, Rabbit } from 'lucide-react';
    Props:
      titulo       string — se lee primero
      descripcion  string — la instrucción
-     texto        string — texto guía (no se lee en modo «completar»: daría la respuesta)
+     texto        string — texto guía (en modo «completar» solo se leen sílabas ya separadas)
      pista        string — se lee al final
      modo         string — evaluacion.modo del ejercicio (copia | completar | imagen)
      etiqueta     string — texto del botón (default: "Escuchar")
@@ -21,6 +21,10 @@ import { Volume2, Square, Turtle, Rabbit } from 'lucide-react';
 const VELOCIDADES = { lento: 0.7, normal: 0.9 };
 const CLAVE_VELOCIDAD = 'lector-velocidad';
 const PAUSA_MS = 700;
+const PAUSA_SILABA_MS = 2000;
+const SEPARADOR_SILABAS = /[ \t]*[+\-‐‑–—]+[ \t]*/u;
+const GRUPO_SILABAS = /\p{L}+(?:[ \t]*[+\-‐‑–—]+[ \t]*\p{L}+)+/gu;
+const ES_SILABA = /^[^aeiouáéíóúü]*[aeiouáéíóúü]+[^aeiouáéíóúü]*$/iu;
 
 // Quita emojis (la voz diría «emoji de queso…») y los huecos «_» de los ejercicios de completar.
 export const textoParaVoz = (texto) => String(texto || '')
@@ -29,11 +33,48 @@ export const textoParaVoz = (texto) => String(texto || '')
   .replace(/\s+/g, ' ')
   .trim();
 
-// Partes que se leen, en orden. En «completar» el texto guía revela la respuesta.
-export const partesParaLeer = ({ titulo, descripcion, texto, pista, modo }) =>
-  [titulo, descripcion, modo === 'completar' ? '' : texto, pista && `Pista: ${pista}`]
-    .map(textoParaVoz)
-    .filter(Boolean);
+const frase = (valor) => {
+  const texto = textoParaVoz(valor);
+  return /[\p{L}\p{N}]/u.test(texto) ? { texto, pausaMs: PAUSA_MS } : null;
+};
+
+const parteSilaba = (texto) => ({ texto, pausaMs: PAUSA_SILABA_MS });
+
+// Lee por separado los grupos escritos como «lu + na» o «ma-ri-po-sa».
+function separarGruposSilabicos(texto) {
+  const partes = [];
+  let inicio = 0;
+  for (const grupo of texto.matchAll(GRUPO_SILABAS)) {
+    const silabas = grupo[0].split(SEPARADOR_SILABAS);
+    if (!silabas.every(silaba => ES_SILABA.test(silaba))) continue;
+    partes.push(frase(texto.slice(inicio, grupo.index)), ...silabas.map(parteSilaba));
+    inicio = grupo.index + grupo[0].length;
+  }
+  return [...partes, frase(texto.slice(inicio))].filter(Boolean);
+}
+
+function partesGuia({ texto, titulo, modo }) {
+  const partes = separarGruposSilabicos(texto);
+  // En las actividades de completar se pueden leer las piezas visibles sin unirlas.
+  if (modo === 'completar') {
+    return !texto.includes('_') && partes.every(parte => parte.pausaMs === PAUSA_SILABA_MS) ? partes : [];
+  }
+
+  if (/\bsílabas\b/iu.test(titulo) && /^[\p{L}\s,;.…]+$/u.test(texto)) {
+    const silabas = texto.match(/\p{L}+/gu) ?? [];
+    if (silabas.length > 1 && silabas.every(silaba => ES_SILABA.test(silaba))) {
+      return silabas.map(parteSilaba);
+    }
+  }
+  return partes;
+}
+
+export const partesParaLeer = ({ titulo, descripcion, texto, pista, modo }) => [
+  frase(titulo),
+  frase(descripcion),
+  ...partesGuia({ texto: String(texto || '').normalize('NFC'), titulo, modo }),
+  ...(pista ? separarGruposSilabicos(`Pista: ${pista}`) : []),
+].filter(Boolean);
 
 const leerVelocidadGuardada = () => {
   try {
@@ -148,22 +189,27 @@ const useLector = () => {
   /* Detener al desmontar */
   useEffect(() => detener, [detener]);
 
-  const leer = useCallback((frases) => {
-    if (!soportado || !frases.length) return;
+  const leer = useCallback((partes) => {
+    if (!soportado || !partes.length) return;
     detener();
     const turno = turnoRef.current;
     const sintesis = window.speechSynthesis;
 
     const decir = (i) => {
       if (turno !== turnoRef.current) return;
-      if (i >= frases.length) { setHablando(false); return; }
-      const utter = new SpeechSynthesisUtterance(frases[i]);
+      if (i >= partes.length) { setHablando(false); return; }
+      const { texto, pausaMs } = partes[i];
+      const utter = new SpeechSynthesisUtterance(texto);
       const voz = elegirVoz(sintesis.getVoices(), vozUri);
       utter.lang  = voz?.lang || 'es-MX';
       utter.rate  = VELOCIDADES[velocidad];
       utter.pitch = 1.05;
       if (voz) utter.voice = voz;
-      const siguiente = () => { pausaRef.current = setTimeout(() => decir(i + 1), PAUSA_MS); };
+      const siguiente = () => {
+        if (turno !== turnoRef.current) return;
+        if (i === partes.length - 1) { setHablando(false); return; }
+        pausaRef.current = setTimeout(() => decir(i + 1), pausaMs);
+      };
       utter.onend   = siguiente;
       utter.onerror = (e) => { if (e.error !== 'interrupted' && e.error !== 'canceled') siguiente(); };
       sintesis.speak(utter);
@@ -207,7 +253,7 @@ const LectorEjercicio = ({
   etiqueta    = 'Escuchar',
 }) => {
   const { hablando, leer, detener, soportado, velocidad, setVelocidad, voces, vozUri, setVozUri } = useLector();
-  const frases = partesParaLeer({ titulo, descripcion, texto, pista, modo });
+  const partes = partesParaLeer({ titulo, descripcion, texto, pista, modo });
   const opcionesVoz = vocesEspanol(voces);
   const vozActual = elegirVoz(voces, vozUri);
 
@@ -223,7 +269,7 @@ const LectorEjercicio = ({
     <div className="flex items-center gap-2 flex-wrap">
       <button
         type="button"
-        onClick={() => (hablando ? detener() : leer(frases))}
+        onClick={() => (hablando ? detener() : leer(partes))}
         className="flex items-center gap-2 px-4 py-2.5 font-black text-sm transition-all hover:scale-105 active:scale-95"
         style={{
           borderRadius: '14px',

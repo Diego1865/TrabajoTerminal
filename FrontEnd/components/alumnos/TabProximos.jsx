@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { BookOpen, Clock, Loader2, Tag, X } from 'lucide-react';
+import { Clock, Loader2, Tag, X } from 'lucide-react';
+import GruposEjercicios from '../GruposEjercicios';
 
 const TabProximos = ({ idAlumno, onRealizar }) => {
   const [ejercicios, setEjercicios] = useState([]);
@@ -82,8 +83,8 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ejercicios.map((ejercicio) => {
+      <GruposEjercicios ejercicios={ejercicios}
+        renderEjercicio={(ejercicio) => {
           const dias = diasRestantes(ejercicio.fecha_fin);
           const badge = getBadgeStyle(dias);
 
@@ -138,8 +139,8 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
               </div>
             </div>
           );
-        })}
-      </div>
+        }}
+      />
 
       {ejercicios.length === 0 && !loadingPage && (
         <div className="text-center py-16">

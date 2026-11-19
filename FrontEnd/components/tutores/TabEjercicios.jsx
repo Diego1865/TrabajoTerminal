@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { BookOpen, CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
 import CrearDictado from './CrearDictado';
+import GruposEjercicios from '../GruposEjercicios';
+import IlustracionesEjercicio from '../IlustracionesEjercicio';
 import { METODOS, ERRORES, MODALIDADES, leerContenido, leerPedagogia } from '../pedagogiaEjercicio';
 
 const Seccion = ({ titulo, children, className = '' }) => (
@@ -30,9 +32,7 @@ const VistaAlumno = ({ ejercicio }) => {
         )}
         {contenido.imagen_guia && (
           <div className="mb-3 p-2 flex justify-center bg-white" style={{ border: '2px solid #EDE9FE', borderRadius: '12px' }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={contenido.imagen_guia} alt="Imagen de referencia del ejercicio"
-              className="max-w-full object-contain" style={{ maxHeight: '120px' }} />
+            <IlustracionesEjercicio src={contenido.imagen_guia} tarjetas={contenido.tarjetas_imagen} alturaMaxima="120px" />
           </div>
         )}
         {contenido.texto_guia && (
@@ -120,12 +120,10 @@ const TabEjercicios = ({ idTutor }) => {
   const [filtroMetodo, setFiltroMetodo] = useState('todos');
   const [filtroError, setFiltroError] = useState('todos');
 
-  // Dictados propios primero; luego el catálogo en el orden de la ruta pedagógica.
   const ejerciciosVisibles = useMemo(() => ejercicios
     .map(e => ({ ...e, pedagogia: leerPedagogia(e) }))
     .filter(e => (filtroMetodo === 'todos' || e.pedagogia?.metodo === filtroMetodo)
-      && (filtroError === 'todos' || e.pedagogia?.error_objetivo === filtroError))
-    .sort((a, b) => (a.pedagogia?.orden ?? 0) - (b.pedagogia?.orden ?? 0)),
+      && (filtroError === 'todos' || e.pedagogia?.error_objetivo === filtroError)),
   [ejercicios, filtroMetodo, filtroError]);
   const erroresPresentes = useMemo(() => {
     const claves = new Set(ejercicios.map(e => leerPedagogia(e)?.error_objetivo).filter(Boolean));
@@ -260,9 +258,8 @@ const TabEjercicios = ({ idTutor }) => {
         </div>
       )}
 
-      {/* Tarjetas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ejerciciosVisibles.map((ejercicio) => {
+      <GruposEjercicios ejercicios={ejerciciosVisibles}
+        renderEjercicio={(ejercicio) => {
           const activo = activados.has(ejercicio.id_ejercicio);
           return (
             <div
@@ -332,8 +329,8 @@ const TabEjercicios = ({ idTutor }) => {
               </div>
             </div>
           );
-        })}
-      </div>
+        }}
+      />
 
       {ejercicios.length > 0 && ejerciciosVisibles.length === 0 && (
         <p className="text-center py-10 font-black text-gray-400">No hay ejercicios con esos filtros.</p>
