@@ -1,7 +1,7 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, Response, status, Depends
 from Control.auth import get_password_hash, verify_password, enviar_codigo
 from Control.dependencies import require_tutor
-from Control.retroalimentacion import descargar_ficha
+from Control.retroalimentacion import cambiar_estado_practica, consultar_practica_tutor, descargar_ficha
 from typing import List
 from Modelo.schemas_alumno import AlumnoCreate, AlumnoResponse, AlumnoProgresoResponse
 from Modelo.dao_tutor import * 
@@ -17,6 +17,18 @@ router = APIRouter()
 @router.get("/intentos/{id_intento}/retroalimentacion/pdf")
 def descargar_retroalimentacion(id_intento: int, current_user: dict = Depends(require_tutor)):
     return descargar_ficha(id_intento, current_user["id_usuario"], "tutor")
+
+
+@router.get("/intentos/{id_intento}/retroalimentacion/practica")
+def obtener_practica(id_intento: int, response: Response, incluir_imagen: bool = False,
+                     current_user: dict = Depends(require_tutor)):
+    response.headers["Cache-Control"] = "private, no-store"
+    return consultar_practica_tutor(id_intento, current_user["id_usuario"], incluir_imagen)
+
+
+@router.put("/intentos/{id_intento}/retroalimentacion/practica/{id_recomendacion}")
+def validar_practica(id_intento: int, id_recomendacion: int, current_user: dict = Depends(require_tutor)):
+    return cambiar_estado_practica(id_intento, id_recomendacion, current_user["id_usuario"], "tutor")
 
 #Funciones relacionadas con el tutor y sus alumnos
 @router.post("/registrar", response_model=dict)

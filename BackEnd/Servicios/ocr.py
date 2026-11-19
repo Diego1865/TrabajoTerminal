@@ -13,6 +13,8 @@ class OcrError(Exception):
 
 MAX_BYTES = 10 * 1024 * 1024
 MAX_PIXELS = 20_000_000
+MIN_LADO_LARGO = 1024
+MIN_LADO_CORTO = 768
 
 
 def pistas_idioma():
@@ -51,6 +53,9 @@ def preparar_imagen(data_url):
                 raise OcrError("El contenido debe ser una imagen PNG o JPEG.", 422)
             if original.width * original.height > MAX_PIXELS:
                 raise OcrError("La imagen excede los 20 millones de píxeles.", 413)
+            lado_corto, lado_largo = sorted(original.size)
+            if lado_largo < MIN_LADO_LARGO or lado_corto < MIN_LADO_CORTO:
+                raise OcrError("La imagen debe tener al menos 1024 × 768 píxeles (o 768 × 1024 en vertical).", 422)
             original.load()
             # El lienzo usa transparencia: componer sobre blanco conserva los trazos.
             rgba = original.convert("RGBA")

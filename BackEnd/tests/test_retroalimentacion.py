@@ -123,7 +123,7 @@ class AccesoFichaTests(unittest.TestCase):
 class PersistenciaTests(unittest.TestCase):
     def test_recalificar_reemplaza_y_puede_retirar_recomendacion(self):
         cursor = MagicMock()
-        cursor.fetchone.side_effect = [(2, 8), (14,), (9, 8)]
+        cursor.fetchone.side_effect = [None, (2, 8), (14,), None, (9, 8)]
         r = guardar_recomendacion(cursor, 20, 3, {})
         self.assertEqual(r['area'], 'ortografia')
         self.assertIsNone(guardar_recomendacion(cursor, 20, 3, {}))
@@ -139,7 +139,7 @@ class PersistenciaTests(unittest.TestCase):
     def test_promedios_se_consultan_despues_de_confirmar_y_antes_del_commit(self, conectar):
         conn = conectar.return_value
         cursor = conn.cursor.return_value
-        cursor.fetchone.side_effect = [(3, None, None, None), (None, 4), (14,)]
+        cursor.fetchone.side_effect = [(3, None, None, None), None, (None, 4), (14,)]
         r = dao_tutor.calificar_intento_dao(20, 40, 'Practica', legibilidad={
             'alineacion': 4, 'tamano': 4, 'espaciado': 4, 'inclinacion': 4})
         self.assertEqual(r['area'], 'legibilidad')
@@ -152,7 +152,7 @@ class PersistenciaTests(unittest.TestCase):
     @patch('Modelo.dao_tutor.connect_to_database')
     def test_fallo_de_recomendacion_revierte_tambien_la_calificacion(self, conectar):
         conn = conectar.return_value
-        conn.cursor.return_value.fetchone.side_effect = [(3, None, None, None), (4, 9), None]
+        conn.cursor.return_value.fetchone.side_effect = [(3, None, None, None), None, (4, 9), None]
         with self.assertRaisesRegex(ValueError, 'migración 007'):
             dao_tutor.calificar_intento_dao(20, 40, 'Practica')
         conn.commit.assert_not_called()
@@ -160,17 +160,18 @@ class PersistenciaTests(unittest.TestCase):
 
     @patch('Modelo.dao_tutor.connect_to_database')
     def test_nota_general_sola_no_genera_recomendacion(self, conectar):
-        conectar.return_value.cursor.return_value.fetchone.side_effect = [(3, None, None, None), (None, None)]
+        conectar.return_value.cursor.return_value.fetchone.side_effect = [(3, None, None, None), None, (None, None)]
         self.assertIsNone(dao_tutor.calificar_intento_dao(20, 0, 'Revisa'))
 
     @patch('Modelo.dao_retroalimentacion.connect_to_database')
     def test_lectura_filtrada_por_usuario_incluye_intentos_anteriores(self, conectar):
         cursor = conectar.return_value.cursor.return_value
         r = crear_recomendacion(2, 8)
-        cursor.fetchall.return_value = [(20, 'Copia', datetime(2026, 11, 17), json.dumps(r)),
-                                       (10, 'Copia', datetime(2026, 11, 16), json.dumps(r))]
+        cursor.fetchall.return_value = [(20, 'Copia', datetime(2026, 11, 17), json.dumps(r), 3, 'validada', None, None),
+                                       (10, 'Copia', datetime(2026, 11, 16), json.dumps(r), 2, 'sugerida', None, None)]
         respuesta = obtener_retroalimentacion_alumno_dao(33)
         self.assertEqual([i['id_intento'] for i in respuesta], [20, 10])
+        self.assertEqual(respuesta[0]['practica']['estado'], 'validada')
         consulta = cursor.execute.call_args
         self.assertIn('a.id_usuario = ?', consulta.args[0])
         self.assertIn('i.puntuacion IS NOT NULL', consulta.args[0])

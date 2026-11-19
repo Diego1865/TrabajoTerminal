@@ -12,8 +12,8 @@ from Servicios.ocr import OcrError, pistas_idioma, preparar_imagen, reconocer_es
 from Modelo.dao_alumno import registrar_intento_dao
 
 
-def imagen_prueba():
-    imagen = Image.new("RGBA", (20, 10), (0, 0, 0, 0))
+def imagen_prueba(tamano=(1024, 768)):
+    imagen = Image.new("RGBA", tamano, (0, 0, 0, 0))
     imagen.putpixel((2, 3), (0, 0, 0, 255))
     salida = io.BytesIO()
     imagen.save(salida, format="PNG")
@@ -23,7 +23,7 @@ def imagen_prueba():
 class ImagenTests(unittest.TestCase):
     def test_transparencia_blanca_y_trazo_conservado(self):
         resultado = Image.open(io.BytesIO(preparar_imagen(imagen_prueba())))
-        self.assertEqual(resultado.size, (20, 10))
+        self.assertEqual(resultado.size, (1024, 768))
         self.assertEqual(resultado.getpixel((0, 0)), (255, 255, 255))
         self.assertEqual(resultado.getpixel((2, 3)), (0, 0, 0))
 
@@ -40,6 +40,14 @@ class ImagenTests(unittest.TestCase):
             preparar_imagen(imagen_prueba())
         self.assertEqual(error.exception.status_code, 413)
 
+    def test_resolucion_minima_en_ambas_orientaciones(self):
+        preparar_imagen(imagen_prueba((768, 1024)))
+        for dimensiones in ((1023, 768), (1024, 767), (1080, 720)):
+            with self.subTest(dimensiones=dimensiones), self.assertRaises(OcrError) as error:
+                preparar_imagen(imagen_prueba(dimensiones))
+            self.assertEqual(error.exception.status_code, 422)
+            self.assertIn("1024 × 768", str(error.exception))
+
 
 @patch.dict(os.environ, {"GOOGLE_VISION_ENABLED": "true"})
 class GoogleTests(unittest.TestCase):
@@ -47,7 +55,7 @@ class GoogleTests(unittest.TestCase):
     def test_conserva_simbolos_coordenadas_y_confianza(self, cliente):
         cliente.return_value.document_text_detection.return_value = vision.AnnotateImageResponse(
             full_text_annotation=vision.TextAnnotation(text="ñ", pages=[{
-                "width": 20, "height": 10, "blocks": [{"paragraphs": [{"words": [{
+                "width": 1024, "height": 768, "blocks": [{"paragraphs": [{"words": [{
                     "symbols": [{"text": "ñ", "confidence": 0.9,
                                  "bounding_box": {"vertices": [{"x": 0, "y": 0},
                                      {"x": 5, "y": 0}, {"x": 5, "y": 8}, {"x": 0, "y": 8}]}}]

@@ -4,6 +4,7 @@ import { Camera, Upload, X, CheckCircle, Loader, Aperture, RotateCw, Crop, Image
 import LectorEjercicio from './lectorejercicio';
 import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
+import { LADO_LARGO_MINIMO, LADO_CORTO_MINIMO, MENSAJE_RESOLUCION, tieneResolucionMinima } from './resolucionImagen';
 
 /* ─── Colores por tipo de ejercicio ─── */
 const TIPO_CONFIG = {
@@ -40,7 +41,7 @@ const PlantillaGuia = () => (
      idEjercicioTutor  – ID para el endpoint
      alTerminar        – callback con imagenPreview
    ════════════════════════════════════════ */
-const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
+const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio, onEnviar }) => {
 
   /* ── Parsear contenido_base ── */
   const contenido = useMemo(() => {
@@ -67,6 +68,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
   const fileInputRef   = useRef(null);
   const videoRef       = useRef(null);
   const imgRef         = useRef(null);
+  const cargaRef       = useRef(0);
 
   useEffect(() => {
     return () => { if (stream) stream.getTracks().forEach(t => t.stop()); };
@@ -77,22 +79,40 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
   }, [videoRef, stream, mostrarCamaraWeb]);
 
   /* ── Procesar archivo ── */
-  const handleFileChange = (e) => procesarArchivo(e.target.files[0]);
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    procesarArchivo(file);
+  };
 
   const procesarArchivo = (file) => {
-    setError(''); setCrop(null); setModoRecorte(false);
     if (!file) return;
+    const carga = ++cargaRef.current;
+    setImagenPreview(null); setError(''); setCrop(null); setModoRecorte(false);
     if (!file.type.startsWith('image/')) { setError('Solo se admiten imágenes.'); return; }
     if (file.size > 10 * 1024 * 1024) { setError('La imagen es demasiado grande. Máximo 10MB.'); return; }
     const reader = new FileReader();
-    reader.onloadend = () => {
+    reader.onerror = () => {
+      if (carga === cargaRef.current) setError('No se pudo leer el archivo. Elige otra imagen.');
+    };
+    reader.onload = () => {
       const img = new Image();
+      img.onerror = () => {
+        if (carga === cargaRef.current) setError('No se pudo abrir la imagen.');
+      };
       img.onload = () => {
+        if (carga !== cargaRef.current) return;
+        const { naturalWidth: ancho, naturalHeight: alto } = img;
+        if (!tieneResolucionMinima(ancho, alto)) {
+          setError(MENSAJE_RESOLUCION);
+          return;
+        }
         const canvas = document.createElement('canvas');
-        let { width, height } = img;
-        const MAX = 1200;
-        if (width > height && width > MAX) { height *= MAX / width; width = MAX; }
-        else if (height > MAX) { width *= MAX / height; height = MAX; }
+        const largo = Math.max(ancho, alto);
+        const corto = Math.min(ancho, alto);
+        const escala = Math.min(1, Math.max(1200 / largo, LADO_LARGO_MINIMO / largo, LADO_CORTO_MINIMO / corto));
+        const width = Math.round(ancho * escala);
+        const height = Math.round(alto * escala);
         canvas.width = width; canvas.height = height;
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#FFFFFF';
@@ -178,20 +198,27 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
     const canvas = document.createElement('canvas');
     canvas.width  = crop.width  * scaleX;
     canvas.height = crop.height * scaleY;
+    if (!tieneResolucionMinima(canvas.width, canvas.height)) {
+      setError('El recorte es demasiado pequeño. ' + MENSAJE_RESOLUCION);
+      return;
+    }
     canvas.getContext('2d').drawImage(img, crop.x * scaleX, crop.y * scaleY, crop.width * scaleX, crop.height * scaleY, 0, 0, canvas.width, canvas.height);
     setImagenPreview(canvas.toDataURL('image/jpeg', 0.8));
-    setCrop(null); setModoRecorte(false);
+    setCrop(null); setModoRecorte(false); setError('');
   };
 
   /* ── Cámara ── */
   const iniciarCamaraWeb = async () => {
+    cargaRef.current++;
     setError('');
     if (!navigator.mediaDevices?.getUserMedia) {
       setError('La cámara no está disponible. Usa "Subir Archivo" en su lugar.');
       return;
     }
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 } } });
+      const mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+      });
       setStream(mediaStream); setMostrarCamaraWeb(true);
     } catch {
       setError('No se pudo acceder a la cámara. Verifica los permisos.');
@@ -208,6 +235,13 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
       const canvas = document.createElement('canvas');
       canvas.width  = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
+      if (!tieneResolucionMinima(canvas.width, canvas.height)) {
+        detenerCamaraWeb();
+        setImagenPreview(null);
+        setModoRecorte(false);
+        setError(MENSAJE_RESOLUCION + ' Prueba con una foto tomada desde la cámara del dispositivo.');
+        return;
+      }
       canvas.getContext('2d').drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
       setImagenPreview(canvas.toDataURL('image/jpeg', 0.8));
       detenerCamaraWeb();
@@ -223,8 +257,17 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
   /* ── Enviar ── */
   const enviarCaptura = async () => {
     if (!imagenPreview) { setError('Debes seleccionar o capturar una imagen primero.'); return; }
+    if (!tieneResolucionMinima(imgRef.current?.naturalWidth ?? 0, imgRef.current?.naturalHeight ?? 0)) {
+      setError(MENSAJE_RESOLUCION);
+      return;
+    }
     try {
       setEnviando(true); setError('');
+      if (onEnviar) {
+        await onEnviar(imagenPreview);
+        limpiarCaptura();
+        return;
+      }
       if (!idEjercicioTutor) { setError('Error: Identificador del ejercicio no encontrado.'); setEnviando(false); return; }
       const token = localStorage.getItem('token');
       if (!token) { setError('Error: Sesión expirada.'); setEnviando(false); return; }
@@ -244,6 +287,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
   };
 
   const limpiarCaptura = () => {
+    cargaRef.current++;
     setImagenPreview(null); setError(''); setCrop(null); setModoRecorte(false);
     if (cameraInputRef.current) cameraInputRef.current.value = '';
     if (fileInputRef.current)   fileInputRef.current.value   = '';
@@ -361,7 +405,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
         {/* ── Título de la sección de captura ── */}
         <div className="text-center mb-5">
           <div style={{ fontSize: '2.5rem' }} className="mb-1">📷</div>
-          <h2 className="font-black" style={{ fontSize: '1.4rem', color: '#6D28D9' }}>Sube tu Escritura</h2>
+          <h2 className="font-black" style={{ fontSize: '1.4rem', color: '#6D28D9' }}>{onEnviar ? 'Foto de tu práctica' : 'Sube tu Escritura'}</h2>
         </div>
 
         {/* ── Área de vista previa ── */}
@@ -444,7 +488,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
 
         {/* ── Error ── */}
         {error && (
-          <div className="mb-4 p-3 font-bold text-sm text-center"
+          <div role="alert" className="mb-4 p-3 font-bold text-sm text-center"
             style={{ background: '#FFF0F0', border: '2px solid #FCA5A5', borderRadius: '14px', color: '#DC2626' }}>
             😅 {error}
           </div>
@@ -471,7 +515,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
         {/* ── Botón enviar ── */}
         <button
           onClick={enviarCaptura}
-          disabled={!imagenPreview || enviando}
+          disabled={!imagenPreview || enviando || modoRecorte}
           className="w-full py-3.5 font-black text-lg flex items-center justify-center gap-2 transition-all"
           style={{
             borderRadius: '16px',
@@ -482,7 +526,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
           }}>
           {enviando
             ? <><Loader size={20} className="animate-spin" /> Enviando...</>
-            : <><CheckCircle size={20} /> ¡Enviar para Revisión! 🚀</>}
+            : <><CheckCircle size={20} /> {onEnviar ? 'Enviar práctica' : '¡Enviar para Revisión! 🚀'}</>}
         </button>
       </div>
     </div>

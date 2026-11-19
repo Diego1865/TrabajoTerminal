@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from Control.auth import get_password_hash, verify_password
 from Control.dependencies import require_alumno
-from Control.retroalimentacion import descargar_ficha
+from Control.retroalimentacion import EntregaPractica, cambiar_estado_practica, descargar_ficha
 from Modelo.schemas_alumno import AlumnoUpdate, IntentoCreate
 from Modelo.schemas_auth import PasswordUpdate
 from Modelo.dao_alumno import *
@@ -15,6 +15,14 @@ router = APIRouter()
 @router.get("/retroalimentacion/{id_intento}/pdf")
 def descargar_retroalimentacion(id_intento: int, current_user: dict = Depends(require_alumno)):
     return descargar_ficha(id_intento, current_user["id_usuario"], "alumno")
+
+
+@router.put("/retroalimentacion/{id_intento}/practica/{id_recomendacion}")
+def entregar_practica(id_intento: int, id_recomendacion: int, datos: EntregaPractica,
+                     current_user: dict = Depends(require_alumno)):
+    return cambiar_estado_practica(
+        id_intento, id_recomendacion, current_user["id_usuario"], "alumno", datos.imagen_codificada
+    )
 
 
 @router.get("/retroalimentacion")

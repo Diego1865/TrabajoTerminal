@@ -2,8 +2,9 @@
 import { useState } from 'react';
 import { Download, Loader2, NotebookPen } from 'lucide-react';
 import FichaMotricidad from './FichaMotricidad';
+import SeguimientoPractica from './SeguimientoPractica';
 
-export default function RetroalimentacionEjercicio({ recomendacion, idIntento, rol = 'alumno' }) {
+export default function RetroalimentacionEjercicio({ recomendacion, idIntento, rol = 'alumno', practica, onPracticaGuardada }) {
   const [descargando, setDescargando] = useState(false);
   const [error, setError] = useState('');
   if (!recomendacion) return null;
@@ -43,7 +44,7 @@ export default function RetroalimentacionEjercicio({ recomendacion, idIntento, r
       </div>
       <h3 className="mt-2 text-lg font-black">{recomendacion.titulo}</h3>
       <p className="mt-2 text-sm">{recomendacion.motivo}</p>
-      <p className="mt-2 text-sm text-violet-800">Puedes practicar a tu ritmo. No tienes que entregar esta actividad y no afecta tu calificación.</p>
+      <p className="mt-2 text-sm text-violet-800">Puedes practicar a tu ritmo y compartir una foto con el tutor. La práctica es opcional y no afecta tu calificación.</p>
       <p className="mt-3 text-sm font-semibold">{recomendacion.objetivo}</p>
       <p className="mt-2 text-sm"><strong>Materiales:</strong> {recomendacion.materiales?.join(', ')}.</p>
       <p className="mt-1 text-sm"><strong>Tiempo sugerido:</strong> {recomendacion.duracion}.</p>
@@ -66,6 +67,8 @@ export default function RetroalimentacionEjercicio({ recomendacion, idIntento, r
       </button>
       {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
       <p className="mt-2 text-xs text-slate-600">La ficha se genera aquí. Puedes imprimirla o seguir las instrucciones con materiales que tengas en casa.</p>
+      <SeguimientoPractica key={recomendacion.generada_en ?? idIntento} idIntento={idIntento} rol={rol}
+        practicaAlumno={practica} onPracticaGuardada={onPracticaGuardada} />
     </section>
   );
 }

@@ -1,4 +1,5 @@
 'use client';
+import { LADO_CORTO_MINIMO, LADO_LARGO_MINIMO } from './resolucionImagen';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CheckCircle, Eraser, Pen, RotateCcw, Trash2, Maximize2, Minimize2, MoveVertical, BookOpen, Image as ImageIcon } from 'lucide-react';
 import LectorEjercicio from './lectorejercicio';
@@ -398,13 +399,15 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
       const tinta = limiteTinta(original);
       const altoVisible = areaVisibleRef.current.clientHeight * ratioRef.current;
       const altoEscrito = tinta ? tinta.abajo + CUADRO * ratioRef.current : 0;
+      const altoRecorte = Math.min(original.height, Math.ceil(Math.max(altoVisible, altoEscrito)));
+      const vertical = altoRecorte > original.width;
       const exportacion = document.createElement('canvas');
-      exportacion.width = original.width;
-      exportacion.height = Math.min(original.height, Math.ceil(Math.max(altoVisible, altoEscrito)));
+      exportacion.width = Math.max(original.width, vertical ? LADO_CORTO_MINIMO : LADO_LARGO_MINIMO);
+      exportacion.height = Math.max(altoRecorte, vertical ? LADO_LARGO_MINIMO : LADO_CORTO_MINIMO);
       const ctx = exportacion.getContext('2d');
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, exportacion.width, exportacion.height);
-      ctx.drawImage(original, 0, 0);
+      ctx.drawImage(original, 0, 0, original.width, altoRecorte, 0, 0, original.width, altoRecorte);
       const imagenDataUrl = exportacion.toDataURL('image/png');
       if (!idEjercicioTutor) { mostrarMensaje('Error: No se especificó el ejercicio.', 'error'); return; }
       const token = localStorage.getItem('token');

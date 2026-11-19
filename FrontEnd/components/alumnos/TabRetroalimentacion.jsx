@@ -8,6 +8,11 @@ export function useRetroalimentacion(idAlumno) {
   const [error, setError] = useState('');
   const [revision, setRevision] = useState(0);
   const actualizar = useCallback(() => setRevision(v => v + 1), []);
+  const guardarEstadoPractica = (practica) => {
+    setRecomendaciones(lista => lista.map(item =>
+      item.practica?.id_recomendacion === practica.id_recomendacion ? { ...item, practica } : item));
+    actualizar();
+  };
 
   useEffect(() => {
     if (!idAlumno) return;
@@ -45,10 +50,10 @@ export function useRetroalimentacion(idAlumno) {
       window.removeEventListener('focus', refrescar);
     };
   }, [idAlumno, revision]);
-  return { recomendaciones, cargando, error, actualizar };
+  return { recomendaciones, cargando, error, actualizar, guardarEstadoPractica };
 }
 
-export default function TabRetroalimentacion({ recomendaciones, cargando, error, actualizar }) {
+export default function TabRetroalimentacion({ recomendaciones, cargando, error, actualizar, guardarEstadoPractica }) {
   return (
     <div>
       <h2 className="text-2xl font-black text-slate-800">Mi retroalimentación</h2>
@@ -62,11 +67,12 @@ export default function TabRetroalimentacion({ recomendaciones, cargando, error,
           {!error && recomendaciones.length === 0 && <p className="rounded-2xl bg-white border border-violet-200 p-6 text-slate-700">
             Aún no tienes recomendaciones. Aparecerán aquí si un promedio confirmado de legibilidad u ortografía es menor a 6/10.
           </p>}
-          {recomendaciones.map(item => <article key={item.id_intento}>
+          {recomendaciones.map(item => <article key={item.practica?.id_recomendacion ?? item.id_intento}>
             <p className="mb-2 text-sm font-semibold text-slate-600">
               {item.titulo_ejercicio} · Intento del {new Date(item.fecha_envio).toLocaleString('es-MX')}
             </p>
-            <RetroalimentacionEjercicio recomendacion={item.recomendacion} idIntento={item.id_intento} />
+            <RetroalimentacionEjercicio recomendacion={item.recomendacion} idIntento={item.id_intento}
+              practica={item.practica} onPracticaGuardada={guardarEstadoPractica} />
           </article>)}
         </div>
       )}

@@ -88,7 +88,7 @@ def _pie(canvas, documento):
     canvas.line(42, 40, letter[0] - 42, 40)
     canvas.setFillColor(TINTA)
     canvas.setFont("Helvetica", 8)
-    canvas.drawString(42, 27, "Graf-IA | Práctica opcional, sin entrega ni calificación")
+    canvas.drawString(42, 27, "Graf-IA | Práctica opcional, sin calificación")
     canvas.drawRightString(letter[0] - 42, 27, f"Página {documento.page}")
     canvas.restoreState()
 
