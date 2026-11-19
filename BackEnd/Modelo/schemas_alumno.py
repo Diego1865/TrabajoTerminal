@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from decimal import Decimal
 
@@ -40,3 +40,4 @@ class AlumnoUpdate(BaseModel):
 class IntentoCreate(BaseModel):
     id_ejercicio_tutor: int
     imagen_codificada: str
+    cuadro_px: float | None = Field(default=None, gt=0, le=1000, allow_inf_nan=False)

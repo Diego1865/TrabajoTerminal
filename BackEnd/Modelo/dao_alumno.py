@@ -114,7 +114,7 @@ def _legibilidad(ocr, imagen_codificada):
         print("No se pudo medir la legibilidad:", type(error).__name__)
         return None
 
-def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
+def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario, *, cuadro_px=None):
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("No se pudo conectar a la base de datos")
@@ -149,6 +149,8 @@ def registrar_intento_dao(ejercicio_tutor_id, imagen_codificada, id_usuario):
             contenido = {}
         ocr["evaluacion_preliminar"] = evaluar(contenido if isinstance(contenido, dict) else {}, ocr)
         ocr["legibilidad"] = _legibilidad(ocr, imagen_codificada)
+        if cuadro_px is not None and imagen_codificada.startswith("data:image/png;base64,"):
+            ocr["cuadro_px"] = cuadro_px
         
         cursor.execute("""
             INSERT INTO Intentos (id_alumno, id_ejercicio_tutor, imagen_codificada,

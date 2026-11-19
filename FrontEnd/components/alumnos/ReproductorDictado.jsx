@@ -58,7 +58,7 @@ export default function ReproductorDictado({ palabras = [] }) {
 
   return <section aria-label="Reproductor del dictado" className="rounded-2xl border-2 border-violet-200 bg-violet-50 p-4">
     <p aria-live="polite" className="font-black text-violet-900">Palabra {indice + 1} de {palabras.length}</p>
-    <p className="mb-3 text-sm text-gray-600">Escucha y escribe sin numerar. Avanza cuando estés listo; puedes repetir el audio.</p>
+    <p className="mb-3 text-sm text-gray-600">Empieza cada palabra con mayúscula y escríbela sin numerar. Puedes repetir el audio.</p>
     <div className="flex flex-wrap items-center gap-2">
       <button type="button" className={boton} disabled={indice === 0} onClick={() => { detener(); setIndice(indice - 1); }}>Anterior</button>
       <button type="button" className={`${boton} flex items-center gap-2`} onClick={hablando ? detener : escuchar}>

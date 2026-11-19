@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Plus, X } from 'lucide-react';
+import { inicialMayuscula } from '../formatoDictado';
 
 export default function CrearDictado({ token, onCreado, onCerrar }) {
   const [pools, setPools] = useState([]);
@@ -42,7 +43,9 @@ export default function CrearDictado({ token, onCreado, onCerrar }) {
         setError('Usa palabras de hasta 40 letras, sin números ni signos.');
         return false;
       }
-      if (!nuevas.some(p => p.toLocaleLowerCase('es') === palabra.toLocaleLowerCase('es'))) nuevas.push(palabra);
+      if (!nuevas.some(p => p.toLocaleLowerCase('es') === palabra.toLocaleLowerCase('es'))) {
+        nuevas.push(inicialMayuscula(palabra));
+      }
     }
     if (nuevas.length > 50) { setError('Puedes seleccionar hasta 50 palabras.'); return false; }
     setSeleccionadas(nuevas);
@@ -107,7 +110,7 @@ export default function CrearDictado({ token, onCreado, onCerrar }) {
                 const elegida = seleccionadas.some(p => p.toLocaleLowerCase('es') === palabra.toLocaleLowerCase('es'));
                 return <button key={palabra} type="button" aria-pressed={elegida} className={`${boton} ${elegida ? 'bg-violet-200' : 'bg-white'}`}
                   onClick={() => elegida ? setSeleccionadas(seleccionadas.filter(p => p.toLocaleLowerCase('es') !== palabra.toLocaleLowerCase('es'))) : agregar([palabra])}>
-                  {elegida ? '✓ ' : '+ '}{palabra}
+                  {elegida ? '✓ ' : '+ '}{inicialMayuscula(palabra)}
                 </button>;
               })}
             </div>

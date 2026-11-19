@@ -3,6 +3,7 @@ import re
 import unicodedata
 from difflib import SequenceMatcher
 from Servicios.cls import calcular_cls
+from Servicios.dictado import inicial_mayuscula
 
 
 def tokens(texto):
@@ -27,6 +28,20 @@ def cls_de_intento(contenido, texto, evaluacion_guardada=None):
     return None
 
 
+def _referencia_dictado(texto):
+    return " ".join(inicial_mayuscula(palabra) for palabra in texto.split())
+
+
+def evaluacion_de_intento(contenido, ocr, confirmado=False):
+    guardada = ocr.get("evaluacion_preliminar")
+    if confirmado or not isinstance(guardada, dict) or guardada.get("modo") != "dictado":
+        return guardada
+    referencia = guardada.get("texto_esperado")
+    if isinstance(referencia, str) and referencia != _referencia_dictado(referencia) and ocr.get("estado") == "procesado":
+        return evaluar(contenido or {}, ocr)
+    return guardada
+
+
 def evaluar(contenido, ocr):
     config = contenido.get("evaluacion")
     base = {"version": 1, "requiere_revision": True, "observaciones": []}
@@ -35,6 +50,8 @@ def evaluar(contenido, ocr):
     respuestas = config.get("respuestas_aceptadas", [])
     if not isinstance(respuestas, list) or not respuestas or any(not isinstance(r, str) or not r.strip() for r in respuestas):
         return {**base, "estado": "no_configurada", "resumen": "Falta configurar una respuesta de referencia válida."}
+    if config["modo"] == "dictado":
+        respuestas = [_referencia_dictado(respuesta) for respuesta in respuestas]
     texto = ocr.get("texto") or ""
     if ocr.get("estado") != "procesado" or not texto.strip():
         return {**base, "estado": "sin_texto", "resumen": "No hay una transcripción disponible para comparar. Revisa la imagen."}

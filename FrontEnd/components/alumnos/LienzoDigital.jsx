@@ -6,6 +6,7 @@ import LectorEjercicio from './lectorejercicio';
 import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
 import IlustracionesEjercicio from '../IlustracionesEjercicio';
+import FondoCuaderno, { CUADRO } from '../FondoCuaderno';
 
 /* ─── Colores por tipo de ejercicio ─── */
 const TIPO_CONFIG = {
@@ -81,21 +82,7 @@ const ToolBtn = ({ onClick, active, activeColor, activeShadow, label, children }
      alTerminar        – callback con imagenDataUrl
    ════════════════════════════════════════ */
 
-// Cuadro grande del cuaderno de primer grado (cuadrícula de fondo del lienzo).
-const CUADRO = 40;
 const ALTO_MINIMO_PAPEL = 24 * CUADRO;
-
-// Margen izquierdo estilo cuaderno: ocupa la primera columna de cuadros y pone
-// un símbolo por cuadro, de arriba hacia abajo: «•», «•», «x», «•», «•», «x»…
-// Es solo fondo CSS (no se dibuja en el canvas), así que no se borra ni se envía al OCR.
-const MEDIO = CUADRO / 2;  // centro de un cuadro
-const MOSAICO_MARGEN = `url("data:image/svg+xml,${encodeURIComponent(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${CUADRO}" height="${CUADRO * 3}">`
-  + `<g fill="#A78BFA"><circle cx="${MEDIO}" cy="${MEDIO}" r="3.5"/><circle cx="${MEDIO}" cy="${CUADRO + MEDIO}" r="3.5"/></g>`
-  + `<path d="M${MEDIO - 8} ${2 * CUADRO + MEDIO - 8}l16 16M${MEDIO + 8} ${2 * CUADRO + MEDIO - 8}l-16 16"`
-  + ' stroke="#A78BFA" stroke-width="3" stroke-linecap="round"/>'
-  + '</svg>'
-)}")`;
 
 const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
@@ -414,7 +401,11 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/alumno/intento`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id_ejercicio_tutor: idEjercicioTutor, imagen_codificada: imagenDataUrl }),
+        body: JSON.stringify({
+          id_ejercicio_tutor: idEjercicioTutor,
+          imagen_codificada: imagenDataUrl,
+          cuadro_px: CUADRO * ratioRef.current,
+        }),
       });
       if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Error al enviar el intento'); }
       mostrarMensaje('¡Intento enviado correctamente! 🎉', 'exito');
@@ -619,21 +610,8 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
             onScroll={esBorrador ? () => setCursorPos(null) : undefined}
           >
             <div className="relative"
-              style={{
-                height: `max(${ALTO_MINIMO_PAPEL}px, calc(100% + ${3 * CUADRO}px))`,
-                backgroundImage: 'linear-gradient(#EDE9FE 1px, transparent 1px), linear-gradient(90deg, #EDE9FE 1px, transparent 1px)',
-                backgroundSize: `${CUADRO}px ${CUADRO}px`,
-              }}>
-              {/* Margen izquierdo: un símbolo por cuadro, alineado con la cuadrícula. */}
-              <div aria-hidden="true" className="absolute left-0 top-0 bottom-0 pointer-events-none"
-                style={{
-                  width: `${CUADRO + 1}px`,
-                  zIndex: 1,
-                  borderRight: '2px solid #C4B5FD',
-                  backgroundImage: MOSAICO_MARGEN,
-                  backgroundRepeat: 'repeat-y',
-                  backgroundPosition: 'left top',
-                }} />
+              style={{ height: `max(${ALTO_MINIMO_PAPEL}px, calc(100% + ${3 * CUADRO}px))` }}>
+              <FondoCuaderno />
 
               {/* La guía ocupa la parte inicial de la hoja y se desplaza con ella. */}
               {imagenGuia && imagenEnLienzo && (

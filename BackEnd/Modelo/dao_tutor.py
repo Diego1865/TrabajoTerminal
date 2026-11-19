@@ -1,5 +1,5 @@
 from Modelo.database import connect_to_database
-from Servicios.evaluacion import cls_de_intento
+from Servicios.evaluacion import cls_de_intento, evaluacion_de_intento
 from Modelo.dao_retroalimentacion import guardar_recomendacion
 from Servicios.retroalimentacion import adaptar_recomendacion
 from Servicios.legibilidad import medir_legibilidad
@@ -406,7 +406,9 @@ def calificar_intento_dao(id_intento, calificacion, retroalimentacion, cls_corre
         if cls_correctas is not None:
             # CLS confirmado por el tutor: las posibles las fija la respuesta esperada (no el cliente).
             # Se guarda en columnas existentes de Analisis_Ortografico y actualiza el promedio del alumno.
-            sugerido = cls_de_intento(_json(contenido), texto, (_json(resultado) or {}).get("evaluacion_preliminar"))
+            base = _json(contenido)
+            evaluacion = evaluacion_de_intento(base, _json(resultado) or {})
+            sugerido = cls_de_intento(base, texto, evaluacion)
             if not sugerido or not sugerido.get("posibles"):
                 raise ValueError("Este ejercicio no tiene respuesta configurada; no se puede registrar el CLS.")
             cls_posibles = sugerido["posibles"]
@@ -498,7 +500,9 @@ def _consultar_intentos(cursor, id_usuario_tutor, id_alumno=None, con_imagen=Tru
     intentos = []
     for row in cursor.fetchall():
         resultado = _json(row[10]) or {}
-        evaluacion = resultado.get("evaluacion_preliminar")
+        contenido = _json(row[12])
+        cls_confirmado = _json(row[11])
+        evaluacion = evaluacion_de_intento(contenido, resultado, confirmado=bool(cls_confirmado))
         confirmada = None if row[13] is None else {m: float(v) for m, v in zip(MEDIDAS_LEGIBILIDAD, row[13:17])}
         intentos.append({
             "id_intento": row[0],
@@ -508,13 +512,14 @@ def _consultar_intentos(cursor, id_usuario_tutor, id_alumno=None, con_imagen=Tru
             "titulo_ejercicio": row[4],
             "fecha_envio": row[5],
             "imagen_codificada": row[6],
+            "cuadro_px": resultado.get("cuadro_px"),
             "texto_detectado_ocr": row[7],
             "puntuacion": row[8],
             "retroalimentacion": row[9],
             "recomendacion": adaptar_recomendacion(_json(row[17]), row[0]),
             "evaluacion_preliminar": evaluacion,
-            "cls_confirmado": _json(row[11]),
-            "cls_sugerido": cls_de_intento(_json(row[12]), row[7], evaluacion),
+            "cls_confirmado": cls_confirmado,
+            "cls_sugerido": cls_de_intento(contenido, row[7], evaluacion),
             "legibilidad_confirmada": confirmada,
             "legibilidad_sugerida": _legibilidad_sugerida(resultado)
         })
@@ -579,7 +584,7 @@ def crear_dictado_dao(data, id_usuario):
     contenido = contenido_dictado(data.palabras)
     fecha_fin = fecha_limite_utc(data.fecha_fin)
     descripcion = (f"Escucha y escribe las {len(contenido['dictado']['palabras'])} palabras "
-                   "en el orden del dictado, sin numerarlas. Puedes repetir cada palabra.")
+                   "en el orden del dictado, con mayúscula inicial y sin numerarlas. Puedes repetir cada palabra.")
     conn = connect_to_database()
     if not conn:
         raise ConnectionError("Error de conexión a la base de datos")

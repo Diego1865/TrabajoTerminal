@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
 import CrearDictado from './CrearDictado';
 import GruposEjercicios from '../GruposEjercicios';
 import IlustracionesEjercicio from '../IlustracionesEjercicio';
+import { inicialMayuscula } from '../formatoDictado';
 import { METODOS, ERRORES, MODALIDADES, leerContenido, leerPedagogia } from '../pedagogiaEjercicio';
 
 const Seccion = ({ titulo, children, className = '' }) => (
@@ -406,7 +407,7 @@ const TabEjercicios = ({ idTutor }) => {
             {ejercicioSeleccionado.tipo === 'dictado' && <div className="mb-5 rounded-xl bg-violet-50 p-3">
               <h4 className="font-bold text-violet-900">Palabras del dictado (en orden)</h4>
               <ol className="mt-2 list-inside list-decimal text-sm text-gray-700">
-                {JSON.parse(ejercicioSeleccionado.contenido_base).dictado.palabras.map((palabra, i) => <li key={i}>{palabra}</li>)}
+                {JSON.parse(ejercicioSeleccionado.contenido_base).dictado.palabras.map((palabra, i) => <li key={i}>{inicialMayuscula(palabra)}</li>)}
               </ol>
             </div>}
 
