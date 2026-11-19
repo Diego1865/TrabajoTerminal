@@ -13,7 +13,7 @@ from Modelo.dao_tutor import crear_dictado_dao, activar_ejercicio_tutor_dao, get
 from Modelo.dao_alumno import registrar_intento_dao
 from Modelo.schemas_tutor import DictadoCreate
 from Servicios.dictado import POOLS, contenido_dictado, fecha_limite_utc
-from Servicios.evaluacion import evaluar
+from Servicios.evaluacion import evaluar, evaluacion_de_intento
 
 
 class ContenidoDictadoTests(unittest.TestCase):
@@ -37,7 +37,8 @@ class ContenidoDictadoTests(unittest.TestCase):
     def test_evalua_dictado_y_cls_sin_calificar(self):
         contenido = contenido_dictado(["árbol", "niño", "casa"])
         self.assertIsNone(contenido["texto_guia"])
-        resultado = evaluar(contenido, {"estado": "procesado", "texto": "arbol\nniño\ncasa"})
+        self.assertEqual(contenido["dictado"]["palabras"], ["Árbol", "Niño", "Casa"])
+        resultado = evaluar(contenido, {"estado": "procesado", "texto": "Arbol\nNiño\nCasa"})
         self.assertEqual(resultado["modo"], "dictado")
         self.assertEqual(resultado["observaciones"][0]["tipo"], "acentuacion")
         self.assertTrue(resultado["requiere_revision"])
@@ -46,8 +47,21 @@ class ContenidoDictadoTests(unittest.TestCase):
 
     def test_dictado_coincidente_y_omision(self):
         contenido = contenido_dictado(["niño", "casa"])
-        self.assertEqual(evaluar(contenido, {"estado": "procesado", "texto": "niño\ncasa"})["observaciones"], [])
-        self.assertEqual(evaluar(contenido, {"estado": "procesado", "texto": "niño"})["observaciones"][0]["tipo"], "omision")
+        self.assertEqual(evaluar(contenido, {"estado": "procesado", "texto": "Niño\nCasa"})["observaciones"], [])
+        self.assertEqual(evaluar(contenido, {"estado": "procesado", "texto": "Niño"})["observaciones"][0]["tipo"], "omision")
+        resultado = evaluar(contenido, {"estado": "procesado", "texto": "Niño\ncasa"})
+        self.assertEqual(resultado["observaciones"][0]["tipo"], "mayusculas")
+
+    def test_dictado_anterior_actualiza_sugerencia_pendiente(self):
+        contenido = {"evaluacion": {"modo": "dictado", "respuestas_aceptadas": ["niño piñata carro"]}}
+        guardada = {"modo": "dictado", "texto_esperado": "niño piñata carro"}
+        ocr = {"estado": "procesado", "texto": "Niño\nPiñata\nCarro", "evaluacion_preliminar": guardada}
+        resultado = evaluacion_de_intento(contenido, ocr)
+        self.assertEqual(resultado["texto_esperado"], "Niño Piñata Carro")
+        self.assertEqual(resultado["cls"]["correctas"], 18)
+        self.assertEqual(resultado["observaciones"], [])
+        self.assertIs(evaluacion_de_intento(contenido, ocr, confirmado=True), guardada)
+        self.assertIs(ocr["evaluacion_preliminar"], guardada)
 
     def test_fechas_futuras_con_zona(self):
         futuro = datetime.now(timezone(timedelta(hours=-6))) + timedelta(days=1)
@@ -69,7 +83,7 @@ class PersistenciaDictadoTests(unittest.TestCase):
         self.assertEqual(cursor.execute.call_args_list[0].args[1], (99,))
         valores = cursor.execute.call_args_list[1].args[1]
         self.assertEqual(valores[3], 12)
-        self.assertEqual(json.loads(valores[2])["dictado"]["palabras"], ["niño"])
+        self.assertEqual(json.loads(valores[2])["dictado"]["palabras"], ["Niño"])
         self.assertEqual(cursor.execute.call_args_list[2].args[1], (50, 12, None))
         conn.commit.assert_called_once()
         conn.close.assert_called_once()
@@ -115,7 +129,7 @@ class PersistenciaDictadoTests(unittest.TestCase):
     def test_entrega_dictado_conserva_referencia_y_evaluacion(self, conectar, reconocer):
         cursor = conectar.return_value.cursor.return_value
         cursor.fetchone.side_effect = [(3,), (1, json.dumps(contenido_dictado(["niño", "casa"])))]
-        reconocer.return_value = {"estado": "procesado", "texto": "niño casa"}
+        reconocer.return_value = {"estado": "procesado", "texto": "Niño Casa"}
         resultado = registrar_intento_dao(60, "imagen", 99)
         self.assertEqual(resultado["evaluacion_preliminar"]["modo"], "dictado")
         self.assertEqual(resultado["evaluacion_preliminar"]["observaciones"], [])

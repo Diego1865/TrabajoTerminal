@@ -5,7 +5,6 @@ import LectorEjercicio from './lectorejercicio';
 import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
 import IlustracionesEjercicio from '../IlustracionesEjercicio';
-import { LADO_LARGO_MINIMO, LADO_CORTO_MINIMO, MENSAJE_RESOLUCION, tieneResolucionMinima } from './resolucionImagen';
 
 /* ─── Colores por tipo de ejercicio ─── */
 const TIPO_CONFIG = {

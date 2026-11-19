@@ -14,7 +14,9 @@ El resultado queda dentro de `resultado_ocr_json.evaluacion_preliminar` y se mue
 en el detalle de intentos del panel de tutor, junto a la imagen y la transcripción.
 El docente puede copiar la propuesta a sus comentarios, editarla y guardar su nota
 mediante el formulario existente. No se asigna nota automática ni se alteran promedios.
-Las entregas anteriores conservan su resultado original y no se reprocesan.
+Las entregas anteriores conservan su resultado OCR y no se reprocesan con Google.
+La revisión preliminar de dictados pendientes aplica mayúscula inicial a cada palabra
+de referencia.
 
 Se normalizan espacios/saltos de línea y Unicode NFC, conservando mayúsculas,
 acentos y puntuación. Se alinean tokens para identificar diferencias, no para
@@ -123,6 +125,28 @@ Para verificar de extremo a extremo: iniciar sesión como alumno, entregar una f
 con texto conocido y un dibujo; abrir Ejercicios Completados y contrastar el texto.
 Inspeccionar `ocr.full_text_annotation` en la respuesta de red o el JSON guardado
 para comparar cajas con la imagen. La precisión manuscrita requiere muestras reales.
+
+### Medir CER con muestras manuscritas
+
+Desde `BackEnd`, ejecuta `python evaluar_cer.py muestras.jsonl`. El archivo UTF-8
+lleva un objeto por muestra. Si ya tienes el texto OCR de una entrega, usa `ocr`.
+Para procesar una imagen, usa `imagen` con su ruta relativa al manifiesto y configura
+las credenciales y `GOOGLE_VISION_ENABLED=true` en el entorno del proceso.
+
+```jsonl
+{"id":"m01","origen":"lienzo","referencia":"Niño\nPiñata\nCarro","ocr":"Niño\nPiñata\nCarro"}
+{"id":"m02","origen":"foto","referencia":"Árbol","imagen":"imagenes/m02.jpg"}
+```
+
+La referencia se transcribe de la imagen, incluidos errores de escritura. Los saltos
+y espacios consecutivos equivalen a un espacio. Se conservan mayúsculas, acentos,
+ñ y puntuación, y se aplica Unicode NFC. El CER global es la suma de las ediciones
+mínimas entre cada referencia y su OCR, dividida por la suma de los caracteres de
+referencia. El informe incluye el desglose por origen. Un OCR exitoso sin texto
+cuenta como omisiones. Los fallos de servicio se cuentan aparte.
+
+Para reportar un resultado de validación, usa muestras autorizadas y reservadas,
+anota cuántas se midieron y usa las imágenes originales que recibió la aplicación.
 
 Referencias oficiales:
 - https://docs.cloud.google.com/vision/docs/handwriting

@@ -7,6 +7,7 @@ import { clasificar, categoriaInicial } from "./categoriasProgreso";
 import TabEjercicios from "./TabEjercicios";
 import PerfilTutor from "./PerfilTutor";
 import EvaluacionPreliminar from "./EvaluacionPreliminar";
+import ImagenIntento from "./ImagenIntento";
 import ModalPasswordAlumno from "./ModalPasswordAlumno";
 import RetroalimentacionEjercicio from "../RetroalimentacionEjercicio";
 
@@ -212,8 +213,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
         {imagenAmpliada && (
           <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-2" onClick={() => setImagenAmpliada(null)}
             role="dialog" aria-label="Imagen del intento ampliada">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imagenAmpliada} alt="Intento del alumno ampliado" className="max-w-full max-h-full object-contain" />
+            <ImagenIntento src={imagenAmpliada} cuadroPx={intentoActivo?.cuadro_px} ampliada />
             <button type="button" onClick={() => setImagenAmpliada(null)} aria-label="Cerrar imagen"
               className="absolute top-3 right-3 p-3 rounded-full bg-white/90 text-gray-800 shadow">
               <X size={22} />
@@ -299,8 +299,8 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                     ) : imagenes[intentoActivo.id_intento] ? (
                       <button type="button" onClick={() => setImagenAmpliada(obtenerSrcImagen(imagenes[intentoActivo.id_intento]))}
                         className="group relative cursor-zoom-in" aria-label="Ampliar imagen del intento">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={obtenerSrcImagen(imagenes[intentoActivo.id_intento])} alt="Intento del alumno" className="max-w-full max-h-[50dvh] md:max-h-[300px] object-contain rounded" />
+                        <ImagenIntento key={intentoActivo.id_intento}
+                          src={obtenerSrcImagen(imagenes[intentoActivo.id_intento])} cuadroPx={intentoActivo.cuadro_px} />
                         <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">Toca para ampliar</span>
                       </button>
                     ) : (
@@ -310,6 +310,9 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                       </div>
                     )}
                   </div>
+                  {!intentoActivo.cuadro_px && imagenes[intentoActivo.id_intento]?.startsWith('data:image/png;base64,') && (
+                    <p className="mt-1 text-xs text-gray-500">Cuadrícula aproximada para esta entrega del lienzo.</p>
+                  )}
 
                   <EvaluacionPreliminar evaluacion={intentoActivo.evaluacion_preliminar}
                     cls={intentoActivo.cls_sugerido}
@@ -321,7 +324,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                   {intentoActivo.texto_detectado_ocr && (
                     <div className="mt-4 p-3 bg-blue-50/50 border border-blue-100 rounded-lg">
                       <p className="text-xs font-bold text-blue-800 mb-1 uppercase tracking-wide">Texto Detectado (OCR)</p>
-                      <p className="text-sm font-mono text-gray-700">{intentoActivo.texto_detectado_ocr}</p>
+                      <p className="whitespace-pre-wrap text-sm font-mono text-gray-700">{intentoActivo.texto_detectado_ocr}</p>
                     </div>
                   )}
                 </div>

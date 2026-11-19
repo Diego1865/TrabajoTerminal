@@ -50,9 +50,13 @@ def fecha_limite_utc(fecha):
 
 
 def contenido_dictado(palabras):
-    palabras = normalizar_palabras(palabras)
+    palabras = [inicial_mayuscula(palabra) for palabra in normalizar_palabras(palabras)]
     return {
         "texto_guia": None,
         "dictado": {"palabras": palabras},
         "evaluacion": {"modo": "dictado", "respuestas_aceptadas": [" ".join(palabras)]},
     }
+
+
+def inicial_mayuscula(palabra):
+    return palabra[:1].upper() + palabra[1:]

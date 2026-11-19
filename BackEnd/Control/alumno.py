@@ -86,7 +86,10 @@ def verificar_estado_tutor(current_user: dict = Depends(require_alumno)):
 def registrar_intento(intento_data: IntentoCreate, current_user: dict = Depends(require_alumno)):
     
     try:
-        ocr = registrar_intento_dao(intento_data.id_ejercicio_tutor, intento_data.imagen_codificada, current_user["id_usuario"])
+        ocr = registrar_intento_dao(
+            intento_data.id_ejercicio_tutor, intento_data.imagen_codificada, current_user["id_usuario"],
+            cuadro_px=intento_data.cuadro_px,
+        )
         return {"message": "Intento registrado.", "ocr": ocr}
     except OcrError as error:
         raise HTTPException(status_code=error.status_code, detail=str(error))

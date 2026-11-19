@@ -118,6 +118,20 @@ class PersistenciaTests(unittest.TestCase):
 
     @patch("Modelo.dao_alumno.reconocer_escritura")
     @patch("Modelo.dao_alumno.connect_to_database")
+    def test_guarda_escala_del_cuaderno_sin_modificar_imagen_para_ocr(self, conectar, reconocer):
+        cursor = conectar.return_value.cursor.return_value
+        cursor.fetchone.side_effect = [(3,), (1, '{}')]
+        reconocer.return_value = {"texto": None, "estado": "desactivado"}
+        imagen = imagen_prueba()
+        resultado = registrar_intento_dao(4, imagen, 5, cuadro_px=80)
+        reconocer.assert_called_once_with(imagen)
+        valores = cursor.execute.call_args.args[1]
+        self.assertEqual(valores[2], imagen)
+        self.assertEqual(resultado["cuadro_px"], 80)
+        self.assertIn('"cuadro_px": 80', valores[4])
+
+    @patch("Modelo.dao_alumno.reconocer_escritura")
+    @patch("Modelo.dao_alumno.connect_to_database")
     def test_no_invoca_google_para_ejercicio_ajeno(self, conectar, reconocer):
         conectar.return_value.cursor.return_value.fetchone.side_effect = [(3,), None]
         with self.assertRaises(ValueError):
