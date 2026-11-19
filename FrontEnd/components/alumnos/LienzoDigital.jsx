@@ -4,6 +4,7 @@ import { CheckCircle, Eraser, Pen, RotateCcw, Trash2, Maximize2, Minimize2, Move
 import LectorEjercicio from './lectorejercicio';
 import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
+import IlustracionesEjercicio from '../IlustracionesEjercicio';
 
 /* ─── Colores por tipo de ejercicio ─── */
 const TIPO_CONFIG = {
@@ -24,7 +25,7 @@ const TipoBadge = ({ tipo }) => {
 };
 
 /* ─── Tarjeta de imagen de referencia (fuera del lienzo) ─── */
-const ImagenReferencia = ({ src, alt = 'Imagen de referencia' }) => (
+const ImagenReferencia = ({ src, tarjetas }) => (
   <div className="w-full mb-4 overflow-hidden"
     style={{ border: '2.5px solid #DDD6FE', borderRadius: '18px', background: '#F5F3FF', boxShadow: '0 4px 0 #DDD6FE' }}>
     <div className="flex items-center gap-2 px-4 py-2.5"
@@ -33,9 +34,7 @@ const ImagenReferencia = ({ src, alt = 'Imagen de referencia' }) => (
       <span className="font-black text-sm" style={{ color: '#6D28D9' }}>Imagen de referencia</span>
     </div>
     <div className="p-3 flex items-center justify-center">
-      <img src={src} alt={alt}
-        className="max-w-full object-contain"
-        style={{ maxHeight: '200px', borderRadius: '10px' }} />
+      <IlustracionesEjercicio src={src} tarjetas={tarjetas} alturaMaxima="200px" />
     </div>
   </div>
 );
@@ -476,7 +475,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
             {/* Imagen de referencia FUERA del lienzo */}
             {imagenGuia && !imagenEnLienzo && (
-              <ImagenReferencia src={imagenGuia} />
+              <ImagenReferencia src={imagenGuia} tarjetas={contenido.tarjetas_imagen} />
             )}
 
             {/* Texto guía */}

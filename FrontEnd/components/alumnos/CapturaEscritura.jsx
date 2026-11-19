@@ -4,6 +4,8 @@ import { Camera, Upload, X, CheckCircle, Loader, Aperture, RotateCw, Crop, Image
 import LectorEjercicio from './lectorejercicio';
 import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
+import IlustracionesEjercicio from '../IlustracionesEjercicio';
+import { LADO_LARGO_MINIMO, LADO_CORTO_MINIMO, MENSAJE_RESOLUCION, tieneResolucionMinima } from './resolucionImagen';
 
 /* ─── Colores por tipo de ejercicio ─── */
 const TIPO_CONFIG = {
@@ -323,9 +325,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
                   <span className="text-xs font-black" style={{ color: '#6D28D9' }}>Imagen de referencia</span>
                 </div>
                 <div className="p-2 flex items-center justify-center">
-                  <img src={imagenGuia} alt="Referencia del ejercicio"
-                    className="max-w-full object-contain"
-                    style={{ maxHeight: '180px', borderRadius: '8px' }} />
+                  <IlustracionesEjercicio src={imagenGuia} tarjetas={contenido.tarjetas_imagen} alturaMaxima="180px" />
                 </div>
               </div>
             )}
@@ -337,7 +337,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio }) => {
                 <p className="text-xs font-black uppercase mb-1" style={{ color: '#A78BFA', letterSpacing: '0.06em' }}>
                   ✏️ Escribe esto en tu cuaderno
                 </p>
-                <p className="font-black text-center"
+                <p className="font-black text-center whitespace-pre-wrap"
                   style={{ fontSize: '1.3rem', color: '#1F2937', letterSpacing: '0.03em' }}>
                   {textoGuia}
                 </p>

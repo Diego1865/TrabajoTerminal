@@ -62,6 +62,28 @@ class CatalogoTests(unittest.TestCase):
         self.assertIn("🐄", svg)
         self.assertIn(">2</text>", svg)
 
+    def test_tarjetas_con_palabras_en_el_orden_de_la_respuesta(self):
+        for orden, ejercicio in enumerate(self.catalogo, start=1):
+            if ejercicio["modo"] != "imagen":
+                continue
+            with self.subTest(ejercicio["titulo"]):
+                base = generador.contenido_base(ejercicio, orden)
+                tarjetas = base["tarjetas_imagen"]
+                palabras = ejercicio["respuestas"][0].split()
+                self.assertEqual([t["dibujo"] for t in tarjetas], ejercicio["emojis"])
+                self.assertEqual([t["palabra"] for t in tarjetas], palabras)
+                svg = base64.b64decode(base["imagen_guia"].split(",", 1)[1]).decode("utf-8")
+                self.assertEqual(re.findall(r'<text[^>]+y="138"[^>]*>([^<]+)</text>', svg), palabras)
+
+    def test_migracion_actualiza_las_imagenes_publicadas(self):
+        numero_lote = generador.LOTE_TARJETAS
+        sql = generador.generar_sql(self.catalogo, numero_lote)
+        anteriores = [e for e in self.catalogo if generador.lote(e) < numero_lote and e.get("emojis")]
+        self.assertEqual(sql.count("'$.tarjetas_imagen'"), len(anteriores))
+        for ejercicio in anteriores:
+            titulo = generador.sql_texto(ejercicio["titulo"])
+            self.assertIn(f"WHERE titulo = {titulo} AND id_tutor_creador IS NULL", sql)
+
     def test_migracion_generada_esta_al_dia(self):
         for numero_lote, archivo in generador.MIGRACIONES.items():
             with self.subTest(archivo.name):
@@ -78,16 +100,20 @@ class CatalogoTests(unittest.TestCase):
                             for e in self.catalogo))
 
     def test_lotes_no_se_repiten(self):
-        """Un lote nuevo no repite respuestas ni palabras de contenido de los anteriores."""
+        """Un lote nuevo usa respuestas y vocabulario distintos, con letras aisladas reutilizables."""
         vacias = {"el", "la", "los", "las", "un", "una", "y", "en", "a", "mi", "su", "de", "me", "con", "por", "ve"}
         vistas = set()
+        respuestas_vistas = set()
         for numero_lote in sorted(generador.MIGRACIONES):
             del_lote = [e for e in self.catalogo if generador.lote(e) == numero_lote]
-            palabras = {p for e in del_lote for r in e["respuestas"]
-                        for p in re.findall(r"[^\W\d_]+", r.lower())} - vacias
+            respuestas = {r for e in del_lote for r in e["respuestas"]}
+            palabras = {p for r in respuestas for p in re.findall(r"[^\W\d_]+", r.lower())
+                        if len(p) > 1} - vacias
             with self.subTest(lote=numero_lote):
                 self.assertEqual(palabras & vistas, set())
+                self.assertEqual(respuestas & respuestas_vistas, set())
             vistas |= palabras
+            respuestas_vistas |= respuestas
         self.assertEqual(len({e["titulo"].lower() for e in self.catalogo}), len(self.catalogo))
 
     def test_cls_castiga_los_errores_objetivo(self):
