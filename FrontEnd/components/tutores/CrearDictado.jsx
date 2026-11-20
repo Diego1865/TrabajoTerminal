@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente CrearDictado y muestra una parte de la interfaz.
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import { Loader2, Plus, X } from 'lucide-react';
 import { inicialMayuscula } from '../formatoDictado';

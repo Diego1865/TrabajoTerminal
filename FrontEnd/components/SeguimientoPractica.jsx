@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente SeguimientoPractica y muestra una parte de la interfaz.
+ */
+
 import { useEffect, useState } from 'react';
 import CapturaEscritura from './alumnos/CapturaEscritura';
 

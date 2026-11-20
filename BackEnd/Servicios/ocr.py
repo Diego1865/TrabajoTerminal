@@ -17,6 +17,21 @@ MIN_LADO_LARGO = 1024
 MIN_LADO_CORTO = 768
 
 
+def ocr_habilitado():
+    return os.getenv("GOOGLE_VISION_ENABLED", "false").lower() == "true"
+
+
+def validar_credenciales_ocr():
+    """Comprueba que el SDK pueda cargar ADC, sin enviar una imagen a Vision."""
+    from google.auth import default
+    from google.auth.exceptions import GoogleAuthError
+
+    try:
+        default()
+    except (GoogleAuthError, OSError):
+        raise RuntimeError("Google Cloud Vision requiere credenciales ADC válidas. Revisa la configuración del backend.") from None
+
+
 def pistas_idioma():
     """Idiomas que se indican a Cloud Vision. Por defecto español.
 
@@ -73,10 +88,9 @@ def preparar_imagen(data_url):
 
 def reconocer_escritura(data_url):
     imagen = preparar_imagen(data_url)
-    if os.getenv("GOOGLE_VISION_ENABLED", "false").lower() != "true":
+    if not ocr_habilitado():
         return {"proveedor": "google_cloud_vision", "estado": "desactivado",
                 "texto": None, "full_text_annotation": None}
-    # Carga diferida: el resto de la aplicación puede iniciar sin credenciales OCR.
     from google.cloud import vision
     from google.auth.exceptions import DefaultCredentialsError, GoogleAuthError
     from google.api_core import exceptions as google_errors

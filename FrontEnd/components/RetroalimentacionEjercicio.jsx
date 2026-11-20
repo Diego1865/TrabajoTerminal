@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente RetroalimentacionEjercicio y muestra una parte de la interfaz.
+ */
+
 import { useState } from 'react';
 import { Download, Loader2, NotebookPen } from 'lucide-react';
 import FichaMotricidad from './FichaMotricidad';

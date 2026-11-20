@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente Registro y muestra una parte de la interfaz.
+ */
+
 import { useState } from 'react';
 import { CheckCircle, Mail, Lock, User, UserCheck, KeyRound } from 'lucide-react';
 

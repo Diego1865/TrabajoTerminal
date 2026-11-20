@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test seguimiento practicas. Verifica el comportamiento esperado y detecta errores.
+"""
+
 from datetime import datetime
 import json
 import unittest

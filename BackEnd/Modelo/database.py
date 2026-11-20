@@ -1,3 +1,7 @@
+"""
+Configura la conexion y operaciones basicas con la base de datos.
+"""
+
 import pyodbc
 import os
 from dotenv import load_dotenv

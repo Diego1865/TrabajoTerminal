@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test legibilidad. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import io
 import math
 import unittest

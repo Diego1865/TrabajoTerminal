@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente EvaluacionPreliminar y muestra una parte de la interfaz.
+ */
+
 const nota = (n) => (n === null || n === undefined ? "—" : Number(n).toFixed(1));
 
 export default function EvaluacionPreliminar({ evaluacion, cls, calificacionSugerida, notaOrtografia, notaLegibilidad, onUsarCalificacion, onUsarSugerencia }) {

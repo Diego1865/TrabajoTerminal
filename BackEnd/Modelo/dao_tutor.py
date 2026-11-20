@@ -1,3 +1,7 @@
+"""
+Contiene el acceso a datos y consultas relacionadas con tutores.
+"""
+
 from Modelo.database import connect_to_database
 from Servicios.evaluacion import cls_de_intento, evaluacion_de_intento
 from Modelo.dao_retroalimentacion import guardar_recomendacion

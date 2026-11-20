@@ -17,5 +17,4 @@ with target.open('x', encoding='utf-8') as archivo:
     archivo.write(f'APP_DOMAIN={args.domain}\nGOOGLE_CLOUD_PROJECT={args.project}\n')
     # DB_SERVER y DB_PASSWORD (Cloud SQL) los agrega deploy/cargar-sql.sh desde Secret Manager.
     archivo.write(f'SECRET_KEY={secrets.token_hex(48)}\n')
-    archivo.write('GOOGLE_VISION_ENABLED=true\n')
 print('Configuración creada en .env.demo con permisos privados.')

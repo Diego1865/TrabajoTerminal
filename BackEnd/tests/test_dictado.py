@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test dictado. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import json
 import unittest
 from datetime import datetime, timedelta, timezone

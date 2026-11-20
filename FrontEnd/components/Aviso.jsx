@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente Aviso y muestra una parte de la interfaz.
+ */
+
 import React from 'react';
 
 const AvisoDePrivacidad = ({ onNavigateBack }) => {

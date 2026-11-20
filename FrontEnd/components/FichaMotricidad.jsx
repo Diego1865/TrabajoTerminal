@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente FichaMotricidad y muestra una parte de la interfaz.
+ */
+
 export default function FichaMotricidad({ ficha }) {
   if (!ficha || ficha.tipo === 'planas') return null;
   if (ficha.tipo === 'laberinto') {

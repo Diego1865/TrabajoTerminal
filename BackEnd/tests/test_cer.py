@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test cer. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import json
 import unittest
 from pathlib import Path

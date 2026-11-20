@@ -58,6 +58,10 @@ deploy_main() {
     "${compose[@]}" build db-init
     "${compose[@]}" build frontend
 
+    # La imagen nueva debe poder cargar las credenciales de la VM antes de migrar.
+    "${compose[@]}" run --rm --no-deps -T --interactive=false backend \
+        python -c 'from Servicios.ocr import validar_credenciales_ocr; validar_credenciales_ocr()'
+
     # Este respaldo usa la cuenta de servicio de la VM y espera hasta terminar.
     # Si falla, no se ejecutan migraciones ni se reemplazan los contenedores.
     bash deploy/respaldo-nube.sh

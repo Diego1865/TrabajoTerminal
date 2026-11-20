@@ -1,3 +1,7 @@
+"""
+Gestiona las operaciones y rutas relacionadas con los tutores.
+"""
+
 from fastapi import APIRouter, HTTPException, Response, status, Depends
 from Control.auth import get_password_hash, verify_password, enviar_codigo
 from Control.dependencies import require_tutor

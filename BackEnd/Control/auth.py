@@ -1,3 +1,7 @@
+"""
+Gestiona autenticacion, inicio de sesion y datos de identidad.
+"""
+
 from fastapi import APIRouter, HTTPException, status
 from passlib.context import CryptContext
 import jwt

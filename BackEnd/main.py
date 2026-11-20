@@ -1,9 +1,14 @@
+"""
+Inicializa la API, registra rutas y configura el servidor FastAPI.
+"""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from Control.auth import router as auth_router
 from Control.alumno import router as alumno_router
 from Control.tareas.cerrar_ejercicio import iniciar_scheduler
 from Control.tutor import router as tutor_router
+from Servicios.ocr import ocr_habilitado, validar_credenciales_ocr
 import os
 
 app = FastAPI()
@@ -27,4 +32,6 @@ async def read_root():
 
 @app.on_event("startup")
 async def startup():
+    if ocr_habilitado():
+        validar_credenciales_ocr()
     iniciar_scheduler()

@@ -1,3 +1,7 @@
+/*
+ * Contiene funciones auxiliares relacionadas con pedagogiaEjercicio.
+ */
+
 // Lectura de contenido_base.pedagogia (catálogo de ejercicios). Los dictados del tutor no la traen.
 
 export const METODOS = {
@@ -24,9 +28,12 @@ export const MODALIDADES = {
 
 export function leerContenido(ejercicio) {
   const valor = ejercicio?.contenido_base;
-  if (!valor) return {};
-  if (typeof valor === 'object') return valor;
-  try { return JSON.parse(valor); } catch { return {}; }
+  try {
+    const contenido = typeof valor === 'string' ? JSON.parse(valor) : valor;
+    return contenido && typeof contenido === 'object' && !Array.isArray(contenido) ? contenido : {};
+  } catch {
+    return {};
+  }
 }
 
 /** pedagogia válida o null. */

@@ -1,4 +1,9 @@
 "use client";
+
+/*
+ * Implementa el componente ModalPasswordAlumno y muestra una parte de la interfaz.
+ */
+
 import { useState } from "react";
 import { X, Eye, EyeOff, Loader2, KeyRound, CheckCircle, Copy } from "lucide-react";
 

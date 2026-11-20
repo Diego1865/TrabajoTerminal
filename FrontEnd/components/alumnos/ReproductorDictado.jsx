@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente ReproductorDictado y muestra una parte de la interfaz.
+ */
+
 import { useEffect, useRef, useState } from 'react';
 import { Volume2, Square } from 'lucide-react';
 import { elegirVoz } from './lectorejercicio';

@@ -1,3 +1,7 @@
+"""
+Define los esquemas de autenticacion y actualizacion de acceso.
+"""
+
 from pydantic import BaseModel, Field, field_validator
 import re
 

@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente ImagenIntento y muestra una parte de la interfaz.
+ */
+
 import { useState } from 'react';
 import FondoCuaderno, { CUADRO } from '../FondoCuaderno';
 

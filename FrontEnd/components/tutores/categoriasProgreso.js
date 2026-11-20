@@ -1,3 +1,7 @@
+/*
+ * Contiene funciones auxiliares relacionadas con categoriasProgreso.
+ */
+
 // Clasificación de alumnos por promedio (0-10). Una sola definición para los contadores,
 // la gráfica y la lista, así siempre coinciden. Los colores van por clave, nunca por posición.
 import { AlertCircle, TrendingUp, Star, Clock } from "lucide-react";

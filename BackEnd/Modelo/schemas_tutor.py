@@ -1,3 +1,7 @@
+"""
+Define los esquemas de entrada y salida para tutores.
+"""
+
 from pydantic import BaseModel, Field, field_validator
 from Modelo.schemas_auth import validar_correo
 from Servicios.dictado import normalizar_palabras

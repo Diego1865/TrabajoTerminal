@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test codigos. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import os
 import unittest
 

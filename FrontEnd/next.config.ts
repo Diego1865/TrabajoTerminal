@@ -1,3 +1,7 @@
+/*
+ * Contiene funciones auxiliares relacionadas con next.config.
+ */
+
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {

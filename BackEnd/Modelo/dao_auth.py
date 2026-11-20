@@ -1,3 +1,7 @@
+"""
+Contiene el acceso a datos de autenticacion y contrasenas.
+"""
+
 from Modelo.database import connect_to_database
 
 def login_dao(username):

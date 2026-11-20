@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test retroalimentacion. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import json
 import unittest
 from datetime import datetime

@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente IlustracionesEjercicio y muestra una parte de la interfaz.
+ */
+
 export default function IlustracionesEjercicio({ src, tarjetas, alturaMaxima }) {
   if (!tarjetas?.length) {
     return (

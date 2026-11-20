@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente Login y muestra una parte de la interfaz.
+ */
+
 import { useState } from 'react';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 

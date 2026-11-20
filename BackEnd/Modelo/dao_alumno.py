@@ -1,3 +1,7 @@
+"""
+Contiene el acceso a datos y consultas relacionadas con alumnos.
+"""
+
 from Modelo.database import connect_to_database
 import json
 from datetime import timezone

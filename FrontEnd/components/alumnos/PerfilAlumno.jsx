@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente PerfilAlumno y muestra una parte de la interfaz.
+ */
+
 import { useEffect, useState } from 'react';
 
 // Perfil de solo lectura: el alumno no edita sus datos ni su contraseña; eso lo hace su tutor.

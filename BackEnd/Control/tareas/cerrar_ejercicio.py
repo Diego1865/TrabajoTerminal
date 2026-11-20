@@ -1,3 +1,7 @@
+"""
+Cierra automaticamente ejercicios vencidos mediante una tarea programada.
+"""
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from Modelo.database import connect_to_database
 

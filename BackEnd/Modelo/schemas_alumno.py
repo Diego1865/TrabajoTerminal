@@ -1,3 +1,7 @@
+"""
+Define los esquemas de entrada y salida para alumnos e intentos.
+"""
+
 from pydantic import BaseModel, Field
 from typing import Optional
 from decimal import Decimal

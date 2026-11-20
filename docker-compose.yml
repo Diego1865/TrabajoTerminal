@@ -44,6 +44,11 @@ services:
         condition: service_healthy
       db-init:
         condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       - DB_DRIVER=${DB_DRIVER}
       - DB_SERVER=${DB_SERVER}
@@ -51,12 +56,20 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - SECRET_KEY=${SECRET_KEY}
-      - GOOGLE_VISION_ENABLED=${GOOGLE_VISION_ENABLED:-false}
+      - GOOGLE_VISION_ENABLED=true
+      - GOOGLE_APPLICATION_CREDENTIALS=/run/secrets/google-vision.json
       - GOOGLE_VISION_LANGUAGE_HINTS=${GOOGLE_VISION_LANGUAGE_HINTS:-es}
       # En local los códigos se imprimen en el log (docker logs BackEnd); con SMTP_USER y SMTP_PASSWORD se envían.
       - CORREO_MODO=${CORREO_MODO:-consola}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+    volumes:
+      - type: bind
+        source: ${GOOGLE_VISION_CREDENTIALS_FILE:?Define la ruta absoluta de las credenciales en el .env de Compose}
+        target: /run/secrets/google-vision.json
+        read_only: true
+        bind:
+          create_host_path: false
 
   frontend:
     build:
@@ -68,7 +81,8 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   mssql_data:

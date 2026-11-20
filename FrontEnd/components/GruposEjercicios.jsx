@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente GruposEjercicios y muestra una parte de la interfaz.
+ */
+
 import { useId } from 'react';
 import { agruparEjercicios } from './rutaEjercicios';
 

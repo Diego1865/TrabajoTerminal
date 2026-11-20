@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test ficha retroalimentacion. Verifica el comportamiento esperado y detecta errores.
+"""
+
 from io import BytesIO
 import unittest
 

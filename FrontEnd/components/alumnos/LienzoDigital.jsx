@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente LienzoDigital y muestra una parte de la interfaz.
+ */
+
 import { LADO_CORTO_MINIMO, LADO_LARGO_MINIMO } from './resolucionImagen';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { CheckCircle, Eraser, Pen, RotateCcw, Trash2, Maximize2, Minimize2, MoveVertical, BookOpen, Image as ImageIcon } from 'lucide-react';
@@ -7,24 +12,9 @@ import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
 import IlustracionesEjercicio from '../IlustracionesEjercicio';
 import FondoCuaderno, { CUADRO } from '../FondoCuaderno';
-
-/* ─── Colores por tipo de ejercicio ─── */
-const TIPO_CONFIG = {
-  Legibilidad: { bg: '#EFF6FF', border: '#BFDBFE', color: '#1D4ED8', emoji: '✍️' },
-  Ortografía:  { bg: '#ECFDF5', border: '#A7F3D0', color: '#065F46', emoji: '📝' },
-  Mixto:       { bg: '#FFFBEB', border: '#FDE68A', color: '#92400E', emoji: '🎯' },
-};
-
-/* ─── Badge de tipo ─── */
-const TipoBadge = ({ tipo }) => {
-  const cfg = TIPO_CONFIG[tipo] || { bg: '#F3F4F6', border: '#E5E7EB', color: '#374151', emoji: '📋' };
-  return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-black"
-      style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: '8px', color: cfg.color }}>
-      {cfg.emoji} {tipo}
-    </span>
-  );
-};
+import { leerContenido } from '../pedagogiaEjercicio';
+import TipoEjercicioBadge from './TipoEjercicioBadge';
+import { enviarIntento } from './ejerciciosAlumno';
 
 /* ─── Tarjeta de imagen de referencia (fuera del lienzo) ─── */
 const ImagenReferencia = ({ src, tarjetas }) => (
@@ -86,12 +76,7 @@ const ALTO_MINIMO_PAPEL = 24 * CUADRO;
 
 const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
-  /* ── Parsear contenido_base ── */
-  const contenido = useMemo(() => {
-    if (!ejercicio?.contenido_base) return {};
-    try { return JSON.parse(ejercicio.contenido_base); }
-    catch { return {}; }
-  }, [ejercicio]);
+  const contenido = useMemo(() => leerContenido(ejercicio), [ejercicio]);
 
   const textoGuia      = contenido.texto_guia   || null;
   const pista = contenido.pedagogia?.pista || null;
@@ -396,18 +381,11 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
       ctx.drawImage(original, 0, 0, original.width, altoRecorte, 0, 0, original.width, altoRecorte);
       const imagenDataUrl = exportacion.toDataURL('image/png');
       if (!idEjercicioTutor) { mostrarMensaje('Error: No se especificó el ejercicio.', 'error'); return; }
-      const token = localStorage.getItem('token');
-      if (!token) { mostrarMensaje('Error: Sesión expirada.', 'error'); return; }
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/alumno/intento`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          id_ejercicio_tutor: idEjercicioTutor,
-          imagen_codificada: imagenDataUrl,
-          cuadro_px: CUADRO * ratioRef.current,
-        }),
-      });
-      if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Error al enviar el intento'); }
+      await enviarIntento({
+        id_ejercicio_tutor: idEjercicioTutor,
+        imagen_codificada: imagenDataUrl,
+        cuadro_px: CUADRO * ratioRef.current,
+      }, 'Error al enviar el intento');
       mostrarMensaje('¡Intento enviado correctamente! 🎉', 'exito');
       if (alTerminar) alTerminar(imagenDataUrl);
     } catch (err) {
@@ -452,7 +430,7 @@ const LienzoDigital = ({ alTerminar, idEjercicioTutor, ejercicio }) => {
 
             {/* Tipo + título */}
             <div className="flex items-start gap-2 mb-2 flex-wrap">
-              <TipoBadge tipo={ejercicio.tipo} />
+              <TipoEjercicioBadge tipo={ejercicio.tipo} />
               <h2 className="font-black leading-tight" style={{ fontSize: '1.1rem', color: '#1F2937' }}>
                 {ejercicio.titulo}
               </h2>

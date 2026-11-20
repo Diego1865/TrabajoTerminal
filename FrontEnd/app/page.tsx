@@ -1,69 +1,70 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+/*
+ * Representa la pagina principal del Frontend.
+ */
+
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import Login from "@/components/Login";
 import Registro from "@/components/Registro";
 import RecuperarPassword from "@/components/RecuperarPassword";
 import MainTutor from "@/components/tutores/MainTutor";
 import MainAlumno from "@/components/alumnos/MainAlumno";
-import AvisoDePrivacida from "@/components/Aviso";
+import AvisoDePrivacidad from "@/components/Aviso";
 
-const decodificarJwt = (token: string) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return null;
-  }
+type Sesion = {
+  id_usuario: number;
+  tipo_usuario: 'alumno' | 'tutor';
+  nombre?: string;
 };
 
-// --- Enrutador Principal ---
+const EVENTO_SESION = 'grafia:sesion';
+const leerToken = () => localStorage.getItem('token');
+const leerTokenServidor = () => null;
+const notificarSesion = () => window.dispatchEvent(new Event(EVENTO_SESION));
+
+function suscribirSesion(notificar: () => void) {
+  window.addEventListener(EVENTO_SESION, notificar);
+  return () => window.removeEventListener(EVENTO_SESION, notificar);
+}
+
+// El payload orienta la navegación. La API valida el JWT en cada solicitud protegida.
+function decodificarSesion(token: string): Sesion | null {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+    const { id_usuario, tipo_usuario, nombre } = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes));
+    if (typeof id_usuario !== 'number' || (tipo_usuario !== 'alumno' && tipo_usuario !== 'tutor')) return null;
+    return { id_usuario, tipo_usuario, nombre: typeof nombre === 'string' ? nombre : undefined };
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
-  const [vistaActual, setVistaActual] = useState('login'); // 'login', 'registro', 'recuperar', 'aviso', 'dashboard'
-  const [tipoUsuario, setTipoUsuario] = useState<string | null>(null); // 'tutor' o 'alumno'
+  const [vistaActual, setVistaActual] = useState('login');
+  const token = useSyncExternalStore(suscribirSesion, leerToken, leerTokenServidor);
+  const sesion = useMemo(() => token ? decodificarSesion(token) : null, [token]);
 
   const handleLogout = () => {
-    // Cambiar la clave eliminada a 'token'
     localStorage.removeItem('token');
-    setTipoUsuario(null);
     setVistaActual('login');
+    notificarSesion();
   };
 
-  const handleLogin = () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const payload = decodificarJwt(token);
-      
-      if (payload && payload.tipo_usuario) {
-        // Extrae el tipo de usuario del token decodificado ('tutor' o 'alumno')
-        setTipoUsuario(payload.tipo_usuario);
-        setVistaActual('dashboard');
-      } else {
-        console.warn('Token inválido o sin tipo_usuario');
-        handleLogout(); // Token inválido o sin tipo_usuario
-      }
-    }
-  };
-
-  // Verificar sesión activa al cargar la aplicación
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      handleLogin();
+    if (token && !sesion) {
+      localStorage.removeItem('token');
+      notificarSesion();
     }
-  }, []);
+  }, [token, sesion]);
 
-  if (vistaActual === 'login') {
-    return (
-      <Login 
-        onLogin={handleLogin} 
-        onNavigateRegister={() => setVistaActual('registro')} 
-        onNavigateRecuperar={() => setVistaActual('recuperar')} 
-      />
-    );
+  if (sesion?.tipo_usuario === 'tutor') {
+    return <MainTutor key={sesion.id_usuario} sesion={sesion} onLogout={handleLogout} />;
+  }
+
+  if (sesion?.tipo_usuario === 'alumno') {
+    return <MainAlumno key={sesion.id_usuario} sesion={sesion} onLogout={handleLogout} />;
   }
 
   if (vistaActual === 'recuperar') {
@@ -71,11 +72,7 @@ export default function App() {
   }
 
   if (vistaActual === 'aviso') {
-  return (
-    <AvisoDePrivacida 
-      onNavigateBack={() => setVistaActual('registro')} 
-      />
-    );
+    return <AvisoDePrivacidad onNavigateBack={() => setVistaActual('registro')} />;
   }
 
   if (vistaActual === 'registro') {
@@ -88,25 +85,11 @@ export default function App() {
     );
   }
 
-  if (vistaActual === 'dashboard') {
-    // Enrutamiento basado en el tipo de usuario
-    
-    if (tipoUsuario === 'tutor') {
-      return <MainTutor onLogout={handleLogout} />;
-    } else if (tipoUsuario === 'alumno') {
-      return <MainAlumno onLogout={handleLogout} />;
-    } else {
-      console.warn('tipoUsuario inválido:', tipoUsuario);
-      // Si no hay tipo_usuario válido, volver al login
-      return (
-        <Login 
-          onLogin={handleLogin} 
-          onNavigateRegister={() => setVistaActual('registro')}
-          onNavigateRecuperar={() => setVistaActual('recuperar')}
-        />
-      );
-    }
-  }
-
-  return null;
+  return (
+    <Login
+      onLogin={notificarSesion}
+      onNavigateRegister={() => setVistaActual('registro')}
+      onNavigateRecuperar={() => setVistaActual('recuperar')}
+    />
+  );
 }

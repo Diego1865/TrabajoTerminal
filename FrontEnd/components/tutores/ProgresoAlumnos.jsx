@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente ProgresoAlumnos y muestra una parte de la interfaz.
+ */
+
 import { useState } from "react";
 import { CATEGORIAS, METRICAS, metricaPorClave } from "./categoriasProgreso";
 

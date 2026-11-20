@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test perfil. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import unittest
 from datetime import datetime
 from unittest.mock import patch

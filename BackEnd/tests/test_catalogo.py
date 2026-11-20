@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test catalogo. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import base64
 import importlib.util
 import json

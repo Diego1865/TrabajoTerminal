@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente TabRetroalimentacion y muestra una parte de la interfaz.
+ */
+
 import { useCallback, useEffect, useState } from 'react';
 import RetroalimentacionEjercicio from '../RetroalimentacionEjercicio';
 

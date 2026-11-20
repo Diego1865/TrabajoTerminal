@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente PistaEjercicio y muestra una parte de la interfaz.
+ */
+
 // Pista para el alumno, escrita en lenguaje infantil (contenido_base.pedagogia.pista).
 const PistaEjercicio = ({ pista }) => {
   if (!pista) return null;

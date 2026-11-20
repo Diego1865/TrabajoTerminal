@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test progreso. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import unittest
 from datetime import date, datetime
 from Servicios.progreso import resumir_progreso, calcular_racha

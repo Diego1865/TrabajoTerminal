@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test cls. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import unittest
 from Servicios.cls import calcular_cls
 

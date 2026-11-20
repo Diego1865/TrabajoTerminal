@@ -32,6 +32,7 @@ docker() {
     case "$*" in
         *'config --format json') echo '{"services":{"web":{"environment":{"APP_DOMAIN":"example.invalid"}}}}' ;;
         *'build frontend') [[ "$SCENARIO" != build_fail ]] ;;
+        *'run --rm --no-deps -T --interactive=false backend python -c '*) [[ "$SCENARIO" != ocr_fail ]] ;;
         *'run --rm --no-deps -T --interactive=false db-init') [[ "$SCENARIO" != migration_fail ]] ;;
         *'up -d '*) [[ "$SCENARIO" != unhealthy ]] ;;
     esac
@@ -93,7 +94,8 @@ class DeploymentTests(unittest.TestCase):
     def test_success_orders_build_backup_migrations_and_health(self):
         result, log, current, previous = self.deploy("ok")
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertLess(log.index("build frontend"), log.index("backup\n"))
+        self.assertLess(log.index("build frontend"), log.index("validar_credenciales_ocr"))
+        self.assertLess(log.index("validar_credenciales_ocr"), log.index("backup\n"))
         self.assertLess(log.index("backup\n"), log.index("run --rm --no-deps -T --interactive=false db-init"))
         self.assertLess(log.index("run --rm --no-deps -T --interactive=false db-init"), log.index("up -d"))
         self.assertIn("--wait --wait-timeout 180", log)
@@ -129,7 +131,7 @@ class DeploymentTests(unittest.TestCase):
                 self.assertIn("build frontend", log)
                 if scenario == "backup_fail":
                     self.assertIn("backup\n", log)
-                self.assertNotIn("run --rm --no-deps", log)
+                self.assertNotIn("--interactive=false db-init", log)
                 self.assertNotIn("up -d", log)
                 self.assertEqual(current, OLD)
 
@@ -137,6 +139,15 @@ class DeploymentTests(unittest.TestCase):
         result, log, current, _ = self.deploy("migration_fail")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("run --rm --no-deps -T --interactive=false db-init", log)
+        self.assertNotIn("up -d", log)
+        self.assertEqual(current, OLD)
+
+    def test_invalid_ocr_configuration_prevents_backups_and_migrations(self):
+        result, log, current, _ = self.deploy("ocr_fail")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("validar_credenciales_ocr", log)
+        self.assertNotIn("backup\n", log)
+        self.assertNotIn("--interactive=false db-init", log)
         self.assertNotIn("up -d", log)
         self.assertEqual(current, OLD)
 

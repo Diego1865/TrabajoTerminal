@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente AlumnosCategoria y muestra una parte de la interfaz.
+ */
+
 import { useState } from "react";
 import { AlertCircle, Star, TrendingUp, Tag, User, Clock } from "lucide-react";
 

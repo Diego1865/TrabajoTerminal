@@ -1,42 +1,17 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+/*
+ * Implementa el componente TabProximos y muestra una parte de la interfaz.
+ */
+
+import { useState } from 'react';
 import { Clock, Loader2, Tag, X } from 'lucide-react';
 import GruposEjercicios from '../GruposEjercicios';
+import { formatearFechaEjercicio, useEjerciciosAlumno } from './ejerciciosAlumno';
 
 const TabProximos = ({ idAlumno, onRealizar }) => {
-  const [ejercicios, setEjercicios] = useState([]);
-  const [loadingPage, setLoadingPage] = useState(true);
-  const [error, setError] = useState('');
+  const { ejercicios, loadingPage, error } = useEjerciciosAlumno(idAlumno, 'proximos', 'Error al cargar los ejercicios');
   const [ejercicioSeleccionado, setEjercicioSeleccionado] = useState(null);
-
-  useEffect(() => {
-    const fetchEjercicios = async () => {
-      setLoadingPage(true);
-      const token = localStorage.getItem('token');
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/alumno/ejercicios/proximos`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-        if (!res.ok) throw new Error('Error al cargar los ejercicios');
-        const data = await res.json();
-        setEjercicios(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoadingPage(false);
-      }
-    };
-    if (idAlumno) fetchEjercicios();
-  }, [idAlumno]);
-
-  const formatearFecha = (fecha) => {
-    if (!fecha) return 'Sin fecha límite';
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      day: '2-digit', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
 
   const diasRestantes = (fecha) => {
     if (!fecha) return null;
@@ -135,7 +110,7 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
               {/* Footer */}
               <div className="mt-4 pt-3 flex items-center gap-1.5" style={{ borderTop: '2px dashed #DBEAFE' }}>
                 <Clock size={12} style={{ color: '#93C5FD' }} />
-                <span className="text-xs font-bold text-gray-400">{formatearFecha(ejercicio.fecha_fin)}</span>
+                <span className="text-xs font-bold text-gray-400">{formatearFechaEjercicio(ejercicio.fecha_fin, 'Sin fecha límite')}</span>
               </div>
             </div>
           );
@@ -187,7 +162,7 @@ const TabProximos = ({ idAlumno, onRealizar }) => {
               <span style={{ fontSize: '1.4rem' }}>⏰</span>
               <div>
                 <p className="text-xs font-black" style={{ color: '#93C5FD' }}>FECHA LÍMITE</p>
-                <p className="font-bold text-gray-700 text-sm">{formatearFecha(ejercicioSeleccionado.fecha_fin)}</p>
+                <p className="font-bold text-gray-700 text-sm">{formatearFechaEjercicio(ejercicioSeleccionado.fecha_fin, 'Sin fecha límite')}</p>
               </div>
             </div>
             </div>

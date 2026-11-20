@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente TabProgreso y muestra una parte de la interfaz.
+ */
+
 import { useState, useEffect } from 'react';
 import { TrendingUp, BookOpen, Award, RotateCw } from 'lucide-react';
 

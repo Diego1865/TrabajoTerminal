@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente MainTutor y muestra una parte de la interfaz.
+ */
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { LogOut, UserPlus, Trash2, Loader2, Eye, X, Image as ImageIcon, CheckCircle, Award, KeyRound, Search, ChevronDown } from "lucide-react";
 import AlumnosCategoria from "./AlumnosCategoria";
@@ -13,34 +18,7 @@ import RetroalimentacionEjercicio from "../RetroalimentacionEjercicio";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// Función para decodificar el payload del JWT
-const decodificarJwt = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  } catch (e) {
-    return null;
-  }
-};
-
-const getTutorFromStorage = () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) return null;
-    return decodificarJwt(token);
-  } catch {
-    return null;
-  }
-};
-
-const getTipoUsuario = () => getTutorFromStorage()?.tipo_usuario;
 const getToken = () => localStorage.getItem("token");
-const getTutorId = () => getTutorFromStorage()?.id_usuario;
-const getNombreTutor = () => getTutorFromStorage()?.nombre || "Tutor";
 
 // Medidas de legibilidad (0-10) sugeridas por el sistema y confirmadas por el tutor.
 const MEDIDAS_LEGIBILIDAD = [
@@ -448,7 +426,7 @@ const ModalDetalleAlumno = ({ alumno, onClose, onCalificacionGuardada }) => {
 };
 
 // --- Componente Principal ---
-export default function MainTutor({ onLogout }) {
+export default function MainTutor({ sesion, onLogout }) {
   const [tab, setTab] = useState("inicio");
   // Inicio: promedios de todos los alumnos en una sola petición; contadores, barra y lista
   // se calculan aquí con la misma clasificación (categoriasProgreso.js).
@@ -496,9 +474,8 @@ export default function MainTutor({ onLogout }) {
   const [perfil, setPerfil] = useState(null);
   const [errorPerfil, setErrorPerfil] = useState("");
 
-  const idTutor = getTutorId();
-  const nombreTutor = perfil?.nombre || getNombreTutor();
-  const tipoUsuario = getTipoUsuario();
+  const idTutor = sesion.id_usuario;
+  const nombreTutor = perfil?.nombre || sesion.nombre || "Tutor";
 
   const cargarPerfil = useCallback(async () => {
     setErrorPerfil("");
@@ -514,21 +491,14 @@ export default function MainTutor({ onLogout }) {
   }, []);
 
   useEffect(() => {
-    if (tipoUsuario === "tutor") cargarPerfil();
-  }, [tipoUsuario, cargarPerfil]);
+    cargarPerfil();
+  }, [cargarPerfil]);
 
   const fecha = new Date().toLocaleDateString("es-MX", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
-
-  useEffect(() => {
-    if (!tipoUsuario) return;
-    if (tipoUsuario !== 'tutor') {
-      onLogout();
-    }
-  }, [tipoUsuario, onLogout]);
 
   useEffect(() => {
     if (!idTutor || tab !== "inicio") return;

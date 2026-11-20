@@ -1,41 +1,16 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Loader2, Tag, X, Image as ImageIcon, Award, Clock, CheckCircle2 } from 'lucide-react';
+
+/*
+ * Implementa el componente TabCompletados y muestra una parte de la interfaz.
+ */
+
+import { useState } from 'react';
+import { Loader2, Tag, X, Image as ImageIcon, Clock } from 'lucide-react';
+import { formatearFechaEjercicio, useEjerciciosAlumno } from './ejerciciosAlumno';
 
 const TabCompletados = ({ idAlumno }) => {
-  const [ejercicios, setEjercicios] = useState([]);
-  const [loadingPage, setLoadingPage] = useState(true);
-  const [error, setError] = useState('');
+  const { ejercicios, loadingPage, error } = useEjerciciosAlumno(idAlumno, 'completados', 'Error al cargar los ejercicios completados');
   const [ejercicioSeleccionado, setEjercicioSeleccionado] = useState(null);
-
-  useEffect(() => {
-    const fetchEjercicios = async () => {
-      setLoadingPage(true);
-      const token = localStorage.getItem('token');
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/alumno/ejercicios/completados`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-        if (!res.ok) throw new Error('Error al cargar los ejercicios completados');
-        const data = await res.json();
-        setEjercicios(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoadingPage(false);
-      }
-    };
-    if (idAlumno) fetchEjercicios();
-  }, [idAlumno]);
-
-  const formatearFecha = (fecha) => {
-    if (!fecha) return '—';
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      day: '2-digit', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
 
   const obtenerSrcImagen = (ejercicio) => {
     if (!ejercicio) return null;
@@ -117,7 +92,7 @@ const TabCompletados = ({ idAlumno }) => {
               <div className="flex items-center gap-1.5">
                 <span style={{ fontSize: '0.9rem' }}>✅</span>
                 <span className="text-xs font-bold" style={{ color: '#10B981' }}>
-                  {formatearFecha(ejercicio.fecha_envio)}
+                  {formatearFechaEjercicio(ejercicio.fecha_envio)}
                 </span>
               </div>
               {(ejercicio.puntuacion !== undefined || ejercicio.calificacion !== undefined) && (
@@ -180,14 +155,14 @@ const TabCompletados = ({ idAlumno }) => {
                     <p className="text-xs font-black text-gray-400 mb-1 flex items-center gap-1">
                       <Clock size={11} /> Fecha límite
                     </p>
-                    <p className="text-sm font-bold text-gray-700">{formatearFecha(ejercicioSeleccionado.fecha_desactivacion)}</p>
+                    <p className="text-sm font-bold text-gray-700">{formatearFechaEjercicio(ejercicioSeleccionado.fecha_desactivacion)}</p>
                   </div>
                   <div className="p-3" style={{ background: '#ECFDF5', borderRadius: '14px', border: '2px solid #A7F3D0' }}>
                     <p className="text-xs font-black mb-1 flex items-center gap-1" style={{ color: '#10B981' }}>
                       ✅ Enviado
                     </p>
                     <p className="text-sm font-bold" style={{ color: '#059669' }}>
-                      {formatearFecha(ejercicioSeleccionado.fecha_envio)}
+                      {formatearFechaEjercicio(ejercicioSeleccionado.fecha_envio)}
                     </p>
                   </div>
                 </div>

@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test ocr. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import base64
 import io
 import os
@@ -10,6 +14,7 @@ from google.auth.exceptions import DefaultCredentialsError
 from google.api_core.exceptions import DeadlineExceeded
 from Servicios.ocr import OcrError, pistas_idioma, preparar_imagen, reconocer_escritura
 from Modelo.dao_alumno import registrar_intento_dao
+from main import startup
 
 
 def imagen_prueba(tamano=(1024, 768)):
@@ -108,6 +113,29 @@ class GoogleTests(unittest.TestCase):
     def test_desactivado_no_llama_google(self, cliente):
         self.assertEqual(reconocer_escritura(imagen_prueba())["estado"], "desactivado")
         cliente.assert_not_called()
+
+
+class ArranqueOcrTests(unittest.IsolatedAsyncioTestCase):
+    @patch.dict(os.environ, {"GOOGLE_VISION_ENABLED": "true"})
+    @patch("main.iniciar_scheduler")
+    @patch("google.auth.default", side_effect=DefaultCredentialsError("detalle privado"))
+    async def test_ocr_activo_sin_credenciales_impide_arranque(self, adc, scheduler):
+        with self.assertRaisesRegex(RuntimeError, "requiere credenciales ADC") as error:
+            await startup()
+        self.assertNotIn("detalle privado", str(error.exception))
+        adc.assert_called_once_with()
+        scheduler.assert_not_called()
+
+    @patch("main.iniciar_scheduler")
+    @patch("google.auth.default")
+    async def test_solo_valida_credenciales_si_ocr_esta_activo(self, adc, scheduler):
+        with patch.dict(os.environ, {"GOOGLE_VISION_ENABLED": "false"}):
+            await startup()
+        adc.assert_not_called()
+        with patch.dict(os.environ, {"GOOGLE_VISION_ENABLED": "true"}):
+            await startup()
+        adc.assert_called_once_with()
+        self.assertEqual(scheduler.call_count, 2)
 
 
 class PersistenciaTests(unittest.TestCase):

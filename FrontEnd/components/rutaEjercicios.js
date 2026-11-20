@@ -1,3 +1,7 @@
+/*
+ * Contiene funciones auxiliares relacionadas con rutaEjercicios.
+ */
+
 import { leerPedagogia } from './pedagogiaEjercicio.js';
 
 // Los primeros lotes solo traen pedagogia.orden; estas claves conservan su ubicación.

@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test evaluacion. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import unittest
 from Servicios.evaluacion import evaluar, cls_de_intento
 

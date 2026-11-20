@@ -1,3 +1,7 @@
+/*
+ * Implementa el componente FondoCuaderno y muestra una parte de la interfaz.
+ */
+
 import { useId } from 'react';
 
 export const CUADRO = 40;

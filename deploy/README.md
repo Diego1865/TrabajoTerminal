@@ -17,9 +17,9 @@ cobra licencia de SQL Server; tiene límites de memoria y de tamaño de base
 (10 GB por base). Los archivos e imágenes base64 guardados en la base consumen ese espacio.
 Cloud SQL se cobra aparte de la VM.
 
-Compose `compose.demo.yml` es INDEPENDIENTE de los archivos locales. No combinarlo
-con `docker-compose.yml` ni `docker-compose.ocr.yml`. No reutiliza tus volúmenes locales.
-Vision usa ADC con la cuenta de servicio adjunta a la VM; no subir claves JSON.
+La VM usa `compose.demo.yml` con Cloud SQL y credenciales ADC de su cuenta de servicio adjunta.
+El despliegue comprueba que la nueva imagen pueda cargar ADC antes de hacer el respaldo,
+ejecutar migraciones y reemplazar los contenedores.
 El frontend usa la misma dirección HTTPS que la API; no incorpora localhost:8000.
 
 ## 1. Crear recursos (genera cargos)

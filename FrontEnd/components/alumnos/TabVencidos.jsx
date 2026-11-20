@@ -1,41 +1,16 @@
 'use client';
-import { useState, useEffect } from 'react';
+
+/*
+ * Implementa el componente TabVencidos y muestra una parte de la interfaz.
+ */
+
+import { useState } from 'react';
 import { Clock, Loader2, Tag, X } from 'lucide-react';
+import { formatearFechaEjercicio, useEjerciciosAlumno } from './ejerciciosAlumno';
 
 const TabVencidos = ({ idAlumno }) => {
-  const [ejercicios, setEjercicios] = useState([]);
-  const [loadingPage, setLoadingPage] = useState(true);
-  const [error, setError] = useState('');
+  const { ejercicios, loadingPage, error } = useEjerciciosAlumno(idAlumno, 'vencidos', 'Error al cargar los ejercicios vencidos');
   const [ejercicioSeleccionado, setEjercicioSeleccionado] = useState(null);
-
-  useEffect(() => {
-    const fetchEjercicios = async () => {
-      setLoadingPage(true);
-      const token = localStorage.getItem('token');
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/alumno/ejercicios/vencidos`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-        if (!res.ok) throw new Error('Error al cargar los ejercicios vencidos');
-        const data = await res.json();
-        setEjercicios(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoadingPage(false);
-      }
-    };
-    if (idAlumno) fetchEjercicios();
-  }, [idAlumno]);
-
-  const formatearFecha = (fecha) => {
-    if (!fecha) return '—';
-    return new Date(fecha).toLocaleDateString('es-MX', {
-      day: '2-digit', month: 'long', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
 
   if (loadingPage) {
     return (
@@ -112,7 +87,7 @@ const TabVencidos = ({ idAlumno }) => {
             <div className="mt-4 pt-3 flex items-center gap-1.5" style={{ borderTop: '2px dashed #FED7AA' }}>
               <Clock size={12} style={{ color: '#FDBA74' }} />
               <span className="text-xs font-bold" style={{ color: '#F97316' }}>
-                Venció: {formatearFecha(ejercicio.fecha_desactivacion)}
+                Venció: {formatearFechaEjercicio(ejercicio.fecha_desactivacion)}
               </span>
             </div>
           </div>
@@ -166,7 +141,7 @@ const TabVencidos = ({ idAlumno }) => {
               <div>
                 <p className="text-xs font-black" style={{ color: '#FDBA74' }}>FECHA DE VENCIMIENTO</p>
                 <p className="font-bold text-sm" style={{ color: '#EA580C' }}>
-                  {formatearFecha(ejercicioSeleccionado.fecha_desactivacion)}
+                  {formatearFechaEjercicio(ejercicioSeleccionado.fecha_desactivacion)}
                 </p>
               </div>
             </div>

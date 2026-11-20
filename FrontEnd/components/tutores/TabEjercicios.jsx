@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente TabEjercicios y muestra una parte de la interfaz.
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import { CheckCircle2, Circle, Loader2, Tag, X } from 'lucide-react';
 import CrearDictado from './CrearDictado';

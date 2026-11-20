@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente RecuperarPassword y muestra una parte de la interfaz.
+ */
+
 import { useState } from 'react';
 import { Mail, Lock, KeyRound, ArrowLeft } from 'lucide-react';
 

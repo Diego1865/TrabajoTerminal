@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente lectorejercicio y muestra una parte de la interfaz.
+ */
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Volume2, Square, Turtle, Rabbit } from 'lucide-react';
 

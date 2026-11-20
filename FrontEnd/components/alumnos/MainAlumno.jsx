@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente MainAlumno y muestra una parte de la interfaz.
+ */
+
 import { useState, useEffect } from 'react';
 import { LogOut, ArrowLeft } from 'lucide-react';
 import TabProximos      from './TabProximos';
@@ -19,26 +24,13 @@ const TABS = [
   { id: 'perfil',      emoji: '👤', label: 'Perfil',      color: '#8B5CF6', shadow: '#4C1D95', bg: '#F5F3FF', border: '#DDD6FE' },
 ];
 
-const decodificarJwt = (token) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-};
-
-const MainAlumno = ({ onLogout }) => {
+const MainAlumno = ({ sesion, onLogout }) => {
   const [pestañaActiva,   setPestañaActiva]   = useState('proximos');
-  const [idAlumno,        setIdAlumno]        = useState(null);
-  const [nombreAlumno,    setNombreAlumno]    = useState('');
   const [modoVista,       setModoVista]       = useState('tabs');
   const [ejercicioActivo, setEjercicioActivo] = useState(null);
   const [tutorActivo,     setTutorActivo]     = useState(true);
+  const idAlumno = sesion.id_usuario;
+  const nombreAlumno = sesion.nombre || 'Alumno';
   const retroalimentacion = useRetroalimentacion(idAlumno);
 
   useEffect(() => {
@@ -54,16 +46,6 @@ const MainAlumno = ({ onLogout }) => {
     verificarTutor();
   }, []);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) { onLogout(); return; }
-    const payload = decodificarJwt(token);
-    if (!payload) { onLogout(); return; }
-    if (payload.tipo_usuario !== 'alumno') { onLogout(); return; }
-    setIdAlumno(payload.id_usuario);
-    setNombreAlumno(payload.nombre || 'Alumno');
-  }, [onLogout]);
-
   const handleRealizarEjercicio = (ejercicio) => {
     setEjercicioActivo(ejercicio);
     setModoVista('lienzo');
@@ -75,8 +57,6 @@ const MainAlumno = ({ onLogout }) => {
     setModoVista('tabs');
     setPestañaActiva('completados');
   };
-
-  if (!idAlumno) return null;
 
   /* ══════════════════════════════════════════════
      VISTA DE RESOLUCIÓN DE EJERCICIO
@@ -128,13 +108,13 @@ const MainAlumno = ({ onLogout }) => {
               <CapturaEscritura
                 idEjercicioTutor={ejercicioActivo?.id_ejercicio_tutor}
                 alTerminar={handleTerminarEjercicio}
-                ejercicio={ejercicioActivo}                           // ← NUEVO
+                ejercicio={ejercicioActivo}
               />
             ) : (
               <LienzoDigital
                 idEjercicioTutor={ejercicioActivo?.id_ejercicio_tutor}
                 alTerminar={handleTerminarEjercicio}
-                ejercicio={ejercicioActivo}                           // ← NUEVO
+                ejercicio={ejercicioActivo}
               />
             )}
           </div>

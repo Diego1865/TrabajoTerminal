@@ -3,7 +3,6 @@ Set-Location (Split-Path $PSScriptRoot -Parent)
 # Entorno de prueba exclusivo: no reutiliza contenedores/volúmenes de TrabajoTerminal.
 $env:APP_DOMAIN = 'demo.example.com'
 $env:GOOGLE_CLOUD_PROJECT = 'test-project'
-$env:GOOGLE_VISION_ENABLED = 'false'
 $env:DB_PASSWORD = 'Aa1' + [Guid]::NewGuid().ToString('N')
 $env:SECRET_KEY = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
 # En la VM la base es Cloud SQL; aquí se sustituye por SQL Server en un contenedor.

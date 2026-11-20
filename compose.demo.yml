@@ -1,4 +1,4 @@
-# Archivo independiente: no combinar con docker-compose.yml ni con el override OCR local.
+# Archivo independiente para la VM; usa las credenciales de su cuenta de servicio.
 name: grafia-demo
 x-logs: &logs
   driver: json-file
@@ -17,7 +17,7 @@ x-backend: &backend
     DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD}
     SECRET_KEY: ${SECRET_KEY:?Define SECRET_KEY}
     CORS_ORIGINS: https://${APP_DOMAIN:?Define APP_DOMAIN}
-    GOOGLE_VISION_ENABLED: ${GOOGLE_VISION_ENABLED:-true}
+    GOOGLE_VISION_ENABLED: "true"
     GOOGLE_CLOUD_QUOTA_PROJECT: ${GOOGLE_CLOUD_PROJECT:?Define GOOGLE_CLOUD_PROJECT}
     GOOGLE_VISION_LANGUAGE_HINTS: ${GOOGLE_VISION_LANGUAGE_HINTS:-es}
     # Cuenta de Gmail que manda los códigos (deploy/cargar-correo.sh la copia de Secret Manager).

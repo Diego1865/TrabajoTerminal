@@ -1,3 +1,7 @@
+"""
+Contiene pruebas automaticas de test revision. Verifica el comportamiento esperado y detecta errores.
+"""
+
 import unittest
 from pathlib import Path
 from unittest.mock import patch

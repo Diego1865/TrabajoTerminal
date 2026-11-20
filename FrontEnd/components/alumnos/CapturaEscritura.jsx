@@ -1,27 +1,19 @@
 'use client';
+
+/*
+ * Implementa el componente CapturaEscritura y muestra una parte de la interfaz.
+ */
+
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Camera, Upload, X, CheckCircle, Loader, Aperture, RotateCw, Crop, Image as ImageIcon } from 'lucide-react';
 import LectorEjercicio from './lectorejercicio';
 import PistaEjercicio from './PistaEjercicio';
 import ReproductorDictado from './ReproductorDictado';
 import IlustracionesEjercicio from '../IlustracionesEjercicio';
-
-/* ─── Colores por tipo de ejercicio ─── */
-const TIPO_CONFIG = {
-  Legibilidad: { bg: '#EFF6FF', border: '#BFDBFE', color: '#1D4ED8', emoji: '✍️' },
-  Ortografía:  { bg: '#ECFDF5', border: '#A7F3D0', color: '#065F46', emoji: '📝' },
-  Mixto:       { bg: '#FFFBEB', border: '#FDE68A', color: '#92400E', emoji: '🎯' },
-};
-
-const TipoBadge = ({ tipo }) => {
-  const cfg = TIPO_CONFIG[tipo] || { bg: '#F3F4F6', border: '#E5E7EB', color: '#374151', emoji: '📋' };
-  return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-black"
-      style={{ background: cfg.bg, border: `1.5px solid ${cfg.border}`, borderRadius: '8px', color: cfg.color }}>
-      {cfg.emoji} {tipo}
-    </span>
-  );
-};
+import { leerContenido } from '../pedagogiaEjercicio';
+import TipoEjercicioBadge from './TipoEjercicioBadge';
+import { enviarIntento } from './ejerciciosAlumno';
+import { LADO_CORTO_MINIMO, LADO_LARGO_MINIMO, MENSAJE_RESOLUCION, tieneResolucionMinima } from './resolucionImagen';
 
 /* ─── Guía centrada en el visor de cámara ─── */
 const PlantillaGuia = () => (
@@ -43,12 +35,7 @@ const PlantillaGuia = () => (
    ════════════════════════════════════════ */
 const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio, onEnviar }) => {
 
-  /* ── Parsear contenido_base ── */
-  const contenido = useMemo(() => {
-    if (!ejercicio?.contenido_base) return {};
-    try { return JSON.parse(ejercicio.contenido_base); }
-    catch { return {}; }
-  }, [ejercicio]);
+  const contenido = useMemo(() => leerContenido(ejercicio), [ejercicio]);
 
   const textoGuia  = contenido.texto_guia  || null;
   const pista = contenido.pedagogia?.pista || null;
@@ -268,15 +255,8 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio, onEnviar })
         limpiarCaptura();
         return;
       }
-      if (!idEjercicioTutor) { setError('Error: Identificador del ejercicio no encontrado.'); setEnviando(false); return; }
-      const token = localStorage.getItem('token');
-      if (!token) { setError('Error: Sesión expirada.'); setEnviando(false); return; }
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/alumno/intento`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ id_ejercicio_tutor: idEjercicioTutor, imagen_codificada: imagenPreview }),
-      });
-      if (!response.ok) { const err = await response.json(); throw new Error(err.detail || 'Error en el servidor'); }
+      if (!idEjercicioTutor) { setError('Error: Identificador del ejercicio no encontrado.'); return; }
+      await enviarIntento({ id_ejercicio_tutor: idEjercicioTutor, imagen_codificada: imagenPreview }, 'Error en el servidor');
       limpiarCaptura();
       if (alTerminar) alTerminar(imagenPreview);
     } catch (err) {
@@ -342,7 +322,7 @@ const CapturaEscritura = ({ idEjercicioTutor, alTerminar, ejercicio, onEnviar })
 
             {/* Tipo + título */}
             <div className="flex items-start gap-2 mb-2 flex-wrap">
-              <TipoBadge tipo={ejercicio.tipo} />
+              <TipoEjercicioBadge tipo={ejercicio.tipo} />
               <h2 className="font-black leading-tight" style={{ fontSize: '1rem', color: '#1F2937' }}>
                 {ejercicio.titulo}
               </h2>

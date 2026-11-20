@@ -1,3 +1,7 @@
+/*
+ * Define la estructura general compartida de las paginas.
+ */
+
 import type { Metadata } from "next";
 import { Andika, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";

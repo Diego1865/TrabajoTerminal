@@ -1,4 +1,9 @@
 'use client';
+
+/*
+ * Implementa el componente PerfilTutor y muestra una parte de la interfaz.
+ */
+
 import { useState } from 'react';
 import { User, Mail, Lock, AlertTriangle, Save, Loader2, Eye, EyeOff, CalendarDays, AtSign, CheckCircle, RefreshCw } from 'lucide-react';
 

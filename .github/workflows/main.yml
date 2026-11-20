@@ -70,7 +70,7 @@ jobs:
           persist-credentials: false
       - run: bash -n deploy/deploy-main.sh
       - run: python3 -m unittest discover -s deploy/tests -v
-      - name: Validar Compose con valores ficticios
+      - name: Validar Compose de la demo con valores ficticios
         env:
           APP_DOMAIN: example.invalid
           GOOGLE_CLOUD_PROJECT: proyecto-de-pruebas
@@ -78,6 +78,22 @@ jobs:
           DB_PASSWORD: solo-validacion
           SECRET_KEY: solo-validacion
         run: docker compose -f compose.demo.yml config --quiet
+      - name: Validar que Compose local exige la ruta de credenciales OCR
+        env:
+          DB_DRIVER: "{ODBC Driver 18 for SQL Server}"
+          DB_SERVER: database
+          DB_NAME: TT
+          DB_USER: sa
+          DB_PASSWORD: solo-validacion
+          SECRET_KEY: solo-validacion
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          GOOGLE_VISION_CREDENTIALS_FILE: /tmp/grafia-credenciales-pruebas.json
+        run: |
+          docker compose -f docker-compose.yml config --quiet
+          if GOOGLE_VISION_CREDENTIALS_FILE= docker compose -f docker-compose.yml config --quiet; then
+            echo 'Compose local debe exigir GOOGLE_VISION_CREDENTIALS_FILE.' >&2
+            exit 1
+          fi
 
   deploy:
     name: Desplegar en grafia-demo
