@@ -52,7 +52,7 @@ const MEDIDAS_LEGIBILIDAD = [
 const LEGIBILIDAD_VACIA = { alineacion: "", tamano: "", espaciado: "", inclinacion: "" };
 
 // --- Componente Modal para Detalle y Calificación ---
-const ModalDetalleAlumno = ({ alumno, onClose }) => {
+const ModalDetalleAlumno = ({ alumno, onClose, onCalificacionGuardada }) => {
   const [intentos, setIntentos] = useState([]);
   // La lista llega sin imágenes; cada una se pide al abrir su intento y se guarda aquí.
   const [imagenes, setImagenes] = useState({});
@@ -198,6 +198,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
       setIntentoActivo(prev => prev?.id_intento === intentoActivo.id_intento ? ({ ...prev, puntuacion: calificacion, retroalimentacion,
         cls_confirmado: clsConfirmado, legibilidad_confirmada: legibilidadConfirmada || prev.legibilidad_confirmada,
         recomendacion: resultado.recomendacion }) : prev);
+      onCalificacionGuardada();
     } catch (err) {
       alert(err.message);
     } finally {
@@ -208,7 +209,8 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 sm:p-4 [@media(max-height:560px)]:p-0" onClick={onClose}>
       {/* En celular (o con poca altura, p. ej. celular horizontal) ocupa toda la pantalla; dvh descuenta la barra del navegador. */}
-      <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-5xl h-[100dvh] sm:h-[85vh] [@media(max-height:560px)]:h-[100dvh] [@media(max-height:560px)]:rounded-none flex flex-col overflow-hidden relative" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-white sm:rounded-2xl shadow-xl w-full max-w-5xl h-[100dvh] sm:h-[85vh] [@media(max-height:560px)]:h-[100dvh] [@media(max-height:560px)]:rounded-none flex flex-col overflow-hidden relative"
+        role="dialog" aria-modal="true" aria-labelledby="expediente-alumno-titulo" onClick={(e) => e.stopPropagation()}>
 
         {imagenAmpliada && (
           <div className="fixed inset-0 z-[60] bg-black/90 flex items-center justify-center p-2" onClick={() => setImagenAmpliada(null)}
@@ -223,7 +225,7 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
 
         <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex justify-between items-center gap-3 bg-gray-50">
           <div className="min-w-0">
-            <h2 className="text-xl font-bold text-gray-800">Expediente del Alumno</h2>
+            <h2 id="expediente-alumno-titulo" className="text-xl font-bold text-gray-800">Expediente del Alumno</h2>
             <p className="text-sm text-gray-500">{alumno.nombre} {alumno.apellido_paterno} {alumno.apellido_materno}</p>
           </div>
           <button onClick={onClose} aria-label="Cerrar expediente" className="shrink-0 text-gray-400 hover:text-gray-700 bg-white p-2.5 rounded-full shadow-sm">
@@ -245,14 +247,15 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                 <p className="text-sm text-gray-500 text-center p-4">El alumno no ha enviado ejercicios aún.</p>
               ) : (
                 intentos.map(intento => (
-                  <div 
-                    key={intento.id_intento} 
+                  <button
+                    type="button"
+                    key={intento.id_intento}
                     onClick={() => seleccionarIntento(intento)}
-                    className={`p-3 border rounded-xl cursor-pointer transition-colors ${intentoActivo?.id_intento === intento.id_intento ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
+                    className={`block w-full p-3 text-left border rounded-xl cursor-pointer transition-colors ${intentoActivo?.id_intento === intento.id_intento ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'}`}
                   >
-                    <p className="font-semibold text-sm text-gray-800 mb-1">{intento.titulo_ejercicio}</p>
-                    <p className="text-xs text-gray-500">{formatearFecha(intento.fecha_envio)}</p>
-                    <div className="mt-2 flex justify-between items-center">
+                    <span className="block font-semibold text-sm text-gray-800 mb-1">{intento.titulo_ejercicio}</span>
+                    <span className="block text-xs text-gray-500">{formatearFecha(intento.fecha_envio)}</span>
+                    <span className="mt-2 flex justify-between items-center">
                       <span className={`text-xs font-bold px-2 py-1 rounded-full ${intento.puntuacion !== undefined && intento.puntuacion !== null ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
                         {intento.puntuacion !== undefined && intento.puntuacion !== null ? `${intento.puntuacion} pts` : 'Sin calificar'}
                       </span>
@@ -266,8 +269,8 @@ const ModalDetalleAlumno = ({ alumno, onClose }) => {
                           Legibilidad confirmada
                         </span>
                       )}
-                    </div>
-                  </div>
+                    </span>
+                  </button>
                 ))
               )}
             </div>
@@ -450,6 +453,7 @@ export default function MainTutor({ onLogout }) {
   // Inicio: promedios de todos los alumnos en una sola petición; contadores, barra y lista
   // se calculan aquí con la misma clasificación (categoriasProgreso.js).
   const [resumen, setResumen] = useState([]);
+  const [versionResumen, setVersionResumen] = useState(0);
   const [loadingResumen, setLoadingResumen] = useState(true);
   const [errorResumen, setErrorResumen] = useState(null);
   const [metrica, setMetrica] = useState("general");
@@ -528,26 +532,31 @@ export default function MainTutor({ onLogout }) {
 
   useEffect(() => {
     if (!idTutor || tab !== "inicio") return;
-    // Se vuelve a pedir cada vez que se entra a Inicio, para ver las calificaciones recientes.
+    const controller = new AbortController();
+    const { signal } = controller;
     const fetchResumen = async () => {
       setLoadingResumen(true);
       setErrorResumen(null);
       try {
         const res = await fetch(`${API_URL}/api/tutor/resumen-progreso`, {
+          signal,
           headers: { "Authorization": `Bearer ${getToken()}` }
         });
         const data = await res.json().catch(() => ({}));
+        if (signal.aborted) return;
         if (!res.ok) throw new Error(typeof data.detail === "string" ? data.detail : "Error al obtener el progreso de los alumnos");
         setResumen(Array.isArray(data.alumnos) ? data.alumnos : []);
       } catch (err) {
+        if (signal.aborted) return;
         setErrorResumen(err.message);
         setResumen([]);
       } finally {
-        setLoadingResumen(false);
+        if (!signal.aborted) setLoadingResumen(false);
       }
     };
     fetchResumen();
-  }, [idTutor, tab]);
+    return () => controller.abort();
+  }, [idTutor, tab, versionResumen]);
 
   useEffect(() => {
     if (tab !== "alumnos") return;
@@ -669,9 +678,11 @@ export default function MainTutor({ onLogout }) {
   return (
     <div className="min-h-screen bg-gray-50 relative">
       {alumnoSeleccionado && (
-        <ModalDetalleAlumno 
-          alumno={alumnoSeleccionado} 
-          onClose={() => setAlumnoSeleccionado(null)} 
+        <ModalDetalleAlumno
+          key={alumnoSeleccionado.id_alumno}
+          alumno={alumnoSeleccionado}
+          onClose={() => setAlumnoSeleccionado(null)}
+          onCalificacionGuardada={() => setVersionResumen(version => version + 1)}
         />
       )}
       {alumnoPassword && (
@@ -736,7 +747,7 @@ export default function MainTutor({ onLogout }) {
               </div>
               <div className="bg-white rounded-2xl shadow-sm">
                 <AlumnosCategoria key={`${categoriaActiva}-${metrica}`} alumnos={grupos[categoriaActiva]}
-                  categoria={categoriaActiva} metrica={metrica} />
+                  categoria={categoriaActiva} metrica={metrica} onSeleccionarAlumno={setAlumnoSeleccionado} />
               </div>
             </div>
           )

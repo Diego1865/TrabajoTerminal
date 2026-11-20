@@ -83,7 +83,7 @@ function colorScore(valor) {
   return "#EF4444";
 }
 
-export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo", metrica = "general" }) {
+export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo", metrica = "general", onSeleccionarAlumno }) {
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const config = CONFIG[categoria] ?? CONFIG.riesgo;
   const { titulo, descripcion, emoji, border, shadow, bgCard, bgIcon, iconColor,
@@ -116,45 +116,44 @@ export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo", m
       {/* Tarjetas */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {visibles.map((alumno) => (
-          <div
+          <button
+            type="button"
             key={alumno.id_alumno}
-            className="relative select-none"
+            onClick={() => onSeleccionarAlumno(alumno)}
+            className="relative cursor-pointer text-left transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
             style={{
               padding: "16px",
               borderRadius: "18px",
               border: `2.5px solid ${border}`,
               background: bgCard,
               boxShadow: `0 4px 0 ${shadow}`,
-              transition: "transform 0.15s, box-shadow 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}>
+            }}>
 
             {/* Icono categoría */}
-            <div className="absolute top-3 right-3">
+            <span className="absolute top-3 right-3" aria-hidden="true">
               <Icono size={18} style={{ color: iconColor }} />
-            </div>
+            </span>
 
             {/* Etiqueta */}
-            <div className="flex items-center gap-1.5 mb-2">
+            <span className="flex items-center gap-1.5 mb-2">
               <Tag size={11} style={{ color: tagColor }} />
               <span className="font-bold uppercase text-xs tracking-wider" style={{ color: tagColor }}>Alumno</span>
-            </div>
+            </span>
 
             {/* Contenido */}
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 p-2 flex items-center justify-center"
+            <span className="flex items-start gap-3">
+              <span className="shrink-0 p-2 flex items-center justify-center"
                 style={{ background: bgIcon, borderRadius: "12px" }}>
                 <User size={16} style={{ color: iconColor }} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h4 className="font-black text-sm leading-tight mb-2 text-gray-800">
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block font-black text-sm leading-tight mb-2 text-gray-800">
                   {alumno.nombre} {alumno.apellido_paterno} {alumno.apellido_materno}
-                </h4>
-                <div className="flex flex-col gap-0.5">
+                </span>
+                <span className="flex flex-col gap-0.5">
                   {PROMEDIOS.map(({ label, campo, metrica: m }) => ({ label, val: alumno[campo], activa: m === metrica })).map(({ label, val, activa }) => (
                     // La métrica con la que se clasificó va resaltada.
-                    <p key={label} className={`text-xs ${activa ? "font-black text-gray-800" : "font-semibold text-gray-500"}`}>
+                    <span key={label} className={`text-xs ${activa ? "font-black text-gray-800" : "font-semibold text-gray-500"}`}>
                       {label}:{" "}
                       {val === null || val === undefined ? (
                         <span className="font-black text-gray-400">Sin datos</span>
@@ -163,12 +162,13 @@ export default function AlumnosCategoria({ alumnos = [], categoria = "riesgo", m
                           {Number(val).toFixed(1)}
                         </span>
                       )}
-                    </p>
+                    </span>
                   ))}
-                </div>
-              </div>
-            </div>
-          </div>
+                </span>
+                <span className="mt-2 block text-xs font-bold text-blue-700">Ver intentos</span>
+              </span>
+            </span>
+          </button>
         ))}
       </div>
 
